@@ -1,9 +1,10 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: locust-master
+  generateName: locust-master-
   labels:
     name: locust-master
+    created-by: "locust-cloud-deploy"
 spec:
   replicas: 1
   selector:

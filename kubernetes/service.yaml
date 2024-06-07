@@ -1,9 +1,10 @@
 kind: Service
 apiVersion: v1
 metadata:
-  name: locust-master
+  generateName: locust-master-
   labels:
     app: locust-master
+    created-by: "locust-cloud-deploy"
 spec:
   ports:
     - port: 5557
@@ -21,7 +22,7 @@ spec:
 kind: Service
 apiVersion: v1
 metadata:
-  name: locust-master-ui
+  generateName: locust-master-ui-
   labels:
     app: locust-master
 spec:
@@ -30,7 +31,6 @@ spec:
       targetPort: loc-master-web
       protocol: TCP
       name: loc-master-web
-      nodePort: 30627
   selector:
     app: locust-master
   type: NodePort
