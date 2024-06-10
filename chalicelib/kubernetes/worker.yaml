@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: locust-worker
-          image: locustio/locust
+          image: 637423602143.dkr.ecr.eu-north-1.amazonaws.com/locust
           env:
             - name: LOCUST_MODE_WORKER
               value: "1"
