@@ -1,7 +1,7 @@
 import os
 from chalice import Chalice, UnauthorizedError
 from chalicelib.kubernetes_client import get_kubernetes_client
-from chalicelib.mutate_cluster import create_cluster, destroy_cluster
+from chalicelib.mutate_cluster import create_deployment, destroy_deployment
 
 app = Chalice(app_name="locust-deployment")
 
@@ -10,6 +10,7 @@ CLUSTER_CONFIGURATION_FILES = [
     for filename in os.listdir("chalicelib/kubernetes")
 ]
 AWS_DEFAULT_REGION = "eu-north-1"
+AWS_DEFAULT_NAMESPACE = "default"
 
 
 def get_region():
@@ -20,14 +21,24 @@ def get_region():
     )
 
 
+def get_namespace():
+    return (
+        app.current_request.query_params.get("namespace", AWS_DEFAULT_REGION)
+        if app.current_request.query_params
+        else AWS_DEFAULT_NAMESPACE
+    )
+
+
 @app.route("/{cluster_name}", methods=["POST"])
 def deploy_pods(cluster_name):
     try:
         region_name = get_region()
+        namespace = get_namespace()
         kubernetes_client = get_kubernetes_client(cluster_name, region_name=region_name)
-        create_cluster(
+        create_deployment(
             kubernetes_client,
             configuration_files=CLUSTER_CONFIGURATION_FILES,
+            namespace=namespace,
         )
 
         return "Deployed"
@@ -39,8 +50,9 @@ def deploy_pods(cluster_name):
 def destroy_deployed_pods(cluster_name):
     try:
         region_name = get_region()
+        namespace = get_namespace()
         kubernetes_client = get_kubernetes_client(cluster_name, region_name=region_name)
-        destroy_cluster(kubernetes_client)
+        destroy_deployment(kubernetes_client, namespace=namespace)
 
         return "Destroyed"
     except Exception as e:
