@@ -6,7 +6,8 @@ from chalicelib.mutate_cluster import create_cluster, destroy_cluster
 app = Chalice(app_name="locust-deployment")
 
 CLUSTER_CONFIGURATION_FILES = [
-    os.path.join("kubernetes", filename) for filename in os.listdir("kubernetes")
+    os.path.join("chalicelib/kubernetes", filename)
+    for filename in os.listdir("chalicelib/kubernetes")
 ]
 AWS_DEFAULT_REGION = "eu-north-1"
 

@@ -54,6 +54,7 @@ def get_kubernetes_client(cluster_name, region_name):
     response = eks_client.describe_cluster(name=cluster_name)
 
     cluster = response["cluster"]
+
     endpoint = cluster["endpoint"]
     cert_authority = _write_cafile(cluster["certificateAuthority"]["data"])
 
