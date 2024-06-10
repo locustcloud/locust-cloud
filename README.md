@@ -12,7 +12,7 @@ kubectl create namespace new-namespace
 ```
 To interact with the cluster locally, update the local kubeconfig:
 ```
-aws eks update-kubeconfig --region eu-north-1 --name loccluster-nameust
+aws eks update-kubeconfig --region eu-north-1 --name cluster-name
 ```
 
 A manual deployment can be created using the kubectl CLI:
@@ -31,12 +31,12 @@ kubectl port-forward pod/locust-master-# 8089:8089
 
 ### Lambda Endpoints
 
-The Chalice endpoint exposes two endpoints; one to deploy and one to teardown the deployment. Simply `POST` the cluster name: `endpoint/<cluster_name>` to deploy and `DELETE` to teardown.
+The Chalice endpoint exposes two endpoints; one to deploy and one to teardown the deployment. Simply `POST` the cluster name: `endpoint/<cluster_name>` to deploy fand `DELETE` to teardown.
 
 Additional query parameters are:
 ```
 region_name: AWS region name for the deployment (defaults to eu-north-1)
-namespace: AWS namespace to scope the deployed pods
+namespace: Kubernetes namespace to scope the deployed pods
 ```
 
 ### Helpful Links
