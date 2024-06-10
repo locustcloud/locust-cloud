@@ -17,7 +17,7 @@ aws eks update-kubeconfig --region eu-north-1 --name cluster-name
 
 A manual deployment can be created using the kubectl CLI:
 ```
-kubectl apply -f ./chalicelib/kubernetes
+kubectl create -f ./chalicelib/kubernetes
 ```
 For debugging purposes logs can be received using kubectl:
 ```
