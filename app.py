@@ -13,20 +13,16 @@ AWS_DEFAULT_REGION = "eu-north-1"
 AWS_DEFAULT_NAMESPACE = "default"
 
 
+def get_query_params():
+    return app.current_request.query_params or {}
+
+
 def get_region():
-    return (
-        app.current_request.query_params.get("region", AWS_DEFAULT_REGION)
-        if app.current_request.query_params
-        else AWS_DEFAULT_REGION
-    )
+    return get_query_params().get("region", AWS_DEFAULT_REGION)
 
 
 def get_namespace():
-    return (
-        app.current_request.query_params.get("namespace", AWS_DEFAULT_REGION)
-        if app.current_request.query_params
-        else AWS_DEFAULT_NAMESPACE
-    )
+    return get_query_params().get("namespace", AWS_DEFAULT_NAMESPACE)
 
 
 @app.route("/{cluster_name}", methods=["POST"])
