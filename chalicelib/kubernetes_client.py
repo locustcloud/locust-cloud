@@ -15,29 +15,29 @@ def _write_cafile(data: str) -> tempfile.NamedTemporaryFile:
     return cafile
 
 
-def get_bearer_token(region):
+def get_bearer_token(cluster_name, region_name):
     STS_TOKEN_EXPIRES_IN = 60
-    session = boto3.session.Session(region_name=region)
+    session = boto3.session.Session(region_name=region_name)
 
-    token_service_client = session.client("sts")
+    client = session.client("sts")
 
-    service_id = token_service_client.meta.service_model.service_id
+    service_id = client.meta.service_model.service_id
 
     signer = RequestSigner(
-        service_id, region, "sts", "v4", session.get_credentials(), session.events
+        service_id, region_name, "sts", "v4", session.get_credentials(), session.events
     )
 
     params = {
         "method": "GET",
-        "url": f"https://sts.{region}.amazonaws.com/?Action=GetCallerIdentity&Version=2011-06-15",
+        "url": f"https://sts.{region_name}.amazonaws.com/?Action=GetCallerIdentity&Version=2011-06-15",
         "body": {},
-        "headers": {"x-k8s-aws-id": region},
+        "headers": {"x-k8s-aws-id": cluster_name},
         "context": {},
     }
 
     signed_url = signer.generate_presigned_url(
         params,
-        region_name=region,
+        region_name=region_name,
         expires_in=STS_TOKEN_EXPIRES_IN,
         operation_name="",
     )
@@ -48,10 +48,10 @@ def get_bearer_token(region):
     return "k8s-aws-v1." + re.sub(r"=*", "", base64_url)
 
 
-def get_kubernetes_client(cluster, region):
+def get_kubernetes_client(cluster_name, region_name):
     eks_client = boto3.client("eks")
 
-    response = eks_client.describe_cluster(name=cluster)
+    response = eks_client.describe_cluster(name=cluster_name)
 
     cluster = response["cluster"]
     endpoint = cluster["endpoint"]
@@ -61,7 +61,7 @@ def get_kubernetes_client(cluster, region):
     configuration.host = endpoint
     configuration.verify_ssl = True
     configuration.ssl_ca_cert = cert_authority.name
-    bearer = get_bearer_token(region)
+    bearer = get_bearer_token(cluster_name, region_name)
     configuration.api_key["authorization"] = bearer
     configuration.api_key_prefix["authorization"] = "Bearer"
 

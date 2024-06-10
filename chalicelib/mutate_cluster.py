@@ -11,9 +11,11 @@ def apply_yaml_file(api_client, configuration_file):
 
 
 def create_cluster(kubernetes_client, configuration_files):
+    print(configuration_files)
     api_client = kubernetes_client.ApiClient()
     for yaml_file in configuration_files:
         print(f"Applying {yaml_file}")
+        print(yaml_file)
         apply_yaml_file(api_client, yaml_file)
         print(f"Successfully applied {yaml_file}")
 

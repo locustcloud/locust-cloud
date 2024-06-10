@@ -19,13 +19,11 @@ def get_region():
     )
 
 
-@app.route("/{cluster}", methods=["POST"])
-def deploy_pods(cluster):
+@app.route("/{cluster_name}", methods=["POST"])
+def deploy_pods(cluster_name):
     try:
-        print(cluster)
-        region = get_region()
-        kubernetes_client = get_kubernetes_client(cluster, region=region)
-        print(kubernetes_client)
+        region_name = get_region()
+        kubernetes_client = get_kubernetes_client(cluster_name, region_name=region_name)
         create_cluster(
             kubernetes_client,
             configuration_files=CLUSTER_CONFIGURATION_FILES,
@@ -36,15 +34,12 @@ def deploy_pods(cluster):
         raise UnauthorizedError(f"Unauthorized: {e}")
 
 
-@app.route("/{cluster}", methods=["DELETE"])
-def destroy_deployed_pods(cluster):
+@app.route("/{cluster_name}", methods=["DELETE"])
+def destroy_deployed_pods(cluster_name):
     try:
-        region = get_region()
-        kubernetes_client = get_kubernetes_client(cluster, region=region)
-        destroy_cluster(
-            kubernetes_client,
-            yaml_configuration=CLUSTER_CONFIGURATION_FILES,
-        )
+        region_name = get_region()
+        kubernetes_client = get_kubernetes_client(cluster_name, region_name=region_name)
+        destroy_cluster(kubernetes_client)
 
         return "Destroyed"
     except Exception as e:
