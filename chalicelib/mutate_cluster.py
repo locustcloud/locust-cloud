@@ -20,7 +20,6 @@ def destroy_cluster(kubernetes_client):
     deployments = v1.list_namespaced_deployment(namespace="default")
 
     for deployment in deployments.items:
-        print(deployment.metadata.name)
         v1.delete_namespaced_deployment(
             name=deployment.metadata.name, namespace=deployment.metadata.namespace
         )
