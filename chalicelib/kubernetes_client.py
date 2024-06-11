@@ -5,6 +5,8 @@ import base64
 from botocore.signers import RequestSigner
 from kubernetes import client
 
+STS_TOKEN_EXPIRES_IN = 60
+
 
 def _write_cafile(data: str) -> tempfile.NamedTemporaryFile:
     cafile = tempfile.NamedTemporaryFile(delete=False)
@@ -15,10 +17,7 @@ def _write_cafile(data: str) -> tempfile.NamedTemporaryFile:
     return cafile
 
 
-def get_bearer_token(cluster_name, region_name):
-    STS_TOKEN_EXPIRES_IN = 60
-    session = boto3.session.Session(region_name=region_name)
-
+def get_bearer_token(session, cluster_name, region_name):
     client = session.client("sts")
 
     service_id = client.meta.service_model.service_id
@@ -48,8 +47,18 @@ def get_bearer_token(cluster_name, region_name):
     return "k8s-aws-v1." + re.sub(r"=*", "", base64_url)
 
 
-def get_kubernetes_client(cluster_name, region_name):
-    eks_client = boto3.client("eks")
+def get_kubernetes_client(
+    cluster_name, region_name, aws_access_key_id, aws_secret_access_key
+):
+    session = boto3.session.Session(
+        region_name=region_name,
+        aws_access_key_id=aws_access_key_id,
+        aws_secret_access_key=aws_secret_access_key,
+    )
+
+    bearer = get_bearer_token(session, cluster_name, region_name)
+
+    eks_client = session.client("eks")
 
     response = eks_client.describe_cluster(name=cluster_name)
 
@@ -62,7 +71,6 @@ def get_kubernetes_client(cluster_name, region_name):
     configuration.host = endpoint
     configuration.verify_ssl = True
     configuration.ssl_ca_cert = cert_authority.name
-    bearer = get_bearer_token(cluster_name, region_name)
     configuration.api_key["authorization"] = bearer
     configuration.api_key_prefix["authorization"] = "Bearer"
 
