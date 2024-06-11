@@ -17,6 +17,10 @@ def get_query_params():
     return app.current_request.query_params or {}
 
 
+def get_headers():
+    return app.current_request.headers or {}
+
+
 def get_region():
     return get_query_params().get("region", AWS_DEFAULT_REGION)
 
@@ -28,9 +32,17 @@ def get_namespace():
 @app.route("/{cluster_name}", methods=["POST"])
 def deploy_pods(cluster_name):
     try:
+        aws_access_key_id = get_headers().get("AWS_PUBLIC_KEY")
+        aws_secret_access_key = get_headers().get("AWS_SECRET_KEY")
+
         region_name = get_region()
         namespace = get_namespace()
-        kubernetes_client = get_kubernetes_client(cluster_name, region_name=region_name)
+        kubernetes_client = get_kubernetes_client(
+            cluster_name,
+            region_name=region_name,
+            aws_access_key_id=aws_access_key_id,
+            aws_secret_access_key=aws_secret_access_key,
+        )
         create_deployment(
             kubernetes_client,
             configuration_files=CLUSTER_CONFIGURATION_FILES,
@@ -45,9 +57,17 @@ def deploy_pods(cluster_name):
 @app.route("/{cluster_name}", methods=["DELETE"])
 def destroy_deployed_pods(cluster_name):
     try:
+        aws_access_key_id = get_headers().get("AWS_PUBLIC_KEY")
+        aws_secret_access_key = get_headers().get("AWS_SECRET_KEY")
+
         region_name = get_region()
         namespace = get_namespace()
-        kubernetes_client = get_kubernetes_client(cluster_name, region_name=region_name)
+        kubernetes_client = get_kubernetes_client(
+            cluster_name,
+            region_name=region_name,
+            aws_access_key_id=aws_access_key_id,
+            aws_secret_access_key=aws_secret_access_key,
+        )
         destroy_deployment(kubernetes_client, namespace=namespace)
 
         return "Destroyed"

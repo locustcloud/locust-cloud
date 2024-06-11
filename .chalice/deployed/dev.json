@@ -1,10 +1,10 @@
 {
   "resources": [
     {
-      "name": "api_handler_role",
+      "name": "default-role",
       "resource_type": "iam_role",
-      "role_arn": "arn:aws:iam::637423602143:role/locust-deployment-dev-api_handler",
-      "role_name": "locust-deployment-dev-api_handler"
+      "role_arn": "arn:aws:iam::637423602143:role/locust-deployment-dev",
+      "role_name": "locust-deployment-dev"
     },
     {
       "name": "api_handler",
