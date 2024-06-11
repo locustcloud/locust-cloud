@@ -21,8 +21,8 @@ def get_headers():
     return app.current_request.headers or {}
 
 
-def get_region():
-    return get_query_params().get("region", AWS_DEFAULT_REGION)
+def get_region_name():
+    return get_query_params().get("region_name", AWS_DEFAULT_REGION)
 
 
 def get_namespace():
@@ -38,12 +38,12 @@ def deploy_pods(cluster_name):
         if not aws_access_key_id or not aws_secret_access_key:
             raise UnauthorizedError("AWS_PUBLIC_KEY and AWS_SECRET_KEY are required")
 
-        region_name = get_region()
+        region_name = get_region_name()
         namespace = get_namespace()
         kubernetes_client = get_kubernetes_client(
             cluster_name,
             region_name=region_name,
-            aws_access_key_id=aws_access_key_id,
+            aws_public_key=aws_access_key_id,
             aws_secret_access_key=aws_secret_access_key,
         )
         create_deployment(
@@ -66,7 +66,7 @@ def destroy_deployed_pods(cluster_name):
         if not aws_access_key_id or not aws_secret_access_key:
             raise UnauthorizedError("AWS_PUBLIC_KEY and AWS_SECRET_KEY are required")
 
-        region_name = get_region()
+        region_name = get_region_name()
         namespace = get_namespace()
         kubernetes_client = get_kubernetes_client(
             cluster_name,
