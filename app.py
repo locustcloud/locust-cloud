@@ -52,7 +52,7 @@ def deploy_pods(cluster_name):
             namespace=namespace,
         )
 
-        return "Deployed"
+        return {"message": "Deployed"}
     except Exception as e:
         raise UnauthorizedError(f"Unauthorized: {e}")
 
@@ -76,6 +76,6 @@ def destroy_deployed_pods(cluster_name):
         )
         destroy_deployment(kubernetes_client, namespace=namespace)
 
-        return "Destroyed"
+        return {"message": "Destroyed"}
     except Exception as e:
         raise UnauthorizedError(f"Unauthorized: {e}")
