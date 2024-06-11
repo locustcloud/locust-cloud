@@ -31,18 +31,15 @@ kubectl port-forward pod/locust-master-# 8089:8089
 
 ### Lambda Endpoints
 
-The Chalice endpoint exposes two endpoints; one to deploy and one to teardown the deployment. Simply `POST` the cluster name: `endpoint/<cluster_name>` to deploy fand `DELETE` to teardown.
+The Chalice endpoint exposes two endpoints; one to deploy and one to teardown the deployment. In order to authenticate, create a user with permissions to the desired cluster and provide the access keys in `AWS_PUBLIC_KEY` and `AWS_SECRET_KEY`. Then simply `POST` `endpoint/<cluster_name>` to deploy and `DELETE` to teardown. 
 
 Additional query parameters are:
-```
-region_name: AWS region name for the deployment (defaults to eu-north-1)
-namespace: Kubernetes namespace to scope the deployed pods
-```
+- `region_name`: AWS region name for the deployment (defaults to eu-north-1)
+- `namespace`: Kubernetes namespace to scope the deployed pods
+
 
 ### Helpful Links
 
 - The [Python Kubernetes Client](https://github.com/kubernetes-client/python) has many useful [examples](https://github.com/kubernetes-client/python/blob/master/examples/README.md)
 - The [Remote Cluster Kubernetes Example](https://github.com/kubernetes-client/python/blob/master/examples/remote_cluster.py) describes receiving and using a bearer token for authentication with the kubernetes client. This is important because the AWS Lambda will not have a kubeconfig
-- The [Boto3](https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/eks.html) Python package has many helpful functions for interacting directly with AWS
-
-
+- The [Boto3](https://boto3.amazonaws.com/v1/documentation/api/latest/index.html) Python package has many helpful functions for interacting directly with AWS
