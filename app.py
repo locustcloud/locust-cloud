@@ -35,6 +35,9 @@ def deploy_pods(cluster_name):
         aws_access_key_id = get_headers().get("AWS_PUBLIC_KEY")
         aws_secret_access_key = get_headers().get("AWS_SECRET_KEY")
 
+        if not aws_access_key_id or not aws_secret_access_key:
+            raise UnauthorizedError("AWS_PUBLIC_KEY and AWS_SECRET_KEY are required")
+
         region_name = get_region()
         namespace = get_namespace()
         kubernetes_client = get_kubernetes_client(
@@ -59,6 +62,9 @@ def destroy_deployed_pods(cluster_name):
     try:
         aws_access_key_id = get_headers().get("AWS_PUBLIC_KEY")
         aws_secret_access_key = get_headers().get("AWS_SECRET_KEY")
+
+        if not aws_access_key_id or not aws_secret_access_key:
+            raise UnauthorizedError("AWS_PUBLIC_KEY and AWS_SECRET_KEY are required")
 
         region_name = get_region()
         namespace = get_namespace()
