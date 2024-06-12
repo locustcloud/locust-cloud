@@ -29,7 +29,7 @@ def get_namespace():
     return get_query_params().get("namespace", AWS_DEFAULT_NAMESPACE)
 
 
-@app.route("/{cluster_name}", methods=["POST"])
+@app.route("/1/{cluster_name}", methods=["POST"])
 def deploy_pods(cluster_name):
     try:
         aws_access_key_id = get_headers().get("AWS_PUBLIC_KEY")
@@ -57,7 +57,7 @@ def deploy_pods(cluster_name):
         raise UnauthorizedError(f"Unauthorized: {e}")
 
 
-@app.route("/{cluster_name}", methods=["DELETE"])
+@app.route("/1/{cluster_name}", methods=["DELETE"])
 def destroy_deployed_pods(cluster_name):
     try:
         aws_access_key_id = get_headers().get("AWS_PUBLIC_KEY")
