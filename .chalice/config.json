@@ -3,7 +3,11 @@
   "app_name": "locust-deployment",
   "stages": {
     "dev": {
-      "api_gateway_stage": "api"
+      "api_gateway_stage": "api",
+      "api_gateway_custom_domain": {
+        "domain_name": "cloud.getlocust.com",
+        "certificate_arn": "arn:aws:acm:us-east-1:637423602143:certificate/795328ef-3055-4f21-9fa1-5026dbffb5f3"
+      }
     }
   }
 }
