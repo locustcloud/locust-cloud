@@ -43,7 +43,7 @@ def deploy_pods(cluster_name):
         kubernetes_client = get_kubernetes_client(
             cluster_name,
             region_name=region_name,
-            aws_public_key=aws_access_key_id,
+            aws_access_key_id=aws_access_key_id,
             aws_secret_access_key=aws_secret_access_key,
         )
         create_deployment(
