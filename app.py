@@ -1,6 +1,6 @@
 import os
 from chalice import Chalice, UnauthorizedError
-from chalicelib.kubernetes_client import get_kubernetes_client
+from kubernetes_client.main import get_kubernetes_client
 from chalicelib.mutate_cluster import create_deployment, destroy_deployment
 
 app = Chalice(app_name="locust-deployment")
