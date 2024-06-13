@@ -29,6 +29,19 @@ Finally, use port forwarding to interact with the Locust deployment locally:
 kubectl port-forward pod/locust-master-# 8089:8089
 ```
 
+### Log Setup
+
+To setup logging with Fargate for EKS, start by creating an observability namespace:
+```
+kubectl apply -f aws-observability-namespace.yaml
+```
+The cloudwatch configmap will be applied when applying the deployment under `./chalicelib/kubernetes`
+
+Finally attach the eks-fargate-logging-policy IAM policy to allow for creating and collecting the logs:
+```
+aws iam attach-role-policy --policy-arn arn:aws:iam::637423602143:policy/eks-fargate-logging-policy --role-name AmazonEKSFargatePodExecutionRole
+```
+
 ### Lambda Endpoints
 
 The Chalice endpoint exposes two endpoints; one to deploy and one to teardown the deployment. In order to authenticate, create a user with permissions to the desired cluster and provide the access keys in `AWS_PUBLIC_KEY` and `AWS_SECRET_KEY`. Then simply `POST` `endpoint/<cluster_name>` to deploy and `DELETE` to teardown. 
@@ -43,3 +56,4 @@ Additional query parameters are:
 - The [Python Kubernetes Client](https://github.com/kubernetes-client/python) has many useful [examples](https://github.com/kubernetes-client/python/blob/master/examples/README.md)
 - The [Remote Cluster Kubernetes Example](https://github.com/kubernetes-client/python/blob/master/examples/remote_cluster.py) describes receiving and using a bearer token for authentication with the kubernetes client. This is important because the AWS Lambda will not have a kubeconfig
 - The [Boto3](https://boto3.amazonaws.com/v1/documentation/api/latest/index.html) Python package has many helpful functions for interacting directly with AWS
+- [AWS Fargate](https://docs.aws.amazon.com/eks/latest/userguide/fargate.html)
