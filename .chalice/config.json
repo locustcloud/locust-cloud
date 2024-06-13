@@ -11,5 +11,6 @@
         "certificate_arn": "arn:aws:acm:eu-north-1:637423602143:certificate/a43eddf9-2b94-47fb-bcc3-56d8e3f5f29e"
       }
     }
-  }
+  },
+  "dependencies": ["kubernetes_client"]
 }
