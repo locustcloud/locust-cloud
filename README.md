@@ -1,46 +1,6 @@
 # Locust Cloud
 
-### Setup
-
-Setup the new client by creating a new namespace or cluster:
-```
-eksctl create cluster --name cluster-name --region eu-north-1 --fargate
-
-# OR
-
-kubectl create namespace new-namespace
-```
-To interact with the cluster locally, update the local kubeconfig:
-```
-aws eks update-kubeconfig --region eu-north-1 --name cluster-name
-```
-
-A manual deployment can be created using the kubectl CLI:
-```
-kubectl create -f ./chalicelib/kubernetes
-```
-For debugging purposes logs can be received using kubectl:
-```
-kubectl logs pod/locust-worker-#
-kubectl logs pod/locust-master-#
-```
-Finally, use port forwarding to interact with the Locust deployment locally:
-```
-kubectl port-forward pod/locust-master-# 8089:8089
-```
-
-### Log Setup
-
-To setup logging with Fargate for EKS, start by creating an observability namespace:
-```
-kubectl apply -f aws-observability-namespace.yaml
-```
-The cloudwatch configmap will be applied when applying the deployment under `./chalicelib/kubernetes`
-
-Finally attach the eks-fargate-logging-policy IAM policy to allow for creating and collecting the logs:
-```
-aws iam attach-role-policy --policy-arn arn:aws:iam::637423602143:policy/eks-fargate-logging-policy --role-name AmazonEKSFargatePodExecutionRole
-```
+Locust cloud is a python package allowing for deploying with Locust Cloud from the CLI. The Python package leverages an AWS lambda for deployments.
 
 ### Lambda Endpoints
 
@@ -48,8 +8,29 @@ The Chalice endpoint exposes two endpoints; one to deploy and one to teardown th
 
 Additional query parameters are:
 - `region_name`: AWS region name for the deployment (defaults to eu-north-1)
-- `namespace`: Kubernetes namespace to scope the deployed pods
+- `namespace`: Kubernetes namespace to scope the deployed pods (defaults to default)
 
+### Local Deployment
+
+A manual deployment can be created using chalice and posting the endpoint using CURL or a similar tool:
+```
+chalice local
+curl --location --request POST 'http://127.0.0.1:8000/1/locust' \
+--header 'AWS_PUBLIC_KEY: {PUBLIC_KEY}' \
+--header 'AWS_SECRET_KEY: {SECRET_KEY}'
+```
+
+### Local Debugging
+
+For debugging purposes logs can be received using kubectl:
+```
+kubectl logs pod/locust-worker-#
+kubectl logs pod/locust-master-#
+```
+Use port forwarding to interact with the Locust deployment locally:
+```
+kubectl port-forward pod/locust-master-# 8089:8089
+```
 
 ### Helpful Links
 
