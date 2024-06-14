@@ -23,8 +23,6 @@ spec:
               value: "1"
             - name: LOCUST_LOGLEVEL
               value: debug
-            - name: LOCUST_LOCUSTFILE
-              value: https://raw.githubusercontent.com/locustio/locust/master/examples/basic.py
           ports:
             - name: loc-master-web
               containerPort: 8089

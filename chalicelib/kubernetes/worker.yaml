@@ -26,4 +26,4 @@ spec:
             - name: LOCUST_MASTER_NODE_HOST
               value: locust-master
             - name: LOCUST_LOCUSTFILE
-              value: https://raw.githubusercontent.com/locustio/locust/master/examples/basic.py
+              value: "-"
