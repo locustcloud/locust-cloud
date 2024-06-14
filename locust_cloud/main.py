@@ -10,7 +10,7 @@ import datetime
 from botocore.exceptions import ClientError
 from collections import OrderedDict
 
-LAMBDA = "http://127.0.0.1:8000"
+LAMBDA = "https://alpha.getlocust.com/1"
 DEFAULT_CLUSTER_NAME = "locust"
 DEFAULT_REGION_NAME = "eu-north-1"
 
@@ -126,24 +126,33 @@ def main():
     locustfile = options.locustfile or "locustfile.py"
 
     try:
+        session = boto3.session.Session(
+            region_name=options.aws_region_name,
+            aws_access_key_id=options.aws_public_key,
+            aws_secret_access_key=options.aws_secret_key,
+        )
+
+        upload_locustfile(
+            session,
+            locustfile,
+            cluster_name=options.kube_cluster_name,
+            namespace=options.kube_namespace,
+        )
         deploy(
             options.aws_public_key,
             options.aws_secret_key,
-            region_name=options.aws_region_name,
             cluster_name=options.kube_cluster_name,
             namespace=options.kube_namespace,
         )
         stream_pod_logs(
-            options.aws_public_key,
-            options.aws_secret_key,
+            session,
             region_name=options.aws_region_name,
             cluster_name=options.kube_cluster_name,
             namespace=options.kube_namespace,
         )
     except KeyboardInterrupt:
         pass
-    except Exception as e:
-        print(e)
+    except Exception:
         sys.stderr.write(
             "An unkown error occured during deployment. Please contact an administrator\n"
         )
@@ -162,6 +171,20 @@ def main():
         sys.exit(1)
 
 
+def upload_locustfile(session, locustfile, cluster_name, namespace):
+    logging.info("Uploading your locustfile...")
+
+    s3 = session.client("s3")
+    s3_bucket = f"{cluster_name}-{namespace}"
+    s3_file_name = "locustfile.py"
+
+    try:
+        s3.upload_file(locustfile, s3_bucket, s3_file_name)
+    except FileNotFoundError:
+        sys.stderr.write(f"Could not find '{locustfile}'\n")
+        sys.exit(1)
+
+
 def deploy(
     aws_public_key,
     aws_secret_key,
@@ -171,7 +194,7 @@ def deploy(
 ):
     logging.info("Your request for deployment has been submitted, please wait...")
     response = requests.post(
-        f"{LAMBDA}/1/{cluster_name}",
+        f"{LAMBDA}/{cluster_name}",
         headers={"AWS_PUBLIC_KEY": aws_public_key, "AWS_SECRET_KEY": aws_secret_key},
         params={"region_name": region_name, "namespace": namespace},
     )
@@ -190,18 +213,12 @@ def deploy(
 
 
 def stream_pod_logs(
-    aws_public_key,
-    aws_secret_key,
-    region_name=None,
+    session,
     cluster_name=DEFAULT_CLUSTER_NAME,
     namespace=None,
 ):
     logging.info("Fetching logs from cluster...")
-    session = boto3.session.Session(
-        region_name=region_name,
-        aws_access_key_id=aws_public_key,
-        aws_secret_access_key=aws_secret_key,
-    )
+
     client = session.client("logs")
     log_group_name = f"/eks/{cluster_name}-{namespace}"
     # read logs from master

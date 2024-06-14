@@ -29,10 +29,19 @@ def apply_yaml_file(api_client, configuration_file, cluster_name, namespace):
         for config in yaml_config:
             if "cloudwatch-configmap" in configuration_file:
                 apply_cloudwatch_configmap(api_client, config, cluster_name, namespace)
-            else:
-                utils.create_from_yaml(
-                    api_client, yaml_objects=[config], namespace=namespace
+                continue
+
+            if "master" in configuration_file:
+                config["spec"]["template"]["spec"]["containers"][0]["env"].append(
+                    {
+                        "name": "LOCUST_LOCUSTFILE",
+                        "value": f"https://{cluster_name}-{namespace}.s3.amazonaws.com/locustfile.py",
+                    }
                 )
+
+            utils.create_from_yaml(
+                api_client, yaml_objects=[config], namespace=namespace
+            )
 
 
 def wait_for_pods_deployment(kubernetes_client, namespace):
