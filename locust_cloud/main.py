@@ -200,8 +200,8 @@ def deploy(
     )
 
     if response.status_code != 200:
-        if response.json().get("Message"):
-            sys.stderr.write(f"{response.json().get('Message')}\n")
+        if response.json().get("message"):
+            sys.stderr.write(f"{response.json().get('message')}\n")
         else:
             sys.stderr.write(
                 "An unkown error occured during deployment. Please contact an administrator\n"
