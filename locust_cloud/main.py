@@ -65,7 +65,7 @@ parser = configargparse.ArgumentParser(
     ),
     description="""A tool for Locust Cloud users to deploy clusters.
 
-Example: locust-cloud -f locust.py --aws-public-key 123 --aws-secret-key 456""",
+Example: locust-cloud -f locust.py --aws-access-key-id 123 --aws-secret-access-key 456""",
     epilog="""Any parameters not listed here are forwarded to locust master unmodified, so go ahead and use things like --users, --host, --run-time, ...
 
 Locust config can also be set using config file (~/.locust.conf, locust.conf, pyproject.toml, ~/.cloud.conf or cloud.conf).
@@ -80,16 +80,16 @@ parser.add_argument(
     type=str,
 )
 parser.add_argument(
-    "--aws-public-key",
+    "--aws-access-key-id",
     type=str,
     help="Authentication for deploying with Locust Cloud",
-    env_var="AWS_PUBLIC_KEY",
+    env_var="AWS_ACCESS_KEY_ID",
 )
 parser.add_argument(
-    "--aws-secret-key",
+    "--aws-secret-access-key",
     type=str,
     help="Authentication for deploying with Locust Cloud",
-    env_var="AWS_SECRET_KEY",
+    env_var="AWS_SECRET_ACCESS_KEY",
 )
 parser.add_argument(
     "--aws-region-name",
@@ -200,8 +200,8 @@ def deploy(
     )
 
     if response.status_code != 200:
-        if response.json().get("Message"):
-            sys.stderr.write(f"{response.json().get('Message')}\n")
+        if response.json().get("message"):
+            sys.stderr.write(f"{response.json().get('message')}\n")
         else:
             sys.stderr.write(
                 "An unkown error occured during deployment. Please contact an administrator\n"
