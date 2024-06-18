@@ -163,7 +163,7 @@ def main():
             options.aws_access_key_id,
             options.aws_secret_access_key,
             region_name=options.aws_region_name,
-            cluster_name=options.kube_namespace,
+            cluster_name=options.kube_cluster_name,
             namespace=options.kube_namespace,
         )
     except Exception:
@@ -279,7 +279,7 @@ def teardown(
 ):
     logging.info("Tearing down Locust cloud...")
 
-    requests.delete(
+    response = requests.delete(
         f"{LAMBDA}/{cluster_name}",
         headers={
             "AWS_ACCESS_KEY_ID": aws_access_key_id,
@@ -287,3 +287,6 @@ def teardown(
         },
         params={"region_name": region_name, "namespace": namespace},
     )
+
+    if response.status_code != 200:
+        raise Exception("Error tearing down Locust")
