@@ -24,8 +24,8 @@ curl --location --request POST 'http://127.0.0.1:8000/1/locust' \
 
 For debugging purposes logs can be received using kubectl:
 ```
-kubectl logs pod/locust-worker-#
-kubectl logs pod/locust-master-#
+kubectl logs pod/locust-pod-worker-#
+kubectl logs pod/locust-pod-master-#
 ```
 Use port forwarding to interact with the Locust deployment locally:
 ```
