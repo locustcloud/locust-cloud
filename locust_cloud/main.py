@@ -117,9 +117,9 @@ options, locust_options = parser.parse_known_args()
 
 
 def main():
-    if not options.aws_public_key or not options.aws_secret_key:
+    if not options.aws_access_key_id or not options.aws_secret_access_key:
         sys.stderr.write(
-            "aws-public-key and aws-secret-key need to be set to use Locust Cloud\n"
+            "aws-access-key-id and aws-secret-access-key need to be set to use Locust Cloud\n"
         )
         sys.exit(1)
 
@@ -128,8 +128,8 @@ def main():
     try:
         session = boto3.session.Session(
             region_name=options.aws_region_name,
-            aws_access_key_id=options.aws_public_key,
-            aws_secret_access_key=options.aws_secret_key,
+            aws_access_key_id=options.aws_access_key_id,
+            aws_secret_access_key=options.aws_secret_access_key,
         )
 
         upload_locustfile(
@@ -139,8 +139,8 @@ def main():
             namespace=options.kube_namespace,
         )
         deploy(
-            options.aws_public_key,
-            options.aws_secret_key,
+            options.aws_access_key_id,
+            options.aws_secret_access_key,
             cluster_name=options.kube_cluster_name,
             namespace=options.kube_namespace,
         )
@@ -160,8 +160,8 @@ def main():
 
     try:
         teardown(
-            options.aws_public_key,
-            options.aws_secret_key,
+            options.aws_access_key_id,
+            options.aws_secret_access_key,
             region_name=options.aws_region_name,
             cluster_name=options.kube_namespace,
             namespace=options.kube_namespace,
@@ -186,8 +186,8 @@ def upload_locustfile(session, locustfile, cluster_name, namespace):
 
 
 def deploy(
-    aws_public_key,
-    aws_secret_key,
+    aws_access_key_id,
+    aws_secret_access_key,
     region_name=None,
     cluster_name=DEFAULT_CLUSTER_NAME,
     namespace=None,
@@ -195,7 +195,10 @@ def deploy(
     logging.info("Your request for deployment has been submitted, please wait...")
     response = requests.post(
         f"{LAMBDA}/{cluster_name}",
-        headers={"AWS_PUBLIC_KEY": aws_public_key, "AWS_SECRET_KEY": aws_secret_key},
+        headers={
+            "AWS_ACCESS_KEY_ID": aws_access_key_id,
+            "AWS_SECRET_ACCESS_KEY": aws_secret_access_key,
+        },
         params={"region_name": region_name, "namespace": namespace},
     )
 
@@ -263,8 +266,8 @@ def stream_pod_logs(
 
 
 def teardown(
-    aws_public_key,
-    aws_secret_key,
+    aws_access_key_id,
+    aws_secret_access_key,
     region_name=None,
     cluster_name=DEFAULT_CLUSTER_NAME,
     namespace=None,
@@ -273,6 +276,9 @@ def teardown(
 
     requests.delete(
         f"{LAMBDA}/{cluster_name}",
-        headers={"AWS_PUBLIC_KEY": aws_public_key, "AWS_SECRET_KEY": aws_secret_key},
+        headers={
+            "AWS_ACCESS_KEY_ID": aws_access_key_id,
+            "AWS_SECRET_ACCESS_KEY": aws_secret_access_key,
+        },
         params={"region_name": region_name, "namespace": namespace},
     )
