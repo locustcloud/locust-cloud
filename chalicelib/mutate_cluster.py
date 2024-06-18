@@ -1,5 +1,5 @@
 import yaml
-from kubernetes import utils, watch
+from kubernetes import utils
 
 
 def apply_cloudwatch_configmap(api_client, config, cluster_name, namespace):
@@ -16,19 +16,26 @@ def apply_cloudwatch_configmap(api_client, config, cluster_name, namespace):
     """
 
     try:
-        utils.create_from_yaml(api_client, yaml_objects=[config], namespace=namespace)
+        response = utils.create_from_yaml(
+            api_client, yaml_objects=[config], namespace=namespace
+        )
+        return response[0][0].metadata.name
     except utils.FailToCreateError:
         # Cloudwatch configmap may already exist
-        pass
+        return None
 
 
 def apply_yaml_file(api_client, configuration_file, cluster_name, namespace):
+    deployment_name = None
+
     with open(configuration_file) as f:
         yaml_config = yaml.safe_load_all(f)
 
         for config in yaml_config:
             if "cloudwatch-configmap" in configuration_file:
-                apply_cloudwatch_configmap(api_client, config, cluster_name, namespace)
+                deployment_name = apply_cloudwatch_configmap(
+                    api_client, config, cluster_name, namespace
+                )
                 continue
 
             if "master" in configuration_file:
@@ -39,32 +46,27 @@ def apply_yaml_file(api_client, configuration_file, cluster_name, namespace):
                     }
                 )
 
-            utils.create_from_yaml(
+            response = utils.create_from_yaml(
                 api_client, yaml_objects=[config], namespace=namespace
             )
 
+            deployment_name = response[0][0].metadata.name
 
-def wait_for_pods_deployment(kubernetes_client, namespace):
-    v1 = kubernetes_client.CoreV1Api()
-    w = watch.Watch()
-
-    for event in w.stream(v1.list_namespaced_pod, namespace=namespace):
-        pod_status = event["object"].status.phase
-
-        if pod_status == "Running":
-            pods = v1.list_namespaced_pod(namespace=namespace)
-            all_ready = all([pod.status.phase == "Running" for pod in pods.items])
-
-            if all_ready:
-                w.stop()
+    return deployment_name
 
 
 def create_deployment(kubernetes_client, configuration_files, cluster_name, namespace):
     api_client = kubernetes_client.ApiClient()
+    deployed_pods = []
     for yaml_file in configuration_files:
-        apply_yaml_file(api_client, yaml_file, cluster_name, namespace)
+        deployment_name = apply_yaml_file(
+            api_client, yaml_file, cluster_name, namespace
+        )
 
-    wait_for_pods_deployment(kubernetes_client, namespace)
+        if deployment_name is not None and "pod" in deployment_name:
+            deployed_pods.append(deployment_name)
+
+    return deployed_pods
 
 
 def destroy_deployment(kubernetes_client, namespace):
