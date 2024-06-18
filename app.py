@@ -30,11 +30,13 @@ def get_namespace():
 
 
 def get_kubernetes_client_from_request(cluster_name):
-    aws_access_key_id = get_headers().get("AWS_PUBLIC_KEY")
-    aws_secret_access_key = get_headers().get("AWS_SECRET_KEY")
+    aws_access_key_id = get_headers().get("AWS_ACCESS_KEY_ID")
+    aws_secret_access_key = get_headers().get("AWS_SECRET_ACCESS_KEY")
 
     if not aws_access_key_id or not aws_secret_access_key:
-        raise UnauthorizedError("AWS_PUBLIC_KEY and AWS_SECRET_KEY are required")
+        raise UnauthorizedError(
+            "AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY are required"
+        )
 
     region_name = get_region_name()
     return get_kubernetes_client(
@@ -51,14 +53,14 @@ def deploy_pods(cluster_name):
         namespace = get_namespace()
         kubernetes_client = get_kubernetes_client_from_request(cluster_name)
 
-        create_deployment(
+        deployed_pods = create_deployment(
             kubernetes_client,
             configuration_files=CLUSTER_CONFIGURATION_FILES,
             cluster_name=cluster_name,
             namespace=namespace,
         )
 
-        return {"message": "Deployed"}
+        return {"message": "Deployed", "pods": deployed_pods}
     except Exception as e:
         raise UnauthorizedError(f"Unauthorized: {e}")
 

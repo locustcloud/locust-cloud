@@ -1,7 +1,7 @@
 kind: Service
 apiVersion: v1
 metadata:
-  generateName: locust-master-
+  generateName: locust-service-master-
   labels:
     app: locust-master
     created-by: "locust-cloud-deploy"
@@ -22,7 +22,7 @@ spec:
 kind: Service
 apiVersion: v1
 metadata:
-  generateName: locust-master-ui-
+  generateName: locust-service-master-ui-
   labels:
     app: locust-master
 spec:

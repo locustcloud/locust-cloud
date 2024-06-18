@@ -4,9 +4,9 @@ import logging
 import configargparse
 import tomllib
 import boto3
-import json
 import time
-import datetime
+import json
+from datetime import datetime, timedelta
 from botocore.exceptions import ClientError
 from collections import OrderedDict
 
@@ -117,9 +117,9 @@ options, locust_options = parser.parse_known_args()
 
 
 def main():
-    if not options.aws_public_key or not options.aws_secret_key:
+    if not options.aws_access_key_id or not options.aws_secret_access_key:
         sys.stderr.write(
-            "aws-public-key and aws-secret-key need to be set to use Locust Cloud\n"
+            "aws-access-key-id and aws-secret-access-key need to be set to use Locust Cloud\n"
         )
         sys.exit(1)
 
@@ -128,8 +128,8 @@ def main():
     try:
         session = boto3.session.Session(
             region_name=options.aws_region_name,
-            aws_access_key_id=options.aws_public_key,
-            aws_secret_access_key=options.aws_secret_key,
+            aws_access_key_id=options.aws_access_key_id,
+            aws_secret_access_key=options.aws_secret_access_key,
         )
 
         upload_locustfile(
@@ -138,32 +138,32 @@ def main():
             cluster_name=options.kube_cluster_name,
             namespace=options.kube_namespace,
         )
-        deploy(
-            options.aws_public_key,
-            options.aws_secret_key,
+        deployed_pods = deploy(
+            options.aws_access_key_id,
+            options.aws_secret_access_key,
             cluster_name=options.kube_cluster_name,
             namespace=options.kube_namespace,
         )
         stream_pod_logs(
             session,
-            region_name=options.aws_region_name,
+            deployed_pods=deployed_pods,
             cluster_name=options.kube_cluster_name,
             namespace=options.kube_namespace,
         )
     except KeyboardInterrupt:
         pass
-    except Exception:
+    except Exception as e:
+        print(e)
         sys.stderr.write(
             "An unkown error occured during deployment. Please contact an administrator\n"
         )
-        sys.exit(1)
 
     try:
         teardown(
-            options.aws_public_key,
-            options.aws_secret_key,
+            options.aws_access_key_id,
+            options.aws_secret_access_key,
             region_name=options.aws_region_name,
-            cluster_name=options.kube_namespace,
+            cluster_name=options.kube_cluster_name,
             namespace=options.kube_namespace,
         )
     except Exception:
@@ -186,8 +186,8 @@ def upload_locustfile(session, locustfile, cluster_name, namespace):
 
 
 def deploy(
-    aws_public_key,
-    aws_secret_key,
+    aws_access_key_id,
+    aws_secret_access_key,
     region_name=None,
     cluster_name=DEFAULT_CLUSTER_NAME,
     namespace=None,
@@ -195,7 +195,10 @@ def deploy(
     logging.info("Your request for deployment has been submitted, please wait...")
     response = requests.post(
         f"{LAMBDA}/{cluster_name}",
-        headers={"AWS_PUBLIC_KEY": aws_public_key, "AWS_SECRET_KEY": aws_secret_key},
+        headers={
+            "AWS_ACCESS_KEY_ID": aws_access_key_id,
+            "AWS_SECRET_ACCESS_KEY": aws_secret_access_key,
+        },
         params={"region_name": region_name, "namespace": namespace},
     )
 
@@ -209,70 +212,81 @@ def deploy(
 
         sys.exit(1)
 
-    logging.info("Locust cloud is ready!")
+    logging.info("Deployment created successfully!")
+    return response.json()["pods"]
 
 
 def stream_pod_logs(
     session,
+    deployed_pods,
     cluster_name=DEFAULT_CLUSTER_NAME,
     namespace=None,
 ):
-    logging.info("Fetching logs from cluster...")
-
+    logging.info("Waiting for pods to be ready...")
     client = session.client("logs")
+
     log_group_name = f"/eks/{cluster_name}-{namespace}"
-    # read logs from master
-    query = "field @message | filter @logStream like /master/ | sort @timestamp desc"
+    master_pod_name = [pod_name for pod_name in deployed_pods if "master" in pod_name][
+        0
+    ]
 
-    start_query_response = None
-    while start_query_response is None:
+    log_stream = None
+    while log_stream is None:
         try:
-            start_query_response = client.start_query(
+            response = client.describe_log_streams(
                 logGroupName=log_group_name,
-                startTime=int(
-                    (
-                        datetime.datetime.now() - datetime.timedelta(minutes=5)
-                    ).timestamp()
-                ),
-                endTime=int(datetime.datetime.now().timestamp()),
-                queryString=query,
+                logStreamNamePrefix=f"from-fluent-bit-kube.var.log.containers.{master_pod_name}",
             )
+            all_streams = response.get("logStreams")
+            if all_streams:
+                log_stream = all_streams[0].get("logStreamName")
+            else:
+                time.sleep(1)
         except ClientError:
-            # logs are not ready yet
+            # log group name does not exist yet
             time.sleep(1)
+            continue
 
-    query_id = start_query_response["queryId"]
+    logging.info("Pods are ready! Logging will now switch to Cloudwatch")
 
+    timestamp = int((datetime.now() - timedelta(minutes=5)).timestamp())
     while True:
-        time.sleep(1)
-        query_result = []
+        response = client.get_log_events(
+            logGroupName=log_group_name,
+            logStreamName=log_stream,
+            startTime=timestamp,
+            startFromHead=True,
+        )
 
-        response = client.get_query_results(queryId=query_id)
-        if response:
-            query_result = response.get("results", [])
+        for event in response["events"]:
+            message = event["message"]
+            timestamp = event["timestamp"] + 1
 
-        for result in query_result:
-            for field in result:
-                if field["field"] == "@message":
-                    try:
-                        log = json.loads(field["value"])["log"]
-                    except json.JSONDecodeError:
-                        log = field["value"]
+            try:
+                print(json.loads(message)["log"])
+            except json.JSONDecodeError:
+                print(message)
 
-                    print(log)
+        time.sleep(5)
 
 
 def teardown(
-    aws_public_key,
-    aws_secret_key,
+    aws_access_key_id,
+    aws_secret_access_key,
     region_name=None,
     cluster_name=DEFAULT_CLUSTER_NAME,
     namespace=None,
 ):
     logging.info("Tearing down Locust cloud...")
 
-    requests.delete(
+    response = requests.delete(
         f"{LAMBDA}/{cluster_name}",
-        headers={"AWS_PUBLIC_KEY": aws_public_key, "AWS_SECRET_KEY": aws_secret_key},
+        headers={
+            "AWS_ACCESS_KEY_ID": aws_access_key_id,
+            "AWS_SECRET_ACCESS_KEY": aws_secret_access_key,
+        },
         params={"region_name": region_name, "namespace": namespace},
     )
+
+    if response.status_code != 200:
+        raise Exception("Error tearing down Locust")

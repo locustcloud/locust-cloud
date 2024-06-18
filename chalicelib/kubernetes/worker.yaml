@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  generateName: locust-worker-
+  generateName: locust-pod-worker-
   labels:
     name: locust-worker
     created-by: "locust-cloud-deploy"
