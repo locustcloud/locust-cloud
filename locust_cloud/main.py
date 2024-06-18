@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 from botocore.exceptions import ClientError
 from collections import OrderedDict
 
-LAMBDA = "https://alpha.getlocust.com/1"
+LAMBDA = "http://127.0.0.1:8000/1"
 DEFAULT_CLUSTER_NAME = "locust"
 DEFAULT_REGION_NAME = "eu-north-1"
 
