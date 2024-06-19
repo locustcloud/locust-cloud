@@ -22,6 +22,10 @@ def get_headers():
     return app.current_request.headers or {}
 
 
+def get_request_body():
+    return app.current_request.json_body or {}
+
+
 def get_region_name():
     return get_query_params().get("region_name", AWS_DEFAULT_REGION)
 
@@ -51,10 +55,12 @@ def deploy_pods(cluster_name):
     try:
         namespace = get_namespace()
         kubernetes_client = get_kubernetes_client_from_request(cluster_name)
+        locust_args = get_request_body().get("locust_args", [])
 
         deployed_pods = create_deployment(
             kubernetes_client,
             configuration_files=CLUSTER_CONFIGURATION_FILES,
+            env_variables=locust_args,
             cluster_name=cluster_name,
             namespace=namespace,
         )

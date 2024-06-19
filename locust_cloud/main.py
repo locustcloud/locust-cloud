@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 import sys
 import time
 import tomllib
@@ -188,11 +189,28 @@ def deploy(
     namespace=None,
 ):
     logging.info("Your request for deployment has been submitted, please wait...")
+    locust_env_variables = [
+        {"name": env_variable, "value": str(os.environ[env_variable])}
+        for env_variable in os.environ
+        if "LOCUST" in env_variable
+    ]
+
     response = requests.post(
         f"{LAMBDA}/{cluster_name}",
         headers={
             "AWS_ACCESS_KEY_ID": aws_access_key_id,
             "AWS_SECRET_ACCESS_KEY": aws_secret_access_key,
+        },
+        json={
+            "locust_args": [
+                {
+                    "name": "LOCUST_LOCUSTFILE",
+                    # "value": f"https://{cluster_name}-{namespace}.s3.amazonaws.com/locustfile.py",
+                    "value": "https://raw.githubusercontent.com/locustio/locust/master/examples/basic.py",
+                },
+                {"name": "LOCUST_FLAGS", "value": " ".join(locust_options)},
+                *locust_env_variables,
+            ]
         },
         params={"region_name": region_name, "namespace": namespace},
     )
