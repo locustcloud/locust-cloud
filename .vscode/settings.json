@@ -1,0 +1,18 @@
+{
+  "editor.formatOnSave": true,
+  "files.exclude": {
+    "locust_cloud.egg-info/**": true,
+    "dist/**": true,
+    "**/.tox/": true,
+    "**/__pycache__": true,
+    ".mypy_cache/**/*": true
+  },
+  "[python]": {
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.fixAll": "explicit",
+      "source.organizeImports": "explicit"
+    },
+    "editor.defaultFormatter": "charliermarsh.ruff"
+  }
+}

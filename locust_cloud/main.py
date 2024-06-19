@@ -1,14 +1,15 @@
-import requests
-import sys
-import logging
-import configargparse
-import tomllib
-import boto3
-import time
 import json
-from datetime import datetime, timedelta
-from botocore.exceptions import ClientError
+import logging
+import sys
+import time
+import tomllib
 from collections import OrderedDict
+from datetime import datetime, timedelta
+
+import boto3
+import configargparse
+import requests
+from botocore.exceptions import ClientError
 
 LAMBDA = "https://alpha.getlocust.com/1"
 DEFAULT_CLUSTER_NAME = "locust"
@@ -20,9 +21,7 @@ class LocustTomlConfigParser(configargparse.TomlConfigParser):
         try:
             config = tomllib.loads(stream.read())
         except Exception as e:
-            raise configargparse.ConfigFileParserException(
-                f"Couldn't parse TOML file: {e}"
-            )
+            raise configargparse.ConfigFileParserException(f"Couldn't parse TOML file: {e}")
 
         # convert to dict and filter based on section names
         result = OrderedDict()
@@ -118,9 +117,7 @@ options, locust_options = parser.parse_known_args()
 
 def main():
     if not options.aws_access_key_id or not options.aws_secret_access_key:
-        sys.stderr.write(
-            "aws-access-key-id and aws-secret-access-key need to be set to use Locust Cloud\n"
-        )
+        sys.stderr.write("aws-access-key-id and aws-secret-access-key need to be set to use Locust Cloud\n")
         sys.exit(1)
 
     locustfile = options.locustfile or "locustfile.py"
@@ -154,9 +151,7 @@ def main():
         pass
     except Exception as e:
         print(e)
-        sys.stderr.write(
-            "An unkown error occured during deployment. Please contact an administrator\n"
-        )
+        sys.stderr.write("An unkown error occured during deployment. Please contact an administrator\n")
 
     try:
         teardown(
@@ -206,9 +201,7 @@ def deploy(
         if response.json().get("message"):
             sys.stderr.write(f"{response.json().get('message')}\n")
         else:
-            sys.stderr.write(
-                "An unkown error occured during deployment. Please contact an administrator\n"
-            )
+            sys.stderr.write("An unkown error occured during deployment. Please contact an administrator\n")
 
         sys.exit(1)
 
@@ -226,9 +219,7 @@ def stream_pod_logs(
     client = session.client("logs")
 
     log_group_name = f"/eks/{cluster_name}-{namespace}"
-    master_pod_name = [pod_name for pod_name in deployed_pods if "master" in pod_name][
-        0
-    ]
+    master_pod_name = [pod_name for pod_name in deployed_pods if "master" in pod_name][0]
 
     log_stream = None
     while log_stream is None:
