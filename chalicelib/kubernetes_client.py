@@ -1,7 +1,8 @@
-import re
-import boto3
-import tempfile
 import base64
+import re
+import tempfile
+
+import boto3
 from botocore.signers import RequestSigner
 from kubernetes import client
 
@@ -22,9 +23,7 @@ def get_bearer_token(session, cluster_name, region_name):
 
     service_id = client.meta.service_model.service_id
 
-    signer = RequestSigner(
-        service_id, region_name, "sts", "v4", session.get_credentials(), session.events
-    )
+    signer = RequestSigner(service_id, region_name, "sts", "v4", session.get_credentials(), session.events)
 
     params = {
         "method": "GET",
@@ -47,9 +46,7 @@ def get_bearer_token(session, cluster_name, region_name):
     return "k8s-aws-v1." + re.sub(r"=*", "", base64_url)
 
 
-def get_kubernetes_client(
-    cluster_name, region_name, aws_access_key_id, aws_secret_access_key
-):
+def get_kubernetes_client(cluster_name, region_name, aws_access_key_id, aws_secret_access_key):
     session = boto3.session.Session(
         region_name=region_name,
         aws_access_key_id=aws_access_key_id,

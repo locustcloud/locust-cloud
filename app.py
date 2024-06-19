@@ -1,13 +1,14 @@
 import os
+
 from chalice import Chalice, UnauthorizedError
+
 from chalicelib.kubernetes_client import get_kubernetes_client
 from chalicelib.mutate_cluster import create_deployment, destroy_deployment
 
 app = Chalice(app_name="locust-deployment")
 
 CLUSTER_CONFIGURATION_FILES = [
-    os.path.join("chalicelib/kubernetes", filename)
-    for filename in os.listdir("chalicelib/kubernetes")
+    os.path.join("chalicelib/kubernetes", filename) for filename in os.listdir("chalicelib/kubernetes")
 ]
 AWS_DEFAULT_REGION = "eu-north-1"
 AWS_DEFAULT_NAMESPACE = "default"
@@ -34,9 +35,7 @@ def get_kubernetes_client_from_request(cluster_name):
     aws_secret_access_key = get_headers().get("AWS_SECRET_ACCESS_KEY")
 
     if not aws_access_key_id or not aws_secret_access_key:
-        raise UnauthorizedError(
-            "AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY are required"
-        )
+        raise UnauthorizedError("AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY are required")
 
     region_name = get_region_name()
     return get_kubernetes_client(
