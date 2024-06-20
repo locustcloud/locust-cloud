@@ -77,7 +77,17 @@ Parameters specified on command line override env vars, which in turn override c
 parser.add_argument(
     "-f",
     "--locustfile",
+    metavar="<filename>",
+    default="locustfile.py",
+    help="The Python file or module that contains your test, e.g. 'my_test.py'. Defaults to 'locustfile'.",
+    env_var="LOCUST_LOCUSTFILE",
+)
+parser.add_argument(
+    "-r",
+    "--requirements",
     type=str,
+    help="Optional requirements.txt file that contains your external libraries.",
+    env_var="LOCUST_REQUIREMENTS",
 )
 parser.add_argument(
     "--aws-access-key-id",
@@ -121,26 +131,40 @@ def main():
         sys.stderr.write("aws-access-key-id and aws-secret-access-key need to be set to use Locust Cloud\n")
         sys.exit(1)
 
-    locustfile = options.locustfile or "locustfile.py"
-
     try:
         session = boto3.session.Session(
             region_name=options.aws_region_name,
             aws_access_key_id=options.aws_access_key_id,
             aws_secret_access_key=options.aws_secret_access_key,
         )
-
-        upload_locustfile(
+        locustfile_url = upload_file(
             session,
-            locustfile,
+            filename=options.locustfile,
+            remote_filename="locustfile.py",
+            region_name=options.aws_region_name,
             cluster_name=options.kube_cluster_name,
             namespace=options.kube_namespace,
         )
+
+        requirements_url = ""
+        if options.requirements:
+            requirements_url = upload_file(
+                session,
+                filename=options.requirements,
+                remote_filename="requirements.txt",
+                region_name=options.aws_region_name,
+                cluster_name=options.kube_cluster_name,
+                namespace=options.kube_namespace,
+            )
+
         deployed_pods = deploy(
             options.aws_access_key_id,
             options.aws_secret_access_key,
+            locustfile_url,
+            region_name=options.aws_region_name,
             cluster_name=options.kube_cluster_name,
             namespace=options.kube_namespace,
+            requirements=requirements_url,
         )
         stream_pod_logs(
             session,
@@ -167,26 +191,28 @@ def main():
         sys.exit(1)
 
 
-def upload_locustfile(session, locustfile, cluster_name, namespace):
-    logging.info("Uploading your locustfile...")
+def upload_file(session, filename, remote_filename, region_name, cluster_name, namespace):
+    logging.info(f"Uploading {remote_filename}...")
 
     s3 = session.client("s3")
     s3_bucket = f"{cluster_name}-{namespace}"
-    s3_file_name = "locustfile.py"
 
     try:
-        s3.upload_file(locustfile, s3_bucket, s3_file_name)
+        s3.upload_file(filename, s3_bucket, remote_filename)
+        return f"https://{cluster_name}-{namespace}.s3.{region_name}.amazonaws.com/{remote_filename}"
     except FileNotFoundError:
-        sys.stderr.write(f"Could not find '{locustfile}'\n")
+        sys.stderr.write(f"Could not find '{filename}'\n")
         sys.exit(1)
 
 
 def deploy(
     aws_access_key_id,
     aws_secret_access_key,
+    locustfile,
     region_name=None,
     cluster_name=DEFAULT_CLUSTER_NAME,
     namespace=None,
+    requirements="",
 ):
     logging.info("Your request for deployment has been submitted, please wait...")
     locust_env_variables = [
@@ -205,9 +231,10 @@ def deploy(
             "locust_args": [
                 {
                     "name": "LOCUST_LOCUSTFILE",
-                    # "value": f"https://{cluster_name}-{namespace}.s3.amazonaws.com/locustfile.py",
+                    # "value": locustfile,
                     "value": "https://raw.githubusercontent.com/locustio/locust/master/examples/basic.py",
                 },
+                {"name": "LOCUST_REQUIREMENTS_URL", "value": requirements},
                 {"name": "LOCUST_FLAGS", "value": " ".join(locust_options)},
                 *locust_env_variables,
             ]
