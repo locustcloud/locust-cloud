@@ -299,9 +299,11 @@ def stream_pod_logs(
             timestamp = event["timestamp"] + 1
 
             try:
-                print(json.loads(message)["log"])
+                message = json.loads(message)
+                if "log" in message:
+                    print(message["log"])
             except json.JSONDecodeError:
-                print(message)
+                pass
 
         time.sleep(5)
 

@@ -29,7 +29,7 @@ kubectl logs pod/locust-pod-master-#
 ```
 Use port forwarding to interact with the Locust deployment locally:
 ```
-kubectl port-forward pod/locust-master-# 8089:8089
+kubectl port-forward pod/locust-pod-master-# 8089:8089
 ```
 
 ### Helpful Links
