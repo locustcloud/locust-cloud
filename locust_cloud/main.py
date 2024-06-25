@@ -131,6 +131,8 @@ def main():
         sys.stderr.write("aws-access-key-id and aws-secret-access-key need to be set to use Locust Cloud\n")
         sys.exit(1)
 
+    s3_bucket = f"{options.kube_cluster_name}-{options.kube_namespace}"
+
     try:
         session = boto3.session.Session(
             region_name=options.aws_region_name,
@@ -139,22 +141,19 @@ def main():
         )
         locustfile_url = upload_file(
             session,
+            s3_bucket=s3_bucket,
             filename=options.locustfile,
             remote_filename="locustfile.py",
             region_name=options.aws_region_name,
-            cluster_name=options.kube_cluster_name,
-            namespace=options.kube_namespace,
         )
-
         requirements_url = ""
         if options.requirements:
             requirements_url = upload_file(
                 session,
+                s3_bucket=s3_bucket,
                 filename=options.requirements,
                 remote_filename="requirements.txt",
                 region_name=options.aws_region_name,
-                cluster_name=options.kube_cluster_name,
-                namespace=options.kube_namespace,
             )
 
         deployed_pods = deploy(
@@ -179,27 +178,34 @@ def main():
         sys.stderr.write("An unkown error occured during deployment. Please contact an administrator\n")
 
     try:
-        teardown(
+        logging.info("Tearing down Locust cloud...")
+        teardown_cluster(
             options.aws_access_key_id,
             options.aws_secret_access_key,
             region_name=options.aws_region_name,
             cluster_name=options.kube_cluster_name,
             namespace=options.kube_namespace,
         )
-    except Exception:
+        teardown_s3(
+            session,
+            s3_bucket=s3_bucket,
+            aws_access_key_id=options.aws_access_key_id,
+            aws_secret_access_key=options.aws_secret_access_key,
+        )
+    except Exception as e:
+        print(e)
         sys.stderr.write("Could not tear down Locust Cloud\n")
         sys.exit(1)
 
 
-def upload_file(session, filename, remote_filename, region_name, cluster_name, namespace):
+def upload_file(session, s3_bucket, filename, remote_filename, region_name):
     logging.info(f"Uploading {remote_filename}...")
 
     s3 = session.client("s3")
-    s3_bucket = f"{cluster_name}-{namespace}"
 
     try:
         s3.upload_file(filename, s3_bucket, remote_filename)
-        return f"https://{cluster_name}-{namespace}.s3.{region_name}.amazonaws.com/{remote_filename}"
+        return f"https://{s3_bucket}.s3.{region_name}.amazonaws.com/{remote_filename}"
     except FileNotFoundError:
         sys.stderr.write(f"Could not find '{filename}'\n")
         sys.exit(1)
@@ -218,7 +224,7 @@ def deploy(
     locust_env_variables = [
         {"name": env_variable, "value": str(os.environ[env_variable])}
         for env_variable in os.environ
-        if "LOCUST" in env_variable
+        if env_variable.startswith("LOCUST_")
     ]
 
     response = requests.post(
@@ -308,15 +314,13 @@ def stream_pod_logs(
         time.sleep(5)
 
 
-def teardown(
+def teardown_cluster(
     aws_access_key_id,
     aws_secret_access_key,
     region_name=None,
     cluster_name=DEFAULT_CLUSTER_NAME,
     namespace=None,
 ):
-    logging.info("Tearing down Locust cloud...")
-
     response = requests.delete(
         f"{LAMBDA}/{cluster_name}",
         headers={
@@ -328,3 +332,10 @@ def teardown(
 
     if response.status_code != 200:
         raise Exception("Error tearing down Locust")
+
+
+def teardown_s3(session, s3_bucket, aws_access_key_id, aws_secret_access_key):
+    s3 = session.resource("s3")
+    bucket = s3.Bucket(s3_bucket)
+
+    bucket.objects.delete()
