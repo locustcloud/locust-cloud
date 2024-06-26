@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 import sys
 import time
 import tomllib
@@ -76,7 +77,17 @@ Parameters specified on command line override env vars, which in turn override c
 parser.add_argument(
     "-f",
     "--locustfile",
+    metavar="<filename>",
+    default="locustfile.py",
+    help="The Python file or module that contains your test, e.g. 'my_test.py'. Defaults to 'locustfile'.",
+    env_var="LOCUST_LOCUSTFILE",
+)
+parser.add_argument(
+    "-r",
+    "--requirements",
     type=str,
+    help="Optional requirements.txt file that contains your external libraries.",
+    env_var="LOCUST_REQUIREMENTS",
 )
 parser.add_argument(
     "--aws-access-key-id",
@@ -120,7 +131,7 @@ def main():
         sys.stderr.write("aws-access-key-id and aws-secret-access-key need to be set to use Locust Cloud\n")
         sys.exit(1)
 
-    locustfile = options.locustfile or "locustfile.py"
+    s3_bucket = f"{options.kube_cluster_name}-{options.kube_namespace}"
 
     try:
         session = boto3.session.Session(
@@ -128,18 +139,31 @@ def main():
             aws_access_key_id=options.aws_access_key_id,
             aws_secret_access_key=options.aws_secret_access_key,
         )
-
-        upload_locustfile(
+        locustfile_url = upload_file(
             session,
-            locustfile,
-            cluster_name=options.kube_cluster_name,
-            namespace=options.kube_namespace,
+            s3_bucket=s3_bucket,
+            filename=options.locustfile,
+            remote_filename="locustfile.py",
+            region_name=options.aws_region_name,
         )
+        requirements_url = ""
+        if options.requirements:
+            requirements_url = upload_file(
+                session,
+                s3_bucket=s3_bucket,
+                filename=options.requirements,
+                remote_filename="requirements.txt",
+                region_name=options.aws_region_name,
+            )
+
         deployed_pods = deploy(
             options.aws_access_key_id,
             options.aws_secret_access_key,
+            locustfile_url,
+            region_name=options.aws_region_name,
             cluster_name=options.kube_cluster_name,
             namespace=options.kube_namespace,
+            requirements=requirements_url,
         )
         stream_pod_logs(
             session,
@@ -154,45 +178,72 @@ def main():
         sys.stderr.write("An unkown error occured during deployment. Please contact an administrator\n")
 
     try:
-        teardown(
+        logging.info("Tearing down Locust cloud...")
+        teardown_cluster(
             options.aws_access_key_id,
             options.aws_secret_access_key,
             region_name=options.aws_region_name,
             cluster_name=options.kube_cluster_name,
             namespace=options.kube_namespace,
         )
-    except Exception:
+        teardown_s3(
+            session,
+            s3_bucket=s3_bucket,
+            aws_access_key_id=options.aws_access_key_id,
+            aws_secret_access_key=options.aws_secret_access_key,
+        )
+    except Exception as e:
+        print(e)
         sys.stderr.write("Could not tear down Locust Cloud\n")
         sys.exit(1)
 
 
-def upload_locustfile(session, locustfile, cluster_name, namespace):
-    logging.info("Uploading your locustfile...")
+def upload_file(session, s3_bucket, filename, remote_filename, region_name):
+    logging.info(f"Uploading {remote_filename}...")
 
     s3 = session.client("s3")
-    s3_bucket = f"{cluster_name}-{namespace}"
-    s3_file_name = "locustfile.py"
 
     try:
-        s3.upload_file(locustfile, s3_bucket, s3_file_name)
+        s3.upload_file(filename, s3_bucket, remote_filename)
+        return f"https://{s3_bucket}.s3.{region_name}.amazonaws.com/{remote_filename}"
     except FileNotFoundError:
-        sys.stderr.write(f"Could not find '{locustfile}'\n")
+        sys.stderr.write(f"Could not find '{filename}'\n")
         sys.exit(1)
 
 
 def deploy(
     aws_access_key_id,
     aws_secret_access_key,
+    locustfile,
     region_name=None,
     cluster_name=DEFAULT_CLUSTER_NAME,
     namespace=None,
+    requirements="",
 ):
     logging.info("Your request for deployment has been submitted, please wait...")
+    locust_env_variables = [
+        {"name": env_variable, "value": str(os.environ[env_variable])}
+        for env_variable in os.environ
+        if env_variable.startswith("LOCUST_")
+    ]
+
     response = requests.post(
         f"{LAMBDA}/{cluster_name}",
         headers={
             "AWS_ACCESS_KEY_ID": aws_access_key_id,
             "AWS_SECRET_ACCESS_KEY": aws_secret_access_key,
+        },
+        json={
+            "locust_args": [
+                {
+                    "name": "LOCUST_LOCUSTFILE",
+                    # "value": locustfile,
+                    "value": "https://raw.githubusercontent.com/locustio/locust/master/examples/basic.py",
+                },
+                {"name": "LOCUST_REQUIREMENTS_URL", "value": requirements},
+                {"name": "LOCUST_FLAGS", "value": " ".join(locust_options)},
+                *locust_env_variables,
+            ]
         },
         params={"region_name": region_name, "namespace": namespace},
     )
@@ -254,22 +305,22 @@ def stream_pod_logs(
             timestamp = event["timestamp"] + 1
 
             try:
-                print(json.loads(message)["log"])
+                message = json.loads(message)
+                if "log" in message:
+                    print(message["log"])
             except json.JSONDecodeError:
-                print(message)
+                pass
 
         time.sleep(5)
 
 
-def teardown(
+def teardown_cluster(
     aws_access_key_id,
     aws_secret_access_key,
     region_name=None,
     cluster_name=DEFAULT_CLUSTER_NAME,
     namespace=None,
 ):
-    logging.info("Tearing down Locust cloud...")
-
     response = requests.delete(
         f"{LAMBDA}/{cluster_name}",
         headers={
@@ -281,3 +332,10 @@ def teardown(
 
     if response.status_code != 200:
         raise Exception("Error tearing down Locust")
+
+
+def teardown_s3(session, s3_bucket, aws_access_key_id, aws_secret_access_key):
+    s3 = session.resource("s3")
+    bucket = s3.Bucket(s3_bucket)
+
+    bucket.objects.delete()
