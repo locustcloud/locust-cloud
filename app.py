@@ -14,34 +14,16 @@ AWS_DEFAULT_REGION = "eu-north-1"
 AWS_DEFAULT_NAMESPACE = "default"
 
 
-def get_query_params():
-    return app.current_request.query_params or {}
-
-
-def get_headers():
-    return app.current_request.headers or {}
-
-
-def get_request_body():
-    return app.current_request.json_body or {}
-
-
-def get_region_name():
-    return get_query_params().get("region_name", AWS_DEFAULT_REGION)
-
-
-def get_namespace():
-    return get_query_params().get("namespace", AWS_DEFAULT_NAMESPACE)
-
-
 def get_kubernetes_client_from_request(cluster_name):
-    aws_access_key_id = get_headers().get("AWS_ACCESS_KEY_ID")
-    aws_secret_access_key = get_headers().get("AWS_SECRET_ACCESS_KEY")
+    request_query_params = app.current_request.query_params or {}
+    request_headers = app.current_request.headers or {}
+    aws_access_key_id = request_headers.get("AWS_ACCESS_KEY_ID")
+    aws_secret_access_key = request_headers.get("AWS_SECRET_ACCESS_KEY")
 
     if not aws_access_key_id or not aws_secret_access_key:
         raise UnauthorizedError("AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY are required")
 
-    region_name = get_region_name()
+    region_name = request_query_params.get("region_name", AWS_DEFAULT_REGION)
     return get_kubernetes_client(
         cluster_name,
         region_name=region_name,
@@ -53,9 +35,12 @@ def get_kubernetes_client_from_request(cluster_name):
 @app.route("/1/{cluster_name}", methods=["POST"])
 def deploy_pods(cluster_name):
     try:
-        namespace = get_namespace()
+        request_query_params = app.current_request.query_params or {}
+        request_body = app.current_request.json_body or {}
+
+        namespace = request_query_params.get("namespace", AWS_DEFAULT_NAMESPACE)
         kubernetes_client = get_kubernetes_client_from_request(cluster_name)
-        locust_args = get_request_body().get("locust_args", [])
+        locust_args = request_body.get("locust_args", [])
 
         deployed_pods = create_deployment(
             kubernetes_client,
@@ -73,7 +58,8 @@ def deploy_pods(cluster_name):
 @app.route("/1/{cluster_name}", methods=["DELETE"])
 def destroy_deployed_pods(cluster_name):
     try:
-        namespace = get_namespace()
+        request_query_params = app.current_request.query_params or {}
+        namespace = request_query_params.get("namespace", AWS_DEFAULT_NAMESPACE)
         kubernetes_client = get_kubernetes_client_from_request(cluster_name)
         destroy_deployment(kubernetes_client, namespace=namespace)
 
