@@ -89,7 +89,7 @@ class Timescale:  # pylint: disable=R0902
                 try:
                     # try to recreate connection
                     self.dbconn = self._dbconn()
-                except:
+                except Exception:
                     pass
                 raise
 
@@ -102,25 +102,6 @@ class Timescale:  # pylint: disable=R0902
         with self.dbcursor() as cur:
             cur.execute("INSERT INTO events (time, text) VALUES (%s, %s)", (timestamp, message))
 
-    def set_gitrepo(self):
-        self._gitrepo = None
-        try:
-            path = os.getcwd()
-            while not self._gitrepo and len(path) > 4:
-                try:
-                    with open(path + "/.git/config") as f:
-                        for l in f.readlines():
-                            l = l.strip()
-                            if l.startswith("url ="):
-                                self._gitrepo = l.split(":")[1][:-4]
-                                return
-                except FileNotFoundError:
-                    pass
-                path = os.path.abspath(os.path.dirname(path))
-        except:
-            pass  # probably on windows or something
-        logging.debug("couldnt figure out which git repo your locustfile is in")
-
     def on_test_start(self, environment: locust.env.Environment):
         # set _testplan from here, because when running distributed, override_test_plan is not yet available at init time
         self._testplan = self.env.parsed_options.locustfile
@@ -129,7 +110,6 @@ class Timescale:  # pylint: disable=R0902
         except psycopg2.OperationalError as e:
             logging.error(e)
             sys.exit(1)
-        self.set_gitrepo()
 
         if not self.env.parsed_options.worker:
             environment._run_id = datetime.now(UTC)
@@ -179,7 +159,7 @@ class Timescale:  # pylint: disable=R0902
                 try:
                     # try to recreate connection
                     self.user_conn = self._dbconn()
-                except:
+                except Exception:
                     pass
             gevent.sleep(2.0)
 
@@ -332,17 +312,17 @@ class Timescale:  # pylint: disable=R0902
                 try:
                     cur.execute(
                         """
-UPDATE testrun 
-SET (requests, resp_time_avg, rps_avg, fail_ratio) = 
-(SELECT reqs, resp_time, reqs / GREATEST(duration, 1), fails / reqs) FROM 
-(SELECT 
- COUNT(*)::numeric AS reqs, 
- AVG(response_time)::numeric as resp_time 
+UPDATE testrun
+SET (requests, resp_time_avg, rps_avg, fail_ratio) =
+(SELECT reqs, resp_time, reqs / GREATEST(duration, 1), fails / reqs) FROM
+(SELECT
+ COUNT(*)::numeric AS reqs,
+ AVG(response_time)::numeric as resp_time
  FROM request WHERE run_id = %s AND time > %s) AS _,
 (SELECT
  EXTRACT(epoch FROM (SELECT MAX(time)-MIN(time) FROM request WHERE run_id = %s AND time > %s))::numeric AS duration) AS __,
-(SELECT 
- COUNT(*)::numeric AS fails 
+(SELECT
+ COUNT(*)::numeric AS fails
  FROM request WHERE run_id = %s AND time > %s AND success = 0) AS ___
 WHERE id = %s""",
                         [self.env._run_id] * 7,
