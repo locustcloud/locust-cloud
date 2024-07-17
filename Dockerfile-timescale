@@ -1,0 +1,3 @@
+FROM timescale/timescaledb:latest-pg13
+# Import table and index definitions on startup
+COPY *.sql /docker-entrypoint-initdb.d/

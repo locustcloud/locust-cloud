@@ -9,12 +9,12 @@ import gevent
 import locust.env
 from gevent.lock import Semaphore
 from locust.exception import CatchResponseError  # need to do this first to make sure monkey patching is done
-from locust_plugins import missing_extra
 
 try:
     import psycogreen.gevent
-except ModuleNotFoundError:
-    missing_extra("psychogreen", "dashboards")
+except ModuleNotFoundError as e:
+    logging.error(f"'{e}', you need to install it using 'pip install psycogreen'")
+    sys.exit(1)
 
 psycogreen.gevent.patch_psycopg()
 import atexit
@@ -54,6 +54,8 @@ class Timescale:  # pylint: disable=R0902
             )
         Timescale.first_instance = False
         self.env = env
+        self.env._run_id = ""
+        self.dbconn = None
         self._samples: list[dict] = []
         self._background = gevent.spawn(self._run)
         self._hostname = socket.gethostname()  # pylint: disable=no-member
@@ -79,9 +81,10 @@ class Timescale:  # pylint: disable=R0902
     def dbcursor(self):
         with self.dblock:
             try:
-                if self.dbconn.closed:
-                    self.dbconn = self._dbconn()
-                yield self.dbconn.cursor()
+                if self.dbconn:
+                    if self.dbconn.closed:
+                        self.dbconn = self._dbconn()
+                    yield self.dbconn.cursor()
             except psycopg2.Error:
                 try:
                     # try to recreate connection
@@ -120,7 +123,7 @@ class Timescale:  # pylint: disable=R0902
 
     def on_test_start(self, environment: locust.env.Environment):
         # set _testplan from here, because when running distributed, override_test_plan is not yet available at init time
-        self._testplan = self.env.parsed_options.override_plan_name or self.env.parsed_options.locustfile
+        self._testplan = self.env.parsed_options.locustfile
         try:
             self.dbconn = self._dbconn()
         except psycopg2.OperationalError as e:
@@ -130,9 +133,6 @@ class Timescale:  # pylint: disable=R0902
 
         if not self.env.parsed_options.worker:
             environment._run_id = datetime.now(UTC)
-            logging.info(
-                f"Follow test run here: {self.env.parsed_options.grafana_url}&var-testplan={self._testplan}&from={int(environment._run_id.timestamp()*1000)}&to=now"
-            )
             msg = environment._run_id.strftime("%Y-%m-%d, %H:%M:%S.%f")
             if environment.runner is not None:
                 logging.debug(f"about to send run_id to workers: {msg}")
@@ -141,25 +141,25 @@ class Timescale:  # pylint: disable=R0902
             self._user_count_logger = gevent.spawn(self._log_user_count)
 
     def _dbconn(self) -> psycopg2.extensions.connection:
-        logging.debug(
-            f"Connecting to Postgres ({self.env.parsed_options.pguser}@{self.env.parsed_options.pghost}:{self.env.parsed_options.pgport or 5432})"
-        )
+        # logging.debug(
+        #     f"Connecting to Postgres ({self.env.parsed_options.pguser}@{self.env.parsed_options.pghost}:{self.env.parsed_options.pgport or 5432})"
+        # )
         try:
             conn = psycopg2.connect(
-                host=self.env.parsed_options.pghost,
-                user=self.env.parsed_options.pguser,
-                password=self.env.parsed_options.pgpassword,
-                database=self.env.parsed_options.pgdatabase,
-                port=self.env.parsed_options.pgport,
+                host=os.environ.get("PG_HOST"),
+                user=os.environ.get("PG_USER"),
+                password=os.environ.get("PG_PASSWORD"),
+                database=os.environ.get("PG_DATABASE"),
+                port="5432",
                 keepalives_idle=120,
                 keepalives_interval=20,
                 keepalives_count=6,
             )
         except Exception:
-            logging.error(
-                f"Could not connect to postgres ({self.env.parsed_options.pguser}@{self.env.parsed_options.pghost}:{self.env.parsed_options.pgport or 5432})."
-                + "Use standard postgres env vars or --pg* command line options to specify where to report locust samples (https://www.postgresql.org/docs/13/libpq-envars.html)"
-            )
+            # logging.error(
+            #     f"Could not connect to postgres ({self.env.parsed_options.pguser}@{self.env.parsed_options.pghost}:{self.env.parsed_options.pgport or 5432})."
+            #     + "Use standard postgres env vars or --pg* command line options to specify where to report locust samples (https://www.postgresql.org/docs/13/libpq-envars.html)"
+            # )
             raise
         conn.autocommit = True
         return conn
@@ -278,15 +278,15 @@ class Timescale:  # pylint: disable=R0902
                 "INSERT INTO testrun (id, testplan, num_clients, rps, description, env, profile_name, username, gitrepo, changeset_guid, arguments) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
                 (
                     self.env._run_id,
-                    self._testplan,
-                    self.env.parsed_options.num_users or 1,
-                    self.env.parsed_options.ips,  # this field is incorrectly called "rps" in db, it should be called something like "target_ips"
-                    self.env.parsed_options.description,
-                    self.env.parsed_options.test_env,
-                    self.env.parsed_options.profile,
-                    self._username,
-                    self._gitrepo,
-                    self.env.parsed_options.test_version,
+                    "self._testplan",
+                    "self.env.parsed_options.num_users",
+                    "self.env.parsed_options.ips",  # this field is incorrectly called "rps" in db, it should be called something like "target_ips"
+                    "self.env.parsed_options.description",
+                    "self.env.parsed_options.test_env",
+                    "self.env.parsed_options.profile",
+                    "self._username",
+                    "self._gitrepo",
+                    "self.env.parsed_options.test_version",
                     " ".join(cmd),
                 ),
             )
@@ -356,6 +356,3 @@ WHERE id = %s""",
                 "Failed to update testrun record (or events) with end time to Postgresql timescale database: "
                 + repr(error)
             )
-        logging.info(
-            f"Report: {self.env.parsed_options.grafana_url}&var-testplan={self._testplan}&from={int(self.env._run_id.timestamp()*1000)}&to={int((end_time.timestamp()+1)*1000)}\n"
-        )

@@ -1,4 +1,4 @@
-from locust_cloud.influxdb.exporter import InfluxExporter
+from locust_cloud.influxdb.exporter import Timescale
 
 from locust import events
 from locust.argument_parser import LocustArgumentParser
@@ -23,4 +23,4 @@ def add_arguments(parser: LocustArgumentParser):
 @events.init.add_listener
 def on_locust_init(environment, **args):
     if environment.parsed_options.exporter:
-        InfluxExporter(environment)
+        Timescale(environment)

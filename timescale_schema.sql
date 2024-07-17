@@ -142,3 +142,14 @@ CREATE INDEX testrun_id_idx ON public.testrun USING btree (id DESC);
 --
 
 CREATE INDEX user_count_time_idx ON public.user_count USING btree ("time" DESC);
+
+CREATE MATERIALIZED VIEW request_summary
+WITH (timescaledb.continuous) AS
+SELECT name,
+   time_bucket(INTERVAL '1s', time) AS bucket,
+   AVG(response_time),
+   MAX(response_time),
+   MIN(response_time),
+   count(*)
+FROM request
+GROUP BY name, bucket;
