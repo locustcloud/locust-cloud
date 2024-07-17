@@ -6,3 +6,4 @@ venv
 locust_cloud.egg*
 .eggs
 dist
+**_cache

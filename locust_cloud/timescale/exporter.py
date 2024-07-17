@@ -8,7 +8,7 @@ from contextlib import contextmanager
 import gevent
 import locust.env
 from gevent.lock import Semaphore
-from locust.exception import CatchResponseError  # need to do this first to make sure monkey patching is done
+from locust.exception import CatchResponseError
 
 try:
     import psycogreen.gevent
@@ -24,8 +24,6 @@ import greenlet
 import psycopg2
 import psycopg2.extras
 
-# pylint: disable=trailing-whitespace # pylint is confused by multiline strings used for SQL
-
 
 def safe_serialize(obj):
     def default(o):
@@ -38,7 +36,7 @@ def print_t(s):
     print(str(s), end="\t")
 
 
-class Timescale:  # pylint: disable=R0902
+class Timescale:
     """
     See timescale_listener_ex.py for documentation
     """
@@ -46,7 +44,7 @@ class Timescale:  # pylint: disable=R0902
     dblock = Semaphore()
     first_instance = True
 
-    def __init__(self, env: locust.env.Environment):
+    def __init__(self, env: locust.env.Environment, pg_user, pg_host, pg_password, pg_database, pg_port):
         if not Timescale.first_instance:
             # we should refactor this into a module as it is much more pythonic
             raise Exception(
@@ -58,10 +56,17 @@ class Timescale:  # pylint: disable=R0902
         self.dbconn = None
         self._samples: list[dict] = []
         self._background = gevent.spawn(self._run)
-        self._hostname = socket.gethostname()  # pylint: disable=no-member
+        self._hostname = socket.gethostname()
         self._username = os.getenv("USER", "unknown")
         self._finished = False
         self._pid = os.getpid()
+
+        self.pg_user = pg_user
+        self.pg_host = pg_host
+        self.pg_password = pg_password
+        self.pg_database = pg_database
+        self.pg_port = pg_port
+
         events = self.env.events
         events.test_start.add_listener(self.on_test_start)
         events.request.add_listener(self.on_request)
@@ -121,27 +126,21 @@ class Timescale:  # pylint: disable=R0902
             self._user_count_logger = gevent.spawn(self._log_user_count)
 
     def _dbconn(self) -> psycopg2.extensions.connection:
-        # logging.debug(
-        #     f"Connecting to Postgres ({self.env.parsed_options.pguser}@{self.env.parsed_options.pghost}:{self.env.parsed_options.pgport or 5432})"
-        # )
         try:
             conn = psycopg2.connect(
-                host=os.environ.get("PG_HOST"),
-                user=os.environ.get("PG_USER"),
-                password=os.environ.get("PG_PASSWORD"),
-                database=os.environ.get("PG_DATABASE"),
-                port="5432",
+                host=self.pg_host,
+                user=self.pg_user,
+                password=self.pg_password,
+                database=self.pg_database,
+                port=self.pg_port,
                 keepalives_idle=120,
                 keepalives_interval=20,
                 keepalives_count=6,
             )
         except Exception:
-            # logging.error(
-            #     f"Could not connect to postgres ({self.env.parsed_options.pguser}@{self.env.parsed_options.pghost}:{self.env.parsed_options.pgport or 5432})."
-            #     + "Use standard postgres env vars or --pg* command line options to specify where to report locust samples (https://www.postgresql.org/docs/13/libpq-envars.html)"
-            # )
-            raise
-        conn.autocommit = True
+            sys.stderr.write(f"Could not connect to postgres ({self.pg_user}@{self.pg_host}:{self.pg_port}).")
+            sys.exit(1)
+
         return conn
 
     def _log_user_count(self):
@@ -192,7 +191,7 @@ class Timescale:  # pylint: disable=R0902
 
     def on_quit(self, exit_code, **kwargs):
         self._finished = True
-        atexit._clear()  # make sure we dont capture additional ctrl-c:s # pylint: disable=protected-access
+        atexit._clear()  # make sure we dont capture additional ctrl-c:s
         self._background.join(timeout=10)
         if getattr(self, "_user_count_logger", False):
             self._user_count_logger.kill()
@@ -327,7 +326,7 @@ SET (requests, resp_time_avg, rps_avg, fail_ratio) =
 WHERE id = %s""",
                         [self.env._run_id] * 7,
                     )
-                except psycopg2.errors.DivisionByZero:  # pylint: disable=no-member
+                except psycopg2.errors.DivisionByZero:
                     logging.info(
                         "Got DivisionByZero error when trying to update testrun, most likely because there were no requests logged"
                     )
