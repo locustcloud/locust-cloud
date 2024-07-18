@@ -1,3 +1,5 @@
+from locust_cloud.timescale.queries import requests_query
+
 import atexit
 import sys
 
@@ -34,10 +36,22 @@ class Api:
         self.cursor.close()
 
     def _register_routes(self):
-        @self.app.route("/cloud-stats/query", methods=["POST"])
-        def query():
+        @self.app.route("/cloud-stats/<query>", methods=["POST"])
+        def query(query):
             assert request.method == "POST"
 
-            self.cursor.execute("SELECT * FROM request")
+            try:
+                sql_params = request.get_json()
+                has_queried = True
 
-            return jsonify({"results": self.cursor.fetchall()})
+                match query:
+                    case "requests":
+                        print("execute!")
+                        self.cursor.execute(requests_query(**sql_params))
+                    case _:
+                        has_queried = False
+
+                return jsonify({"results": self.cursor.fetchall() if has_queried else []})
+            except Exception as e:
+                print(e)
+                return jsonify({"results": []})

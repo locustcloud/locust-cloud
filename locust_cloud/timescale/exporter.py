@@ -137,6 +137,8 @@ class Timescale:
                 keepalives_interval=20,
                 keepalives_count=6,
             )
+
+            conn.autocommit = True
         except Exception:
             sys.stderr.write(f"Could not connect to postgres ({self.pg_user}@{self.pg_host}:{self.pg_port}).")
             sys.exit(1)
@@ -258,10 +260,10 @@ class Timescale:
                 (
                     self.env._run_id,
                     "self._testplan",
-                    "self.env.parsed_options.num_users",
-                    "self.env.parsed_options.ips",  # this field is incorrectly called "rps" in db, it should be called something like "target_ips"
+                    0,  # self.env.parsed_options.num_users
+                    0.0,  # "self.env.parsed_options.ips"  # this field is incorrectly called "rps" in db, it should be called something like "target_ips"
                     "self.env.parsed_options.description",
-                    "self.env.parsed_options.test_env",
+                    "",  # "self.env.parsed_options.test_env",
                     "self.env.parsed_options.profile",
                     "self._username",
                     "self._gitrepo",
