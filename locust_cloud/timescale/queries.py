@@ -93,7 +93,7 @@ SELECT
 CASE cast(allRec as numeric)
  WHEN 0 THEN 0
  ELSE cast(errorRec as numeric) / cast(allRec as numeric)
-END
+END as "errorPercentage"
 FROM (SELECT count(*) as allRec FROM request WHERE time BETWEEN '2024-07-22T12:30:25.757Z' AND '2024-07-22T12:45:25.757Z' and (testplan = 'locust.py' OR 'locust.py' = 'All')) AS "allRecords",
  (SELECT count(*) as errorRec FROM request WHERE time BETWEEN '2024-07-22T12:30:25.757Z' AND '2024-07-22T12:45:25.757Z' and (testplan = 'locust.py' OR 'locust.py' = 'All') AND exception is not null) AS "errorRecords"
  """

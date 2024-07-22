@@ -1,7 +1,13 @@
+import Gauge from "components/Gauge/Gauge";
 import { LineChart, Table, useInterval } from "locust-ui";
 import { useEffect, useState } from "react";
 
 const startTime = new Date(new Date().getTime() - 5 * 60 * 1000).toISOString();
+
+const roundToDecimalPlaces = (n: number, decimalPlaces = 0) => {
+  const factor = Math.pow(10, decimalPlaces);
+  return Math.round(n * factor) / factor;
+};
 
 export default function Timescale() {
   const [timestamp, setTimestamp] = useState(new Date().toISOString());
@@ -157,7 +163,12 @@ export default function Timescale() {
   const getTotalFailures = (body) =>
     makeRequest("/cloud-stats/total-failures", body, setTotalFailures);
   const getErrorPercentage = (body) =>
-    makeRequest("/cloud-stats/error-percentage", body, setErrorPercentage);
+    makeRequest(
+      "/cloud-stats/error-percentage",
+      body,
+      ([{ errorPercentage }]) =>
+        setErrorPercentage(roundToDecimalPlaces(errorPercentage * 100, 2))
+    );
 
   useEffect(() => {
     getTotalRequests({ start: startTime, end: timestamp });
@@ -200,6 +211,9 @@ export default function Timescale() {
           ]}
           rows={failuresData}
         />
+      )}
+      {errorPercentage && (
+        <Gauge name="Error Rate" gaugeValue={errorPercentage} />
       )}
       {rpsData && (
         <LineChart
