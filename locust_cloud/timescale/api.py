@@ -1,57 +1,70 @@
-from locust_cloud.timescale.queries import requests_query
+from locust_cloud.timescale.queries import queries
 
 import atexit
 import sys
 
-import psycopg2
 from flask import jsonify, request
+from psycopg2 import pool
 
 
 class Api:
     def __init__(self, app, pg_host, pg_user, pg_password, pg_database, pg_port):
-        try:
-            self.app = app
-            self.conn = psycopg2.connect(
-                host=pg_host,
-                user=pg_user,
-                password=pg_password,
-                database=pg_database,
-                port=pg_port,
-                keepalives_idle=120,
-                keepalives_interval=20,
-                keepalives_count=6,
-            )
-            self.cursor = self.conn.cursor()
+        self.app = app
 
-            atexit.register(self._on_exit)
+        self.pg_user = pg_user
+        self.pg_host = pg_host
+        self.pg_password = pg_password
+        self.pg_database = pg_database
+        self.pg_port = pg_port
 
-        except Exception:
-            sys.stderr.write(f"Could not connect to postgres ({pg_user}@{pg_host}:{pg_port}).\n")
-            sys.exit(1)
-
+        self._create_connection()
         self._register_routes()
 
-    def _on_exit(self):
-        self.conn.close()
-        self.cursor.close()
+        atexit.register(self.clear_connection)
+
+    def _create_connection(self):
+        try:
+            self.pool = pool.ThreadedConnectionPool(
+                minconn=1,
+                maxconn=10,
+                host=self.pg_host,
+                user=self.pg_user,
+                password=self.pg_password,
+                database=self.pg_database,
+                port=self.pg_port,
+            )
+        except Exception:
+            sys.stderr.write(f"Could not connect to postgres ({self.pg_user}@{self.pg_host}:{self.pg_port}).")
+            sys.exit(1)
 
     def _register_routes(self):
         @self.app.route("/cloud-stats/<query>", methods=["POST"])
         def query(query):
             assert request.method == "POST"
 
+            results = []
+
             try:
+                conn = self.pool.getconn()
+                cursor = conn.cursor()
+
                 sql_params = request.get_json()
-                has_queried = True
 
-                match query:
-                    case "requests":
-                        print("execute!")
-                        self.cursor.execute(requests_query(**sql_params))
-                    case _:
-                        has_queried = False
+                if query and queries[query]:
+                    cursor.execute(queries[query](**sql_params))
 
-                return jsonify({"results": self.cursor.fetchall() if has_queried else []})
+                    results = [
+                        dict(zip([column[0] for column in cursor.description], row)) for row in cursor.fetchall()
+                    ]
+
+                    cursor.close()
+                    self.pool.putconn(conn)
+
+                return jsonify(results)
             except Exception as e:
                 print(e)
-                return jsonify({"results": []})
+
+            return jsonify(results)
+
+    def clear_connection(self):
+        self.pool.closeall()
