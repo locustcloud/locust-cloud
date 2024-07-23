@@ -69,18 +69,11 @@ ALTER TABLE public.request OWNER TO postgres;
 
 CREATE TABLE public.testrun (
     id timestamp with time zone NOT NULL,
-    testplan text NOT NULL,
-    profile_name text,
-    num_clients integer NOT NULL,
-    rps double precision,
+    num_users integer NOT NULL,
     description text,
     end_time timestamp with time zone,
-    env character varying(10) NOT NULL,
-    username character varying(64),
-    gitrepo character varying(120),
     rps_avg numeric,
     resp_time_avg numeric,
-    changeset_guid character varying(36),
     fail_ratio double precision,
     requests integer,
     arguments text,
@@ -142,14 +135,3 @@ CREATE INDEX testrun_id_idx ON public.testrun USING btree (id DESC);
 --
 
 CREATE INDEX user_count_time_idx ON public.user_count USING btree ("time" DESC);
-
-CREATE MATERIALIZED VIEW request_summary
-WITH (timescaledb.continuous) AS
-SELECT name,
-   time_bucket(INTERVAL '1s', time) AS bucket,
-   AVG(response_time),
-   MAX(response_time),
-   MIN(response_time),
-   count(*)
-FROM request
-GROUP BY name, bucket;

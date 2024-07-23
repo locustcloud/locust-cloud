@@ -57,7 +57,6 @@ class Timescale:
         self._samples: list[dict] = []
         self._background = gevent.spawn(self._run)
         self._hostname = socket.gethostname()
-        self._username = os.getenv("USER", "unknown")
         self._finished = False
         self._pid = os.getpid()
 
@@ -256,24 +255,17 @@ class Timescale:
         cmd = sys.argv[1:]
         with self.dbcursor() as cur:
             cur.execute(
-                "INSERT INTO testrun (id, testplan, num_clients, rps, description, env, profile_name, username, gitrepo, changeset_guid, arguments) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                "INSERT INTO testrun (id, num_users, description, arguments) VALUES (%s,%s,%s,%s)",
                 (
                     self.env._run_id,
-                    "self._testplan",
-                    0,  # self.env.parsed_options.num_users
-                    0.0,  # "self.env.parsed_options.ips"  # this field is incorrectly called "rps" in db, it should be called something like "target_ips"
+                    self.env.parsed_options.num_users,
                     "self.env.parsed_options.description",
-                    "",  # "self.env.parsed_options.test_env",
-                    "self.env.parsed_options.profile",
-                    "self._username",
-                    "self._gitrepo",
-                    "self.env.parsed_options.test_version",
                     " ".join(cmd),
                 ),
             )
             cur.execute(
                 "INSERT INTO events (time, text) VALUES (%s, %s)",
-                (datetime.now(UTC).isoformat(), self._testplan + " started by " + self._username),
+                (datetime.now(UTC).isoformat(), self._testplan),
             )
 
     def spawning_complete(self, user_count):

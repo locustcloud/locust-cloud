@@ -170,7 +170,9 @@ export default function Timescale() {
         setErrorPercentage(roundToDecimalPlaces(errorPercentage * 100, 2))
     );
 
-  useEffect(() => {
+  useInterval(() => {
+    const currentTimestamp = new Date().toISOString();
+
     getTotalRequests({ start: startTime, end: timestamp });
     getTotalFailures({ start: startTime, end: timestamp });
     getErrorPercentage({ start: startTime, end: timestamp });
@@ -185,7 +187,9 @@ export default function Timescale() {
     getResponseTimes({ start: startTime, end: timestamp });
     getPerc99ResponseTimes({ start: startTime, end: timestamp });
     getResponseLength({ start: startTime, end: timestamp });
-  }, []);
+
+    setTimestamp(currentTimestamp);
+  }, 1000);
 
   return (
     <div>
@@ -212,7 +216,7 @@ export default function Timescale() {
           rows={failuresData}
         />
       )}
-      {errorPercentage && (
+      {!!errorPercentage && (
         <Gauge name="Error Rate" gaugeValue={errorPercentage} />
       )}
       {rpsData && (
