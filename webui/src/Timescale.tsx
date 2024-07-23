@@ -22,7 +22,6 @@ export default function Timescale() {
   const [rpsPerRequest, setRpsPerRequest] = useState();
   const [avgResponseTimes, setAvgResponseTimes] = useState();
   const [errorsPerRequest, setErrorsPerRequest] = useState();
-  const [responseTimes, setResponseTimes] = useState();
   const [perc99ResponseTimes, setPerc99ResponseTimes] = useState();
   const [responseLength, setResponseLength] = useState();
 
@@ -115,19 +114,6 @@ export default function Timescale() {
         )
       )
     );
-  const getResponseTimes = (body) =>
-    makeRequest("/cloud-stats/response-times", body, (responseTimes) =>
-      setResponseTimes(
-        responseTimes.reduce(
-          (responseTimeChart, { name, avg, time }) => ({
-            ...responseTimeChart,
-            [name]: [...(responseTimeChart[name] || []), avg],
-            time: [...(responseTimeChart.time || []), time],
-          }),
-          {}
-        )
-      )
-    );
   const getPerc99ResponseTimes = (body) =>
     makeRequest(
       "/cloud-stats/perc99-response-times",
@@ -167,12 +153,11 @@ export default function Timescale() {
       "/cloud-stats/error-percentage",
       body,
       ([{ errorPercentage }]) =>
-        setErrorPercentage(roundToDecimalPlaces(errorPercentage * 100, 2))
+        setErrorPercentage(roundToDecimalPlaces(errorPercentage, 2))
     );
 
   useInterval(() => {
     const currentTimestamp = new Date().toISOString();
-
     getTotalRequests({ start: startTime, end: timestamp });
     getTotalFailures({ start: startTime, end: timestamp });
     getErrorPercentage({ start: startTime, end: timestamp });
@@ -184,7 +169,6 @@ export default function Timescale() {
     getRpsPerRequest({ start: startTime, end: timestamp });
     getAvgResponseTimes({ start: startTime, end: timestamp });
     getErrorsPerRequest({ start: startTime, end: timestamp });
-    getResponseTimes({ start: startTime, end: timestamp });
     getPerc99ResponseTimes({ start: startTime, end: timestamp });
     getResponseLength({ start: startTime, end: timestamp });
 
@@ -281,21 +265,6 @@ export default function Timescale() {
           lines={requestLines}
           title="Errors per Request"
           charts={errorsPerRequest}
-        />
-      )}
-      {responseTimes && requestLines && (
-        <LineChart
-          colors={[
-            "#9966CC",
-            "#8A2BE2",
-            "#8E4585",
-            "#E0B0FF",
-            "#C8A2C8",
-            "#E6E6FA",
-          ]}
-          lines={requestLines}
-          title="Response Times"
-          charts={responseTimes}
         />
       )}
       {perc99ResponseTimes && requestLines && (

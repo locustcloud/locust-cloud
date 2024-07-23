@@ -24,9 +24,9 @@ class Api:
 
     def _create_connection(self):
         try:
-            self.pool = pool.ThreadedConnectionPool(
+            self.pool = pool.SimpleConnectionPool(
                 minconn=1,
-                maxconn=10,
+                maxconn=40,
                 host=self.pg_host,
                 user=self.pg_user,
                 password=self.pg_password,
@@ -45,13 +45,12 @@ class Api:
             results = []
 
             try:
-                conn = self.pool.getconn()
-                cursor = conn.cursor()
-
-                sql_params = request.get_json()
-                print(sql_params)
-
                 if query and queries[query]:
+                    conn = self.pool.getconn()
+                    cursor = conn.cursor()
+
+                    sql_params = request.get_json()
+
                     cursor.execute(queries[query](**sql_params))
 
                     results = [
