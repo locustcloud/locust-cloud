@@ -9,49 +9,144 @@ const roundToDecimalPlaces = (n: number, decimalPlaces = 0) => {
   return Math.round(n * factor) / factor;
 };
 
+interface IRequestBody {
+  start: string;
+  end: string;
+}
+
+interface IRequestLines {
+  name: string;
+  key: string;
+}
+
+interface IStatsData {
+  method: string;
+  name: string;
+  average: number;
+  requests: number;
+  failed: number;
+  min: number;
+  max: number;
+  errorPercentage: number;
+}
+
+interface IFailuresData {
+  name: string;
+  exception: string;
+  count: number;
+}
+
+interface IRpsResponse {
+  users: number;
+  rps: number;
+  time: string;
+}
+
+interface IRpsData {
+  users: number[];
+  rps: number[];
+  time: string[];
+}
+
+interface IErrorPerSecondResponse {
+  errorRate: number;
+  time: string;
+}
+
+interface IErrorPerSecondData {
+  errorRate: number[];
+  time: string[];
+}
+
+interface IPerRequestResponse {
+  name: string;
+  time: string;
+}
+
+type IPerRequestData = {
+  [key: string]: number[];
+} & { time: string[] };
+
+interface IRpsPerRequestResponse extends IPerRequestResponse {
+  throughput: number;
+}
+
+interface IAvgResponseTimesResponse extends IPerRequestResponse {
+  responseTime: number;
+}
+
+interface IErrorsPerRequestResponse extends IPerRequestResponse {
+  errorRate: number;
+}
+
+interface IPerc99ResponseTimesResponse extends IPerRequestResponse {
+  perc99: number;
+}
+
+interface IResponseLengthResponse extends IPerRequestResponse {
+  responseLength: number;
+}
+
+interface IErrorPercentageResponse {
+  errorPercentage: number;
+}
+
+function makeRequest<ResponseType>(
+  url: string,
+  body: IRequestBody,
+  onSuccess: (response: ResponseType) => void
+) {
+  fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  })
+    .then((res) => res.json())
+    .then(onSuccess)
+    .catch(console.error);
+}
+
 export default function Timescale() {
   const [timestamp, setTimestamp] = useState(new Date().toISOString());
-  const [totalRequests, setTotalRequests] = useState();
-  const [totalFailures, setTotalFailures] = useState();
-  const [errorPercentage, setErrorPercentage] = useState();
-  const [requestLines, setRequestLines] = useState();
-  const [statsData, setStatsData] = useState();
-  const [failuresData, setFailuresData] = useState();
-  const [rpsData, setRpsData] = useState();
-  const [errorsPerSecond, setErrorsPerSecond] = useState();
-  const [rpsPerRequest, setRpsPerRequest] = useState();
-  const [avgResponseTimes, setAvgResponseTimes] = useState();
-  const [errorsPerRequest, setErrorsPerRequest] = useState();
-  const [perc99ResponseTimes, setPerc99ResponseTimes] = useState();
-  const [responseLength, setResponseLength] = useState();
+  const [totalRequests, setTotalRequests] = useState<number>();
+  const [totalFailures, setTotalFailures] = useState<number>();
+  const [errorPercentage, setErrorPercentage] = useState<number>();
+  const [requestLines, setRequestLines] = useState<IRequestLines[]>();
+  const [statsData, setStatsData] = useState<IStatsData[]>();
+  const [failuresData, setFailuresData] = useState<IFailuresData[]>();
+  const [rpsData, setRpsData] = useState<IRpsData>();
+  const [errorsPerSecond, setErrorsPerSecond] = useState<IErrorPerSecondData>();
+  const [rpsPerRequest, setRpsPerRequest] = useState<IPerRequestData>();
+  const [avgResponseTimes, setAvgResponseTimes] = useState<IPerRequestData>();
+  const [errorsPerRequest, setErrorsPerRequest] = useState<IPerRequestData>();
+  const [perc99ResponseTimes, setPerc99ResponseTimes] =
+    useState<IPerRequestData>();
+  const [responseLength, setResponseLength] = useState<IPerRequestData>();
 
-  const makeRequest = (url, body, onSuccess) =>
-    fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
-    })
-      .then((res) => res.json())
-      .then(onSuccess)
-      .catch(console.error);
-
-  const getRequestNames = (body) =>
-    makeRequest("/cloud-stats/request-names", body, (requestNames) =>
-      setRequestLines(
-        requestNames.map(({ name: requestName }) => ({
-          name: `${requestName}`,
-          key: requestName,
-        }))
-      )
+  const getRequestNames = (body: IRequestBody) =>
+    makeRequest<{ name: string }[]>(
+      "/cloud-stats/request-names",
+      body,
+      (requestNames) =>
+        setRequestLines(
+          requestNames.map(({ name: requestName }) => ({
+            name: `${requestName}`,
+            key: requestName,
+          }))
+        )
     );
-  const getRequests = (body) =>
-    makeRequest("/cloud-stats/requests", body, setStatsData);
-  const getFailures = (body) =>
-    makeRequest("/cloud-stats/failures", body, setFailuresData);
-  const getRps = (body) =>
-    makeRequest("/cloud-stats/rps", body, (rps) =>
+  const getRequests = (body: IRequestBody) =>
+    makeRequest<IStatsData[]>("/cloud-stats/requests", body, setStatsData);
+  const getFailures = (body: IRequestBody) =>
+    makeRequest<IFailuresData[]>(
+      "/cloud-stats/failures",
+      body,
+      setFailuresData
+    );
+  const getRps = (body: IRequestBody) =>
+    makeRequest<IRpsResponse[]>("/cloud-stats/rps", body, (rps) =>
       setRpsData(
         rps.reduce(
           (rpsChart, { users, rps, time }) => ({
@@ -59,97 +154,117 @@ export default function Timescale() {
             rps: [...(rpsChart.rps || []), rps],
             time: [...(rpsChart.time || []), time],
           }),
-          {}
+          {} as IRpsData
         )
       )
     );
-  const getErrorPerSecond = (body) =>
-    makeRequest("/cloud-stats/errors-per-second", body, (errorsPerSecond) =>
-      setErrorsPerSecond(
-        errorsPerSecond.reduce(
-          (errorChart, { errorRate, time }) => ({
-            errorRate: [...(errorChart.errorRate || []), errorRate],
-            time: [...(errorChart.time || []), time],
-          }),
-          {}
+  const getErrorPerSecond = (body: IRequestBody) =>
+    makeRequest<IErrorPerSecondResponse[]>(
+      "/cloud-stats/errors-per-second",
+      body,
+      (errorsPerSecond) =>
+        setErrorsPerSecond(
+          errorsPerSecond.reduce(
+            (errorChart, { errorRate, time }) => ({
+              errorRate: [...(errorChart.errorRate || []), errorRate],
+              time: [...(errorChart.time || []), time],
+            }),
+            {} as IErrorPerSecondData
+          )
         )
-      )
     );
-  const getRpsPerRequest = (body) =>
-    makeRequest("/cloud-stats/rps-per-request", body, (rpsPerRequest) =>
-      setRpsPerRequest(
-        rpsPerRequest.reduce(
-          (rpsChart, { name, throughput, time }) => ({
-            ...rpsChart,
-            [name]: [...(rpsChart[name] || []), throughput],
-            time: [...(rpsChart.time || []), time],
-          }),
-          {}
+  const getRpsPerRequest = (body: IRequestBody) =>
+    makeRequest<IRpsPerRequestResponse[]>(
+      "/cloud-stats/rps-per-request",
+      body,
+      (rpsPerRequest) =>
+        setRpsPerRequest(
+          rpsPerRequest.reduce(
+            (rpsChart, { name, throughput, time }) =>
+              ({
+                ...rpsChart,
+                [name]: [...(rpsChart[name] || []), throughput],
+                time: [...(rpsChart.time || []), time],
+              } as IPerRequestData),
+            {} as IPerRequestData
+          )
         )
-      )
     );
-  const getAvgResponseTimes = (body) =>
-    makeRequest("/cloud-stats/avg-response-times", body, (avgResponseTimes) =>
-      setAvgResponseTimes(
-        avgResponseTimes.reduce(
-          (avgChart, { name, responseTime, time }) => ({
-            ...avgChart,
-            [name]: [...(avgChart[name] || []), responseTime],
-            time: [...(avgChart.time || []), time],
-          }),
-          {}
+  const getAvgResponseTimes = (body: IRequestBody) =>
+    makeRequest<IAvgResponseTimesResponse[]>(
+      "/cloud-stats/avg-response-times",
+      body,
+      (avgResponseTimes) =>
+        setAvgResponseTimes(
+          avgResponseTimes.reduce(
+            (avgChart, { name, responseTime, time }) =>
+              ({
+                ...avgChart,
+                [name]: [...(avgChart[name] || []), responseTime],
+                time: [...(avgChart.time || []), time],
+              } as IPerRequestData),
+            {} as IPerRequestData
+          )
         )
-      )
     );
-  const getErrorsPerRequest = (body) =>
-    makeRequest("/cloud-stats/errors-per-request", body, (errorsPerRequest) =>
-      setErrorsPerRequest(
-        errorsPerRequest.reduce(
-          (errorChart, { name, errorRate, time }) => ({
-            ...errorChart,
-            [name]: [...(errorChart[name] || []), errorRate],
-            time: [...(errorChart.time || []), time],
-          }),
-          {}
+  const getErrorsPerRequest = (body: IRequestBody) =>
+    makeRequest<IErrorsPerRequestResponse[]>(
+      "/cloud-stats/errors-per-request",
+      body,
+      (errorsPerRequest) =>
+        setErrorsPerRequest(
+          errorsPerRequest.reduce(
+            (errorChart, { name, errorRate, time }) =>
+              ({
+                ...errorChart,
+                [name]: [...(errorChart[name] || []), errorRate],
+                time: [...(errorChart.time || []), time],
+              } as IPerRequestData),
+            {} as IPerRequestData
+          )
         )
-      )
     );
-  const getPerc99ResponseTimes = (body) =>
-    makeRequest(
+  const getPerc99ResponseTimes = (body: IRequestBody) =>
+    makeRequest<IPerc99ResponseTimesResponse[]>(
       "/cloud-stats/perc99-response-times",
       body,
       (perc99ResponseTimes) =>
         setPerc99ResponseTimes(
           perc99ResponseTimes.reduce(
-            (perc99Chart, { name, perc99, time }) => ({
-              ...perc99Chart,
-              [name]: [...(perc99Chart[name] || []), perc99],
-              time: [...(perc99Chart.time || []), time],
-            }),
-            {}
+            (perc99Chart, { name, perc99, time }) =>
+              ({
+                ...perc99Chart,
+                [name]: [...(perc99Chart[name] || []), perc99],
+                time: [...(perc99Chart.time || []), time],
+              } as IPerRequestData),
+            {} as IPerRequestData
           )
         )
     );
-  const getResponseLength = (body) =>
-    makeRequest("/cloud-stats/response-length", body, (responseLength) =>
-      setResponseLength(
-        responseLength.reduce(
-          (responseLengthChart, { name, responseLength, time }) => ({
-            ...responseLengthChart,
-            [name]: [...(responseLengthChart[name] || []), responseLength],
-            time: [...(responseLengthChart.time || []), time],
-          }),
-          {}
+  const getResponseLength = (body: IRequestBody) =>
+    makeRequest<IResponseLengthResponse[]>(
+      "/cloud-stats/response-length",
+      body,
+      (responseLength) =>
+        setResponseLength(
+          responseLength.reduce(
+            (responseLengthChart, { name, responseLength, time }) =>
+              ({
+                ...responseLengthChart,
+                [name]: [...(responseLengthChart[name] || []), responseLength],
+                time: [...(responseLengthChart.time || []), time],
+              } as IPerRequestData),
+            {} as IPerRequestData
+          )
         )
-      )
     );
 
-  const getTotalRequests = (body) =>
-    makeRequest("/cloud-stats/total-requests", body, setTotalRequests);
-  const getTotalFailures = (body) =>
-    makeRequest("/cloud-stats/total-failures", body, setTotalFailures);
-  const getErrorPercentage = (body) =>
-    makeRequest(
+  const getTotalRequests = (body: IRequestBody) =>
+    makeRequest<number>("/cloud-stats/total-requests", body, setTotalRequests);
+  const getTotalFailures = (body: IRequestBody) =>
+    makeRequest<number>("/cloud-stats/total-failures", body, setTotalFailures);
+  const getErrorPercentage = (body: IRequestBody) =>
+    makeRequest<IErrorPercentageResponse[]>(
       "/cloud-stats/error-percentage",
       body,
       ([{ errorPercentage }]) =>

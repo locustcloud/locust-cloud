@@ -258,7 +258,7 @@ class Timescale:
                 "INSERT INTO testrun (id, num_users, description, arguments) VALUES (%s,%s,%s,%s)",
                 (
                     self.env._run_id,
-                    self.env.parsed_options.num_users,
+                    self.env.parsed_options.num_users or 0,
                     "self.env.parsed_options.description",
                     " ".join(cmd),
                 ),
