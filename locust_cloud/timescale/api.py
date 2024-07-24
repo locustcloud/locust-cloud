@@ -26,7 +26,7 @@ class Api:
         try:
             self.pool = pool.SimpleConnectionPool(
                 minconn=1,
-                maxconn=40,
+                maxconn=100,
                 host=self.pg_host,
                 user=self.pg_user,
                 password=self.pg_password,
@@ -50,8 +50,9 @@ class Api:
                     cursor = conn.cursor()
 
                     sql_params = request.get_json()
+                    print(sql_params)
 
-                    cursor.execute(queries[query](**sql_params))
+                    cursor.execute(queries[query], sql_params)
 
                     results = [
                         dict(zip([column[0] for column in cursor.description], row)) for row in cursor.fetchall()

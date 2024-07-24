@@ -1,5 +1,4 @@
-def requests_query(start, end):
-    return f"""
+requests_query = """
 SELECT
 	name,
     request_type as "method",
@@ -10,32 +9,29 @@ SELECT
 	MAX(max),
 	SUM("failedCount") / SUM(count) * 100 "errorPercentage"
 FROM request_summary
-WHERE bucket BETWEEN '{start}' AND '{end}'
+WHERE bucket BETWEEN %(start)s AND %(end)s
 GROUP BY name, method
 """
 
 
-def failures_query(start, end):
-    return f"""
+failures_query = """
 SELECT name as "name",
  left(exception,300) as exception,
  count(*)
 FROM "request"
-WHERE time BETWEEN '{start}' AND '{end}' and
- (testplan = 'locust.py' OR 'locust.py' = 'All') AND
+WHERE time BETWEEN %(start)s AND %(end)s AND
  exception is not null
 GROUP BY "name",left(exception,300)
 """
 
 
-def requests_per_second(start, end):
-    return f"""
+requests_per_second = """
 WITH user_count_agg AS (
   SELECT
     time_bucket('5.000s',"time") AS "time",
     avg(user_count) as users
   FROM user_count
-  WHERE time BETWEEN '{start}' AND '{end}'
+  WHERE time BETWEEN %(start)s AND %(end)s
   GROUP BY 1
   ORDER BY 1
 ),
@@ -44,7 +40,7 @@ request_count_agg AS (
     bucket as "time",
     SUM(count) as "rps"
   FROM request_summary
-  WHERE bucket BETWEEN '{start}' AND '{end}'
+  WHERE bucket BETWEEN %(start)s AND %(end)s
   GROUP BY 1
   ORDER BY 1
 )
@@ -58,110 +54,101 @@ ORDER BY u.time;
 """
 
 
-def total_requests(start, end):
-    return f"""
+total_requests = """
 SELECT
  SUM(count)
 FROM request_summary
-WHERE bucket BETWEEN '{start}' AND '{end}'
+WHERE bucket BETWEEN %(start)s AND %(end)s
 """
 
 
-def total_failed(start, end):
-    return f"""
+total_failed = """
 SELECT
  SUM("failedCount")
 FROM request_summary
-WHERE bucket BETWEEN '{start}' AND '{end}'
+WHERE bucket BETWEEN %(start)s AND %(end)s
 """
 
 
-def error_percentage(start, end):
-    return f"""
+error_percentage = """
 SELECT
 	SUM("failedCount") / SUM(count) * 100 "errorPercentage"
 FROM request_summary
-WHERE bucket BETWEEN '{start}' AND '{end}'
+WHERE bucket BETWEEN %(start)s AND %(end)s
  """
 
 
-def errors_per_second(start, end):
-    return f"""
+errors_per_second = """
 SELECT
     bucket as "time",
-    SUM("failedCount")
+    SUM("failedCount") as "errorRate"
 FROM request_summary
-WHERE bucket BETWEEN '{start}' AND '{end}'
+WHERE bucket BETWEEN %(start)s AND %(end)s
 GROUP BY 1
 ORDER BY 1
 """
 
 
-def rps_per_request(start, end):
-    return f"""
+rps_per_request = """
 SELECT
     bucket as "time",
     name,
-    SUM(count)
+    SUM(count) as "throughput"
 FROM request_summary
-WHERE bucket BETWEEN '{start}' AND '{end}'
+WHERE bucket BETWEEN %(start)s AND %(end)s
 GROUP BY 1, name
 ORDER BY 1,2
 """
 
 
-def avg_response_times(start, end):
-    return f"""
+avg_response_times = """
 SELECT
     bucket as "time",
     name,
     avg(average) as "responseTime"
 FROM request_summary
-WHERE bucket BETWEEN '{start}' AND '{end}'
+WHERE bucket BETWEEN %(start)s AND %(end)s
 GROUP BY 1, name
 ORDER BY 1, 2
 """
 
 
-def errors_per_request(start, end):
-    return f"""
+errors_per_request = """
 SELECT
     bucket as "time",
     name,
-    SUM("failedCount")
+    SUM("failedCount") as "errorRate"
 FROM request_summary
-WHERE bucket BETWEEN '{start}' AND '{end}'
+WHERE bucket BETWEEN %(start)s AND %(end)s
 GROUP BY 1, name
 ORDER BY 1
 """
 
 
-def perc99_response_times(start, end):
-    return f"""
+perc99_response_times = """
 SELECT time_bucket('5.000s',"time") AS "time",
  name,
  percentile_cont(0.99) within group (order by response_time) as "perc99"
 FROM request
-WHERE time BETWEEN '{start}' AND '{end}'
+WHERE time BETWEEN %(start)s AND %(end)s
+GROUP BY 1, name
 """
 
 
-def response_length(start, end):
-    return f"""
+response_length = """
 SELECT
     bucket as "time",
     "responseLength",
     name
 FROM request_summary
-WHERE bucket BETWEEN '{start}' AND '{end}'
+WHERE bucket BETWEEN %(start)s AND %(end)s
 """
 
 
-def request_names(start, end):
-    return f"""
-SELECT name
-FROM request_summary
-WHERE bucket BETWEEN '{start}' AND '{end}'
+request_names = """
+SELECT DISTINCT name
+FROM request
+WHERE time BETWEEN %(start)s AND %(end)s
 """
 
 

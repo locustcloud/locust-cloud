@@ -134,9 +134,9 @@ export default function Timescale() {
     makeRequest("/cloud-stats/response-length", body, (responseLength) =>
       setResponseLength(
         responseLength.reduce(
-          (responseLengthChart, { name, avg, time }) => ({
+          (responseLengthChart, { name, responseLength, time }) => ({
             ...responseLengthChart,
-            [name]: [...(responseLengthChart[name] || []), avg],
+            [name]: [...(responseLengthChart[name] || []), responseLength],
             time: [...(responseLengthChart.time || []), time],
           }),
           {}

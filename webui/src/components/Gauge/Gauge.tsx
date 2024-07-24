@@ -112,7 +112,6 @@ export default function Gauge({ name, gaugeValue }: IGauge) {
 
   useEffect(() => {
     if (gauge) {
-      console.log({ gaugeValue });
       gauge.setOption({
         series: [{ data: [{ value: gaugeValue, name }] }],
       });
