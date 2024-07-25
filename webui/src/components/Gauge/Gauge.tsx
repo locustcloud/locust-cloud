@@ -1,19 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 
-import { init, registerTheme, dispose, ECharts } from "echarts";
+import { init, dispose, ECharts } from "echarts";
+import { useSelector } from "react-redux";
+import { IRootState } from "locust-ui";
 
-const CHART_TEXT_COLOR = "#b3c3bc";
-const CHART_AXIS_COLOR = "#999";
+interface IGauge {
+  name: string;
+  gaugeValue: string | number;
+}
 
-registerTheme("locust", {
-  backgroundColor: "#27272a",
-  textStyle: { color: CHART_TEXT_COLOR },
-  title: {
-    textStyle: { color: CHART_TEXT_COLOR },
-  },
-});
-
-const createOptions = ({ name }) => ({
+const createOptions = ({ name }: { name: IGauge["name"] }) => ({
   series: [
     {
       type: "gauge",
@@ -41,29 +37,14 @@ const createOptions = ({ name }) => ({
       axisTick: {
         distance: -25,
         splitNumber: 5,
-        lineStyle: {
-          width: 2,
-          color: CHART_AXIS_COLOR,
-        },
       },
       splitLine: {
         distance: -32,
         length: 14,
-        lineStyle: {
-          width: 3,
-          color: CHART_AXIS_COLOR,
-        },
       },
       axisLabel: {
         distance: -45,
-        color: CHART_AXIS_COLOR,
         fontSize: 16,
-      },
-      anchor: {
-        color: "Red",
-      },
-      title: {
-        color: "inherit",
       },
       detail: {
         valueAnimation: true,
@@ -81,12 +62,10 @@ const createOptions = ({ name }) => ({
   ],
 });
 
-interface IGauge {
-  name: string;
-  gaugeValue: string | number;
-}
-
 export default function Gauge({ name, gaugeValue }: IGauge) {
+  const isDarkMode = useSelector(
+    ({ theme: { isDarkMode } }: IRootState) => isDarkMode
+  );
   const [gauge, setGauge] = useState<ECharts | null>(null);
 
   const gaugeContainer = useRef<HTMLDivElement | null>(null);
@@ -117,6 +96,46 @@ export default function Gauge({ name, gaugeValue }: IGauge) {
       });
     }
   }, [gauge, gaugeValue]);
+
+  useEffect(() => {
+    if (gauge) {
+      const chartTextColor = isDarkMode ? "#b3c3bc" : "#000";
+      const chartAxisColor = isDarkMode ? "#b3c3bc" : "#000";
+
+      gauge.setOption({
+        textStyle: { color: chartTextColor },
+        title: {
+          textStyle: { color: chartTextColor },
+        },
+        series: [
+          {
+            axisTick: {
+              distance: -25,
+              splitNumber: 5,
+              lineStyle: {
+                width: 2,
+                color: chartAxisColor,
+              },
+            },
+            splitLine: {
+              distance: -32,
+              length: 14,
+              lineStyle: {
+                width: 3,
+                color: chartAxisColor,
+              },
+            },
+            axisLabel: {
+              color: chartAxisColor,
+            },
+            title: {
+              color: chartTextColor,
+            },
+          },
+        ],
+      });
+    }
+  }, [gauge, isDarkMode]);
 
   return (
     <div ref={gaugeContainer} style={{ width: "100%", height: "300px" }}></div>

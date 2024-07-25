@@ -1,7 +1,7 @@
 requests_query = """
 SELECT
 	name,
-    request_type as "method",
+  request_type as "method",
 	SUM(average * count) / SUM(count) as "average",
 	SUM(count) as "requests",
 	SUM("failedCount") as "failed",
