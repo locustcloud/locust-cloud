@@ -1,6 +1,7 @@
+import { Box, Typography } from "@mui/material";
 import Gauge from "components/Gauge/Gauge";
 import { LineChart, Table, useInterval } from "locust-ui";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 const startTime = new Date(new Date().getTime() - 5 * 60 * 1000).toISOString();
 
@@ -293,33 +294,47 @@ export default function Timescale() {
   return (
     <div>
       {statsData && (
-        <Table
-          structure={[
-            { key: "name", title: "Name" },
-            { key: "method", title: "Type" },
-            { key: "requests", title: "Requests" },
-            { key: "failed", title: "Failed" },
-            { key: "max", title: "Max", round: 2 },
-            { key: "errorPercentage", title: "Error Percentage (%)", round: 2 },
-          ]}
-          rows={statsData}
-        />
+        <Box mb={2}>
+          <Typography component="h2" mb={1} variant="h6">
+            Request Statistics
+          </Typography>
+          <Table
+            structure={[
+              { key: "name", title: "Name" },
+              { key: "method", title: "Type" },
+              { key: "requests", title: "Requests" },
+              { key: "failed", title: "Failed" },
+              { key: "max", title: "Max", round: 2 },
+              {
+                key: "errorPercentage",
+                title: "Error Percentage (%)",
+                round: 2,
+              },
+            ]}
+            rows={statsData}
+          />
+        </Box>
       )}
       {failuresData && (
-        <Table
-          structure={[
-            { key: "name", title: "Name" },
-            { key: "exception", title: "Message" },
-            { key: "count", title: "Count" },
-          ]}
-          rows={failuresData}
-        />
+        <Box mb={2}>
+          <Typography component="h2" mb={1} variant="h6">
+            Failure Statistics
+          </Typography>
+          <Table
+            structure={[
+              { key: "name", title: "Name" },
+              { key: "exception", title: "Message" },
+              { key: "count", title: "Count" },
+            ]}
+            rows={failuresData}
+          />
+        </Box>
       )}
       {!!errorPercentage && (
         <Gauge name="Error Rate" gaugeValue={errorPercentage} />
       )}
       {rpsData && (
-        <LineChart
+        <LineChart<IRpsData>
           colors={["#eeff00", "#0099ff"]}
           lines={[
             { name: "RPS", key: "rps" },
@@ -330,7 +345,7 @@ export default function Timescale() {
         />
       )}
       {errorsPerSecond && (
-        <LineChart
+        <LineChart<IErrorPerSecondData>
           colors={["#ff6d6d"]}
           lines={[{ name: "Error Rate", key: "errorRate" }]}
           title="Errors/s"
@@ -338,7 +353,7 @@ export default function Timescale() {
         />
       )}
       {rpsPerRequest && requestLines && (
-        <LineChart
+        <LineChart<IPerRequestData>
           colors={[
             "#9966CC",
             "#8A2BE2",
@@ -353,7 +368,7 @@ export default function Timescale() {
         />
       )}
       {avgResponseTimes && requestLines && (
-        <LineChart
+        <LineChart<IPerRequestData>
           colors={[
             "#9966CC",
             "#8A2BE2",
@@ -368,7 +383,7 @@ export default function Timescale() {
         />
       )}
       {errorsPerRequest && requestLines && (
-        <LineChart
+        <LineChart<IPerRequestData>
           colors={[
             "#9966CC",
             "#8A2BE2",
@@ -383,7 +398,7 @@ export default function Timescale() {
         />
       )}
       {perc99ResponseTimes && requestLines && (
-        <LineChart
+        <LineChart<IPerRequestData>
           colors={[
             "#9966CC",
             "#8A2BE2",
@@ -398,7 +413,7 @@ export default function Timescale() {
         />
       )}
       {responseLength && requestLines && (
-        <LineChart
+        <LineChart<IPerRequestData>
           colors={[
             "#9966CC",
             "#8A2BE2",
