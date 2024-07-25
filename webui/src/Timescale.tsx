@@ -174,22 +174,40 @@ export default function Timescale() {
           )
         )
     );
+
+  const adaptPerNameChartData = (chartData, key) => {
+    const timeAxis = chartData.map(({ time }) => time);
+    const timeAxisLength = timeAxis.length;
+
+    return chartData.reduce(
+      (chart, data, index) => {
+        const name = data.name;
+        const value = data[key];
+
+        if (!chart[name]) {
+          const dataForRequest = new Array(timeAxisLength).fill(null);
+          dataForRequest[index] = value;
+
+          return {
+            ...chart,
+            [name]: dataForRequest,
+          };
+        }
+
+        chart[name][index] = value;
+
+        return chart;
+      },
+      { time: timeAxis }
+    );
+  };
+
   const getRpsPerRequest = (body: IRequestBody) =>
     makeRequest<IRpsPerRequestResponse[]>(
       "/cloud-stats/rps-per-request",
       body,
       (rpsPerRequest) =>
-        setRpsPerRequest(
-          rpsPerRequest.reduce(
-            (rpsChart, { name, throughput, time }) =>
-              ({
-                ...rpsChart,
-                [name]: [...(rpsChart[name] || []), throughput],
-                time: [...(rpsChart.time || []), time],
-              } as IPerRequestData),
-            {} as IPerRequestData
-          )
-        )
+        setRpsPerRequest(adaptPerNameChartData(rpsPerRequest, "throughput"))
     );
   const getAvgResponseTimes = (body: IRequestBody) =>
     makeRequest<IAvgResponseTimesResponse[]>(
@@ -197,15 +215,7 @@ export default function Timescale() {
       body,
       (avgResponseTimes) =>
         setAvgResponseTimes(
-          avgResponseTimes.reduce(
-            (avgChart, { name, responseTime, time }) =>
-              ({
-                ...avgChart,
-                [name]: [...(avgChart[name] || []), responseTime],
-                time: [...(avgChart.time || []), time],
-              } as IPerRequestData),
-            {} as IPerRequestData
-          )
+          adaptPerNameChartData(avgResponseTimes, "responseTime")
         )
     );
   const getErrorsPerRequest = (body: IRequestBody) =>
@@ -214,15 +224,7 @@ export default function Timescale() {
       body,
       (errorsPerRequest) =>
         setErrorsPerRequest(
-          errorsPerRequest.reduce(
-            (errorChart, { name, errorRate, time }) =>
-              ({
-                ...errorChart,
-                [name]: [...(errorChart[name] || []), errorRate],
-                time: [...(errorChart.time || []), time],
-              } as IPerRequestData),
-            {} as IPerRequestData
-          )
+          adaptPerNameChartData(errorsPerRequest, "errorRate")
         )
     );
   const getPerc99ResponseTimes = (body: IRequestBody) =>
@@ -231,15 +233,7 @@ export default function Timescale() {
       body,
       (perc99ResponseTimes) =>
         setPerc99ResponseTimes(
-          perc99ResponseTimes.reduce(
-            (perc99Chart, { name, perc99, time }) =>
-              ({
-                ...perc99Chart,
-                [name]: [...(perc99Chart[name] || []), perc99],
-                time: [...(perc99Chart.time || []), time],
-              } as IPerRequestData),
-            {} as IPerRequestData
-          )
+          adaptPerNameChartData(perc99ResponseTimes, "perc99")
         )
     );
   const getResponseLength = (body: IRequestBody) =>
@@ -248,15 +242,7 @@ export default function Timescale() {
       body,
       (responseLength) =>
         setResponseLength(
-          responseLength.reduce(
-            (responseLengthChart, { name, responseLength, time }) =>
-              ({
-                ...responseLengthChart,
-                [name]: [...(responseLengthChart[name] || []), responseLength],
-                time: [...(responseLengthChart.time || []), time],
-              } as IPerRequestData),
-            {} as IPerRequestData
-          )
+          adaptPerNameChartData(responseLength, "responseLength")
         )
     );
 
@@ -367,6 +353,7 @@ export default function Timescale() {
           charts={rpsPerRequest}
         />
       )}
+      {console.log({ rpsPerRequest })}
       {avgResponseTimes && requestLines && (
         <LineChart<IPerRequestData>
           colors={[
