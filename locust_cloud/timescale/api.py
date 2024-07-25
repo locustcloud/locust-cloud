@@ -50,15 +50,12 @@ class Api:
                     cursor = conn.cursor()
 
                     sql_params = request.get_json()
-                    print(sql_params)
 
                     cursor.execute(queries[query], sql_params)
 
                     results = [
                         dict(zip([column[0] for column in cursor.description], row)) for row in cursor.fetchall()
                     ]
-
-                    print(results)
 
                     cursor.close()
                     self.pool.putconn(conn)

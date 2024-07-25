@@ -37,10 +37,10 @@ WITH user_count_agg AS (
 ),
 request_count_agg AS (
   SELECT
-    bucket as "time",
-    SUM(count) as "rps"
-  FROM request_summary
-  WHERE bucket BETWEEN %(start)s AND %(end)s
+    time_bucket('5.000s',"time") AS "time",
+    count(*)/(5000/1000.0) as "rps"
+  FROM request
+  WHERE time BETWEEN %(start)s AND %(end)s
   GROUP BY 1
   ORDER BY 1
 )
@@ -127,8 +127,8 @@ ORDER BY 1
 
 perc99_response_times = """
 SELECT time_bucket('5.000s',"time") AS "time",
- name,
- percentile_cont(0.99) within group (order by response_time) as "perc99"
+  name,
+  percentile_cont(0.99) within group (order by response_time) as "perc99"
 FROM request
 WHERE time BETWEEN %(start)s AND %(end)s
 GROUP BY 1, name
@@ -142,6 +142,7 @@ SELECT
     name
 FROM request_summary
 WHERE bucket BETWEEN %(start)s AND %(end)s
+AND "responseLength" > 0
 """
 
 

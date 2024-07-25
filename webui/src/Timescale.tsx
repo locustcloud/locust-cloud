@@ -385,12 +385,12 @@ export default function Timescale() {
       {errorsPerRequest && requestLines && (
         <LineChart<IPerRequestData>
           colors={[
-            "#9966CC",
-            "#8A2BE2",
-            "#8E4585",
-            "#E0B0FF",
-            "#C8A2C8",
-            "#E6E6FA",
+            "#ff8080",
+            "#ff4d4d",
+            "#ff1a1a",
+            "#e60000",
+            "#b30000",
+            "#800000",
           ]}
           lines={requestLines}
           title="Errors per Request"
