@@ -27,6 +27,13 @@ def add_arguments(parser: LocustArgumentParser):
         env_var="LOCUST_EXPORTER",
         help="Exports Locust stats to Timescale",
     )
+    locust_cloud.add_argument(
+        "--description",
+        type=str,
+        env_var="LOCUST_DESCRIPTION",
+        default="",
+        help="Description of the test being run",
+    )
 
 
 @events.init.add_listener

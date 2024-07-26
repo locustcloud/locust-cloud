@@ -47,8 +47,8 @@ SET default_with_oids = false;
 -- Name: request; Type: TABLE; Schema: public; Owner: postgres
 --
 
-CREATE TABLE public.request (
-    "time" timestamp with time zone NOT NULL,
+CREATE TABLE public.requests (
+    time timestamp with time zone NOT NULL,
     run_id timestamp with time zone NOT NULL,
     exception text,
     greenlet_id integer NOT NULL,
@@ -58,29 +58,21 @@ CREATE TABLE public.request (
     response_length integer,
     response_time double precision,
     success smallint NOT NULL,
-    testplan character varying(255) NOT NULL,
     pid integer,
     context jsonb,
     url character varying(255)
 );
 
 
-ALTER TABLE public.request OWNER TO postgres;
+ALTER TABLE public.requests OWNER TO postgres;
 
-CREATE TABLE public.testrun (
+CREATE TABLE public.testruns (
     id timestamp with time zone NOT NULL,
-    testplan text NOT NULL,
-    profile_name text,
-    num_clients integer NOT NULL,
-    rps double precision,
+    num_users integer NOT NULL,
     description text,
     end_time timestamp with time zone,
-    env character varying(10) NOT NULL,
-    username character varying(64),
-    gitrepo character varying(120),
     rps_avg numeric,
     resp_time_avg numeric,
-    changeset_guid character varying(36),
     fail_ratio double precision,
     requests integer,
     arguments text,
@@ -88,27 +80,27 @@ CREATE TABLE public.testrun (
 );
 
 
-ALTER TABLE public.testrun OWNER TO postgres;
+ALTER TABLE public.testruns OWNER TO postgres;
 --
 -- Name: user_count; Type: TABLE; Schema: public; Owner: postgres
 --
 
-CREATE TABLE public.user_count (
-    testplan character varying(255) NOT NULL,
+CREATE TABLE public.number_of_users (
     user_count integer NOT NULL,
-    "time" timestamp with time zone NOT NULL,
+    time timestamp with time zone NOT NULL,
     run_id timestamp with time zone
 );
 
 
-ALTER TABLE public.user_count OWNER TO postgres;
+ALTER TABLE public.number_of_users OWNER TO postgres;
 --
 -- Name: events; Type: TABLE; Schema: public; Owner: postgres
 --
 
 CREATE TABLE public.events (
-    "time" timestamp with time zone NOT NULL,
-    text text NOT NULL
+    time timestamp with time zone NOT NULL,
+    text text NOT NULL,
+    run_id timestamp with time zone
 );
 
 
@@ -117,39 +109,28 @@ ALTER TABLE public.events OWNER TO postgres;
 -- Name: testrun testrun_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.testrun
+ALTER TABLE ONLY public.testruns
     ADD CONSTRAINT testrun_pkey PRIMARY KEY (id);
 --
 -- Name: request_time_idx; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX request_time_idx ON public.request USING btree ("time" DESC);
+CREATE INDEX request_time_idx ON public.requests USING btree (time DESC);
 
 --
 -- Name: run_id_idx; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX run_id_idx ON public.request USING btree (run_id);
+CREATE INDEX run_id_idx ON public.requests USING btree (run_id);
 
 --
 -- Name: testrun_id_idx; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX testrun_id_idx ON public.testrun USING btree (id DESC);
+CREATE INDEX testrun_id_idx ON public.testruns USING btree (id DESC);
 
 --
 -- Name: user_count_time_idx; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX user_count_time_idx ON public.user_count USING btree ("time" DESC);
-
-CREATE MATERIALIZED VIEW request_summary
-WITH (timescaledb.continuous) AS
-SELECT name,
-   time_bucket(INTERVAL '1s', time) AS bucket,
-   AVG(response_time),
-   MAX(response_time),
-   MIN(response_time),
-   count(*)
-FROM request
-GROUP BY name, bucket;
+CREATE INDEX user_count_time_idx ON public.number_of_users USING btree (time DESC);
