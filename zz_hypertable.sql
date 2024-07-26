@@ -1,8 +1,8 @@
 -- this needs to be in a different file/session, so that timescale extension is properly initialized
 
-SELECT create_hypertable('request', 'time');
+SELECT create_hypertable('requests', 'time');
 
-CREATE MATERIALIZED VIEW request_summary
+CREATE MATERIALIZED VIEW requests_summary
 WITH (timescaledb.continuous) AS
 SELECT 
     name,
@@ -16,8 +16,7 @@ SELECT
     PERCENTILE_CONT(0.99) within GROUP (order by response_time) as "perc99",
     count(*),
     count(exception) as "failedCount"
-FROM request
+FROM requests
 GROUP BY name, bucket, request_type;
 
-ALTER MATERIALIZED VIEW request_summary set (timescaledb.materialized_only = true);
-ALTER MATERIALIZED VIEW request_summary set (timescaledb.materialized_only = false);
+ALTER MATERIALIZED VIEW requests_summary set (timescaledb.materialized_only = false);

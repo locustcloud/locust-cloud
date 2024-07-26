@@ -14,11 +14,6 @@ services:
       # change the password if you intend to expose postgres to other machines
       - POSTGRES_PASSWORD=password
       - TIMESCALEDB_TELEMETRY=off
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
 
 networks:
   timenet: null
-
-volumes:
-  postgres_data: null

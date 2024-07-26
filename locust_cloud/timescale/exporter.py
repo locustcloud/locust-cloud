@@ -44,15 +44,15 @@ class Timescale:
     dblock = Semaphore()
     first_instance = True
 
-    def __init__(self, env: locust.env.Environment, pg_user, pg_host, pg_password, pg_database, pg_port):
+    def __init__(self, environment: locust.env.Environment, pg_user, pg_host, pg_password, pg_database, pg_port):
         if not Timescale.first_instance:
             # we should refactor this into a module as it is much more pythonic
             raise Exception(
                 "You tried to initialize the Timescale listener twice, maybe both in your locustfile and using command line --timescale? Ignoring second initialization."
             )
         Timescale.first_instance = False
-        self.env = env
-        self.env._run_id = ""
+        self.env = environment
+        self._run_id = ""
         self.dbconn = None
         self._samples: list[dict] = []
         self._background = gevent.spawn(self._run)
@@ -79,7 +79,7 @@ class Timescale:
 
     def set_run_id(self, environment, msg, **kwargs):
         logging.debug(f"run id from master: {msg.data}")
-        environment._run_id = datetime.strptime(msg.data, "%Y-%m-%d, %H:%M:%S.%f").replace(tzinfo=UTC)
+        self._run_id = datetime.strptime(msg.data, "%Y-%m-%d, %H:%M:%S.%f").replace(tzinfo=UTC)
 
     @contextmanager
     def dbcursor(self):
@@ -102,13 +102,13 @@ class Timescale:
         if not timestamp:
             timestamp = datetime.now(UTC).isoformat()
         if not message:
-            message = f"{self._testplan} High CPU usage ({cpu_usage}%)"
+            message = f"High CPU usage ({cpu_usage}%)"
         with self.dbcursor() as cur:
-            cur.execute("INSERT INTO events (time, text) VALUES (%s, %s)", (timestamp, message))
+            cur.execute(
+                "INSERT INTO events (time, text, run_id) VALUES (%s, %s, %s)", (timestamp, message, self._run_id)
+            )
 
     def on_test_start(self, environment: locust.env.Environment):
-        # set _testplan from here, because when running distributed, override_test_plan is not yet available at init time
-        self._testplan = self.env.parsed_options.locustfile
         try:
             self.dbconn = self._dbconn()
         except psycopg2.OperationalError as e:
@@ -151,8 +151,8 @@ class Timescale:
             try:
                 with self.dbcursor() as cur:
                     cur.execute(
-                        """INSERT INTO user_count(time, run_id, testplan, user_count) VALUES (%s, %s, %s, %s)""",
-                        (datetime.now(UTC), self.env._run_id, self._testplan, self.env.runner.user_count),
+                        """INSERT INTO number_of_users(time, run_id, user_count) VALUES (%s, %s, %s)""",
+                        (datetime.now(UTC), self._run_id, self.env.runner.user_count),
                     )
             except psycopg2.Error as error:
                 logging.error("Failed to write user count to Postgresql: " + repr(error))
@@ -181,9 +181,9 @@ class Timescale:
             with self.dbcursor() as cur:
                 psycopg2.extras.execute_values(
                     cur,
-                    """INSERT INTO request(time,run_id,greenlet_id,loadgen,name,request_type,response_time,success,testplan,response_length,exception,pid,url,context) VALUES %s""",
+                    """INSERT INTO requests(time,run_id,greenlet_id,loadgen,name,request_type,response_time,success,response_length,exception,pid,url,context) VALUES %s""",
                     samples,
-                    template="(%(time)s, %(run_id)s, %(greenlet_id)s, %(loadgen)s, %(name)s, %(request_type)s, %(response_time)s, %(success)s, %(testplan)s, %(response_length)s, %(exception)s, %(pid)s, %(url)s, %(context)s)",
+                    template="(%(time)s, %(run_id)s, %(greenlet_id)s, %(loadgen)s, %(name)s, %(request_type)s, %(response_time)s, %(success)s, %(response_length)s, %(exception)s, %(pid)s, %(url)s, %(context)s)",
                 )
 
         except psycopg2.Error as error:
@@ -220,7 +220,7 @@ class Timescale:
         greenlet_id = getattr(greenlet.getcurrent(), "minimal_ident", 0)  # if we're debugging there is no greenlet
         sample = {
             "time": time,
-            "run_id": self.env._run_id,
+            "run_id": self._run_id,
             "greenlet_id": greenlet_id,
             "loadgen": self._hostname,
             "name": name,
@@ -228,7 +228,6 @@ class Timescale:
             "response_time": response_time,
             "success": success,
             "url": url[0:255] if url else None,
-            "testplan": self._testplan,
             "pid": self._pid,
             "context": psycopg2.extras.Json(context, safe_serialize),
         }
@@ -255,17 +254,17 @@ class Timescale:
         cmd = sys.argv[1:]
         with self.dbcursor() as cur:
             cur.execute(
-                "INSERT INTO testrun (id, num_users, description, arguments) VALUES (%s,%s,%s,%s)",
+                "INSERT INTO testruns (id, num_users, description, arguments) VALUES (%s,%s,%s,%s)",
                 (
-                    self.env._run_id,
+                    self._run_id,
                     self.env.parsed_options.num_users or 0,
                     "self.env.parsed_options.description",
                     " ".join(cmd),
                 ),
             )
             cur.execute(
-                "INSERT INTO events (time, text) VALUES (%s, %s)",
-                (datetime.now(UTC).isoformat(), self._testplan),
+                "INSERT INTO events (time, text, run_id) VALUES (%s, %s, %s)",
+                (datetime.now(UTC).isoformat(), "Test run started", self._run_id),
             )
 
     def spawning_complete(self, user_count):
@@ -274,8 +273,8 @@ class Timescale:
             try:
                 with self.dbcursor() as cur:
                     cur.execute(
-                        "INSERT INTO events (time, text) VALUES (%s, %s)",
-                        (end_time, f"{self._testplan} rampup complete, {user_count} users spawned"),
+                        "INSERT INTO events (time, text, run_id) VALUES (%s, %s, %s)",
+                        (end_time, f"Rampup complete, {user_count} users spawned", self._run_id),
                     )
             except psycopg2.Error as error:
                 logging.error(
@@ -283,7 +282,7 @@ class Timescale:
                 )
 
     def log_stop_test_run(self, exit_code=None):
-        logging.debug(f"Test run id {self.env._run_id} stopping")
+        logging.debug(f"Test run id {self._run_id} stopping")
         if self.env.parsed_options.worker:
             return  # only run on master or standalone
         if getattr(self, "dbconn", None) is None:
@@ -292,12 +291,12 @@ class Timescale:
         try:
             with self.dbcursor() as cur:
                 cur.execute(
-                    "UPDATE testrun SET end_time = %s, exit_code = %s where id = %s",
-                    (end_time, exit_code, self.env._run_id),
+                    "UPDATE testruns SET end_time = %s, exit_code = %s where id = %s",
+                    (end_time, exit_code, self._run_id),
                 )
                 cur.execute(
-                    "INSERT INTO events (time, text) VALUES (%s, %s)",
-                    (end_time, self._testplan + f" finished with exit code: {exit_code}"),
+                    "INSERT INTO events (time, text, run_id) VALUES (%s, %s, %s)",
+                    (end_time, f"Finished with exit code: {exit_code}", self._run_id),
                 )
                 # The AND time > run_id clause in the following statements are there to help Timescale performance
                 # We dont use start_time / end_time to calculate RPS, instead we use the time between the actual first and last request
@@ -305,27 +304,27 @@ class Timescale:
                 try:
                     cur.execute(
                         """
-UPDATE testrun
+UPDATE testruns
 SET (requests, resp_time_avg, rps_avg, fail_ratio) =
 (SELECT reqs, resp_time, reqs / GREATEST(duration, 1), fails / reqs) FROM
 (SELECT
  COUNT(*)::numeric AS reqs,
  AVG(response_time)::numeric as resp_time
- FROM request WHERE run_id = %s AND time > %s) AS _,
+ FROM requests WHERE run_id = %s AND time > %s) AS _,
 (SELECT
- EXTRACT(epoch FROM (SELECT MAX(time)-MIN(time) FROM request WHERE run_id = %s AND time > %s))::numeric AS duration) AS __,
+ EXTRACT(epoch FROM (SELECT MAX(time)-MIN(time) FROM requests WHERE run_id = %s AND time > %s))::numeric AS duration) AS __,
 (SELECT
  COUNT(*)::numeric AS fails
- FROM request WHERE run_id = %s AND time > %s AND success = 0) AS ___
+ FROM requests WHERE run_id = %s AND time > %s AND success = 0) AS ___
 WHERE id = %s""",
-                        [self.env._run_id] * 7,
+                        [self._run_id] * 7,
                     )
                 except psycopg2.errors.DivisionByZero:
                     logging.info(
-                        "Got DivisionByZero error when trying to update testrun, most likely because there were no requests logged"
+                        "Got DivisionByZero error when trying to update testruns, most likely because there were no requests logged"
                     )
         except psycopg2.Error as error:
             logging.error(
-                "Failed to update testrun record (or events) with end time to Postgresql timescale database: "
+                "Failed to update testruns record (or events) with end time to Postgresql timescale database: "
                 + repr(error)
             )
