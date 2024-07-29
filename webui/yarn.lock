@@ -1862,7 +1862,7 @@ lines-and-columns@^1.1.6:
 
 locust-ui@../../locust/locust/webui/locust-ui-v1.0.0.tgz:
   version "1.0.0"
-  resolved "../../locust/locust/webui/locust-ui-v1.0.0.tgz#97e2ca53b79d196e3f677733ac122e77348e741d"
+  resolved "../../locust/locust/webui/locust-ui-v1.0.0.tgz#6213a015d4975e41c340f070e27193be3449aacf"
   dependencies:
     "@emotion/react" "^11.11.1"
     "@emotion/styled" "^11.11.0"

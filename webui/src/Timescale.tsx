@@ -1,7 +1,15 @@
 import { Box, Button, Typography } from "@mui/material";
 import Gauge from "components/Gauge/Gauge";
-import { LineChart, Table, useInterval, roundToDecimalPlaces } from "locust-ui";
+import {
+  LineChart,
+  Table,
+  useInterval,
+  roundToDecimalPlaces,
+  IRootState,
+  SWARM_STATE,
+} from "locust-ui";
 import { useCallback, useState } from "react";
+import { useSelector } from "react-redux";
 
 const startTime = new Date(new Date().getTime() - 5 * 60 * 1000).toISOString();
 
@@ -60,7 +68,7 @@ interface IPerRequestResponse {
 }
 
 type IPerRequestData = {
-  [key: string]: number[];
+  [key: string]: string[][];
 } & { time: string[] };
 
 interface IRpsPerRequestResponse extends IPerRequestResponse {
@@ -113,6 +121,8 @@ function makeRequest<ResponseType>(
 }
 
 export default function Timescale() {
+  const swarmState = useSelector(({ swarm }: IRootState) => swarm.state);
+
   const [timestamp, setTimestamp] = useState(new Date().toISOString());
   const [totalRequests, setTotalRequests] = useState<number>();
   const [totalFailures, setTotalFailures] = useState<number>();
@@ -178,37 +188,43 @@ export default function Timescale() {
         )
     );
 
-  const adaptPerNameChartData = (chartData, key) => {
-    const timeAxis = chartData.map(({ time }) => time);
-    const timeAxisLength = timeAxis.length;
+  const adaptPerNameChartData = <ChartType extends IPerRequestResponse>(
+    chartData: ChartType[],
+    key: keyof ChartType
+  ) =>
+    chartData.reduce((chart, data) => {
+      const { name, time } = data;
+      const value = data[key] as string;
+      const timeAxis = chart.time || [];
+      timeAxis.push(time);
 
-    return chartData.reduce(
-      (chart, data, index) => {
-        const name = data.name;
-        const time = data.time;
-        const value = data[key];
+      if (!chart[name]) {
+        return {
+          ...chart,
+          [name]: [[time, value]],
+          time: timeAxis,
+        } as IPerRequestData;
+      }
 
-        if (!chart[name]) {
-          return {
-            ...chart,
-            [name]: [[time, value]],
-          };
-        }
+      chart[name].push([time, value]);
 
-        chart[name].push([time, value]);
-
-        return chart;
-      },
-      { time: timeAxis }
-    );
-  };
+      return {
+        ...chart,
+        time: timeAxis,
+      } as IPerRequestData;
+    }, {} as IPerRequestData);
 
   const getRpsPerRequest = (body: IRequestBody) =>
     makeRequest<IRpsPerRequestResponse[]>(
       "/cloud-stats/rps-per-request",
       body,
       (rpsPerRequest) =>
-        setRpsPerRequest(adaptPerNameChartData(rpsPerRequest, "throughput"))
+        setRpsPerRequest(
+          adaptPerNameChartData<IRpsPerRequestResponse>(
+            rpsPerRequest,
+            "throughput"
+          )
+        )
     );
   const getAvgResponseTimes = (body: IRequestBody) =>
     makeRequest<IAvgResponseTimesResponse[]>(
@@ -216,7 +232,10 @@ export default function Timescale() {
       body,
       (avgResponseTimes) =>
         setAvgResponseTimes(
-          adaptPerNameChartData(avgResponseTimes, "responseTime")
+          adaptPerNameChartData<IAvgResponseTimesResponse>(
+            avgResponseTimes,
+            "responseTime"
+          )
         )
     );
   const getErrorsPerRequest = (body: IRequestBody) =>
@@ -225,7 +244,10 @@ export default function Timescale() {
       body,
       (errorsPerRequest) =>
         setErrorsPerRequest(
-          adaptPerNameChartData(errorsPerRequest, "errorRate")
+          adaptPerNameChartData<IErrorsPerRequestResponse>(
+            errorsPerRequest,
+            "errorRate"
+          )
         )
     );
   const getPerc99ResponseTimes = (body: IRequestBody) =>
@@ -234,7 +256,10 @@ export default function Timescale() {
       body,
       (perc99ResponseTimes) =>
         setPerc99ResponseTimes(
-          adaptPerNameChartData(perc99ResponseTimes, "perc99")
+          adaptPerNameChartData<IPerc99ResponseTimesResponse>(
+            perc99ResponseTimes,
+            "perc99"
+          )
         )
     );
   const getResponseLength = (body: IRequestBody) =>
@@ -243,7 +268,10 @@ export default function Timescale() {
       body,
       (responseLength) =>
         setResponseLength(
-          adaptPerNameChartData(responseLength, "responseLength")
+          adaptPerNameChartData<IResponseLengthResponse>(
+            responseLength,
+            "responseLength"
+          )
         )
     );
 
@@ -267,24 +295,33 @@ export default function Timescale() {
         setErrorPercentage(roundToDecimalPlaces(errorPercentage, 2))
     );
 
-  useInterval(() => {
-    const currentTimestamp = new Date().toISOString();
-    getTotalRequests({ start: startTime, end: timestamp });
-    getTotalFailures({ start: startTime, end: timestamp });
-    getErrorPercentage({ start: startTime, end: timestamp });
-    getRequestNames({ start: startTime, end: timestamp });
-    getRequests({ start: startTime, end: timestamp });
-    getFailures({ start: startTime, end: timestamp });
-    getRps({ start: startTime, end: timestamp });
-    getErrorPerSecond({ start: startTime, end: timestamp });
-    getRpsPerRequest({ start: startTime, end: timestamp });
-    getAvgResponseTimes({ start: startTime, end: timestamp });
-    getErrorsPerRequest({ start: startTime, end: timestamp });
-    getPerc99ResponseTimes({ start: startTime, end: timestamp });
-    getResponseLength({ start: startTime, end: timestamp });
+  useInterval(
+    () => {
+      const currentTimestamp = new Date().toISOString();
+      getTotalRequests({ start: startTime, end: timestamp });
+      getTotalFailures({ start: startTime, end: timestamp });
+      getErrorPercentage({ start: startTime, end: timestamp });
+      getRequestNames({ start: startTime, end: timestamp });
+      getRequests({ start: startTime, end: timestamp });
+      getFailures({ start: startTime, end: timestamp });
+      getRps({ start: startTime, end: timestamp });
+      getErrorPerSecond({ start: startTime, end: timestamp });
+      getRpsPerRequest({ start: startTime, end: timestamp });
+      getAvgResponseTimes({ start: startTime, end: timestamp });
+      getErrorsPerRequest({ start: startTime, end: timestamp });
+      getPerc99ResponseTimes({ start: startTime, end: timestamp });
+      getResponseLength({ start: startTime, end: timestamp });
 
-    setTimestamp(currentTimestamp);
-  }, 1000);
+      setTimestamp(currentTimestamp);
+    },
+    1000,
+    {
+      shouldRunInterval:
+        swarmState === SWARM_STATE.SPAWNING ||
+        swarmState == SWARM_STATE.RUNNING,
+      immediate: true,
+    }
+  );
 
   const perRequestValueFormatter = useCallback(
     (value: string[]) => roundToDecimalPlaces(Number(value[1]), 2),
