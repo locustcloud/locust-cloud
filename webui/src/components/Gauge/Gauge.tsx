@@ -9,6 +9,22 @@ interface IGauge {
   gaugeValue: string | number;
 }
 
+const colors = [
+  [0, "#00C853"],
+  [10, "#ffc40c"],
+  [50, "#f44336"],
+  [99, "#a91409"],
+  [1, "#790e07"],
+];
+
+const getColor = (value: string | number) => {
+  const color = colors.find(
+    ([threshold, color]) => Number(value) <= (threshold as number)
+  ) as (number | string)[];
+
+  return color ? color[1] : colors[colors.length - 1][1];
+};
+
 const createOptions = ({ name }: { name: IGauge["name"] }) => ({
   series: [
     {
@@ -19,32 +35,16 @@ const createOptions = ({ name }: { name: IGauge["name"] }) => ({
       min: 0,
       max: 100,
       splitNumber: 10,
+      axisTick: { show: false },
+      splitLine: { show: false },
+      pointer: { show: false },
+      axisLabel: { show: false },
       itemStyle: {
-        color: "#FFAB91",
+        color: colors[0][1],
       },
       progress: {
         show: true,
         width: 10,
-      },
-      pointer: {
-        show: false,
-      },
-      axisLine: {
-        lineStyle: {
-          width: 10,
-        },
-      },
-      axisTick: {
-        distance: -25,
-        splitNumber: 5,
-      },
-      splitLine: {
-        distance: -32,
-        length: 14,
-      },
-      axisLabel: {
-        distance: -45,
-        fontSize: 16,
       },
       detail: {
         valueAnimation: true,
@@ -92,7 +92,12 @@ export default function Gauge({ name, gaugeValue }: IGauge) {
   useEffect(() => {
     if (gauge) {
       gauge.setOption({
-        series: [{ data: [{ value: gaugeValue, name }] }],
+        series: [
+          {
+            data: [{ value: gaugeValue, name }],
+            itemStyle: { color: getColor(gaugeValue) },
+          },
+        ],
       });
     }
   }, [gauge, gaugeValue]);
@@ -109,25 +114,6 @@ export default function Gauge({ name, gaugeValue }: IGauge) {
         },
         series: [
           {
-            axisTick: {
-              distance: -25,
-              splitNumber: 5,
-              lineStyle: {
-                width: 2,
-                color: chartAxisColor,
-              },
-            },
-            splitLine: {
-              distance: -32,
-              length: 14,
-              lineStyle: {
-                width: 3,
-                color: chartAxisColor,
-              },
-            },
-            axisLabel: {
-              color: chartAxisColor,
-            },
             title: {
               color: chartTextColor,
             },
