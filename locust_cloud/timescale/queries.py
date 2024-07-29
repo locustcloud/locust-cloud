@@ -1,13 +1,13 @@
 requests_query = """
 SELECT
 	name,
-  request_type as "method",
-	SUM(average * count) / SUM(count) as "average",
-	SUM(count) as "requests",
-	SUM("failedCount") as "failed",
+  request_type as method,
+	SUM(average * count) / SUM(count) as average,
+	SUM(count) as requests,
+	SUM(failed_count) as failed,
 	MIN(min),
 	MAX(max),
-	SUM("failedCount") / SUM(count) * 100 "errorPercentage"
+	SUM(failed_count) / SUM(count) * 100 as "errorPercentage"
 FROM requests_summary
 WHERE bucket BETWEEN %(start)s AND %(end)s
 GROUP BY name, method
@@ -39,7 +39,7 @@ WITH user_count_agg AS (
 request_count_agg AS (
   SELECT
     time_bucket('5.000s', bucket) AS time,
-    count(*)/5 as "rps"
+    count(*)/5 as rps
   FROM requests_summary
   WHERE bucket BETWEEN %(start)s AND %(end)s
   GROUP BY 1
@@ -65,7 +65,7 @@ WHERE bucket BETWEEN %(start)s AND %(end)s
 
 total_failed = """
 SELECT
- SUM("failedCount") as "totalFailures"
+ SUM(failed_count) as "totalFailures"
 FROM requests_summary
 WHERE bucket BETWEEN %(start)s AND %(end)s
 """
@@ -73,7 +73,7 @@ WHERE bucket BETWEEN %(start)s AND %(end)s
 
 error_percentage = """
 SELECT
-	SUM("failedCount") / SUM(count) * 100 "errorPercentage"
+	SUM(failed_count) / SUM(count) * 100 "errorPercentage"
 FROM requests_summary
 WHERE bucket BETWEEN %(start)s AND %(end)s
  """
@@ -82,7 +82,7 @@ WHERE bucket BETWEEN %(start)s AND %(end)s
 errors_per_second = """
 SELECT
     time_bucket('5.000s', bucket) AS time,
-    SUM("failedCount")/5 as "errorRate"
+    SUM(failed_count)/5 as "errorRate"
 FROM requests_summary
 WHERE bucket BETWEEN %(start)s AND %(end)s
 GROUP BY 1
@@ -118,7 +118,7 @@ errors_per_request = """
 SELECT
     bucket as time,
     name,
-    SUM("failedCount") as "errorRate"
+    SUM(failed_count) as "errorRate"
 FROM requests_summary
 WHERE bucket BETWEEN %(start)s AND %(end)s
 GROUP BY 1, name
@@ -129,7 +129,7 @@ ORDER BY 1
 perc99_response_times = """
 SELECT time_bucket('5.000s', time) AS time,
   name,
-  percentile_cont(0.99) within group (order by response_time) as "perc99"
+  percentile_cont(0.99) within group (order by response_time) as perc99
 FROM requests
 WHERE time BETWEEN %(start)s AND %(end)s
 GROUP BY 1, name
@@ -139,11 +139,11 @@ GROUP BY 1, name
 response_length = """
 SELECT
     bucket as time,
-    "responseLength",
+    response_length as "responseLength",
     name
 FROM requests_summary
 WHERE bucket BETWEEN %(start)s AND %(end)s
-AND "responseLength" > 0
+AND response_length > 0
 ORDER BY 1
 """
 
