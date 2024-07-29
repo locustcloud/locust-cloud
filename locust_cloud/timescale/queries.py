@@ -39,7 +39,7 @@ WITH user_count_agg AS (
 request_count_agg AS (
   SELECT
     time_bucket('5.000s', bucket) AS time,
-    count(*)/(5) as "rps"
+    count(*)/5 as "rps"
   FROM requests_summary
   WHERE bucket BETWEEN %(start)s AND %(end)s
   GROUP BY 1
@@ -82,7 +82,7 @@ WHERE bucket BETWEEN %(start)s AND %(end)s
 errors_per_second = """
 SELECT
     time_bucket('5.000s', bucket) AS time,
-    SUM("failedCount")/(5) as "errorRate"
+    SUM("failedCount")/5 as "errorRate"
 FROM requests_summary
 WHERE bucket BETWEEN %(start)s AND %(end)s
 GROUP BY 1
