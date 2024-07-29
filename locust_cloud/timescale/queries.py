@@ -38,10 +38,10 @@ WITH user_count_agg AS (
 ),
 request_count_agg AS (
   SELECT
-    time_bucket('5.000s', time) AS time,
-    count(*)/(5000/1000.0) as "rps"
-  FROM requests
-  WHERE time BETWEEN %(start)s AND %(end)s
+    time_bucket('5.000s', bucket) AS time,
+    count(*)/(5) as "rps"
+  FROM requests_summary
+  WHERE bucket BETWEEN %(start)s AND %(end)s
   GROUP BY 1
   ORDER BY 1
 )
@@ -57,7 +57,7 @@ ORDER BY u.time;
 
 total_requests = """
 SELECT
- SUM(count)
+ SUM(count) as "totalRequests"
 FROM requests_summary
 WHERE bucket BETWEEN %(start)s AND %(end)s
 """
@@ -65,7 +65,7 @@ WHERE bucket BETWEEN %(start)s AND %(end)s
 
 total_failed = """
 SELECT
- SUM("failedCount")
+ SUM("failedCount") as "totalFailures"
 FROM requests_summary
 WHERE bucket BETWEEN %(start)s AND %(end)s
 """
@@ -81,8 +81,8 @@ WHERE bucket BETWEEN %(start)s AND %(end)s
 
 errors_per_second = """
 SELECT
-    bucket as time,
-    SUM("failedCount") as "errorRate"
+    time_bucket('5.000s', bucket) AS time,
+    SUM("failedCount")/(5) as "errorRate"
 FROM requests_summary
 WHERE bucket BETWEEN %(start)s AND %(end)s
 GROUP BY 1
@@ -144,6 +144,7 @@ SELECT
 FROM requests_summary
 WHERE bucket BETWEEN %(start)s AND %(end)s
 AND "responseLength" > 0
+ORDER BY 1
 """
 
 

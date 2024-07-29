@@ -1,14 +1,9 @@
-import { Box, Typography } from "@mui/material";
+import { Box, Button, Typography } from "@mui/material";
 import Gauge from "components/Gauge/Gauge";
-import { LineChart, Table, useInterval } from "locust-ui";
-import { useState } from "react";
+import { LineChart, Table, useInterval, roundToDecimalPlaces } from "locust-ui";
+import { useCallback, useState } from "react";
 
 const startTime = new Date(new Date().getTime() - 5 * 60 * 1000).toISOString();
-
-const roundToDecimalPlaces = (n: number, decimalPlaces = 0) => {
-  const factor = Math.pow(10, decimalPlaces);
-  return Math.round(n * factor) / factor;
-};
 
 interface IRequestBody {
   start: string;
@@ -88,6 +83,14 @@ interface IResponseLengthResponse extends IPerRequestResponse {
   responseLength: number;
 }
 
+interface ITotalRequestsResponse {
+  totalRequests: number;
+}
+
+interface ITotalFailuresResponse {
+  totalFailures: number;
+}
+
 interface IErrorPercentageResponse {
   errorPercentage: number;
 }
@@ -105,7 +108,7 @@ function makeRequest<ResponseType>(
     body: JSON.stringify(body),
   })
     .then((res) => res.json())
-    .then(onSuccess)
+    .then((data) => data && data.length && onSuccess(data))
     .catch(console.error);
 }
 
@@ -182,19 +185,17 @@ export default function Timescale() {
     return chartData.reduce(
       (chart, data, index) => {
         const name = data.name;
+        const time = data.time;
         const value = data[key];
 
         if (!chart[name]) {
-          const dataForRequest = new Array(timeAxisLength).fill(null);
-          dataForRequest[index] = value;
-
           return {
             ...chart,
-            [name]: dataForRequest,
+            [name]: [[time, value]],
           };
         }
 
-        chart[name][index] = value;
+        chart[name].push([time, value]);
 
         return chart;
       },
@@ -247,9 +248,17 @@ export default function Timescale() {
     );
 
   const getTotalRequests = (body: IRequestBody) =>
-    makeRequest<number>("/cloud-stats/total-requests", body, setTotalRequests);
+    makeRequest<ITotalRequestsResponse[]>(
+      "/cloud-stats/total-requests",
+      body,
+      ([{ totalRequests }]) => setTotalRequests(totalRequests)
+    );
   const getTotalFailures = (body: IRequestBody) =>
-    makeRequest<number>("/cloud-stats/total-failures", body, setTotalFailures);
+    makeRequest<ITotalFailuresResponse[]>(
+      "/cloud-stats/total-failures",
+      body,
+      ([{ totalFailures }]) => setTotalFailures(totalFailures)
+    );
   const getErrorPercentage = (body: IRequestBody) =>
     makeRequest<IErrorPercentageResponse[]>(
       "/cloud-stats/error-percentage",
@@ -276,6 +285,11 @@ export default function Timescale() {
 
     setTimestamp(currentTimestamp);
   }, 1000);
+
+  const perRequestValueFormatter = useCallback(
+    (value: string[]) => roundToDecimalPlaces(Number(value[1]), 2),
+    []
+  );
 
   return (
     <div>
@@ -316,9 +330,47 @@ export default function Timescale() {
           />
         </Box>
       )}
-      {!!errorPercentage && (
-        <Gauge name="Error Rate" gaugeValue={errorPercentage} />
-      )}
+      <Box sx={{ display: "flex", justifyContent: "space-between", px: 4 }}>
+        {!!totalRequests && (
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Typography noWrap component="p" mb={1} variant="h6">
+              Total Requests
+            </Typography>
+            <Typography component="p" mb={1} variant="h6" color="success.main">
+              {totalRequests}
+            </Typography>
+          </Box>
+        )}
+        {!!errorPercentage && (
+          <Box sx={{ display: "flex", flex: 0.5 }}>
+            <Gauge name="Error Rate" gaugeValue={errorPercentage} />
+          </Box>
+        )}
+        {!!totalFailures && (
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Typography noWrap component="p" mb={1} variant="h6">
+              Total Failures
+            </Typography>
+            <Typography component="p" mb={1} variant="h6" color="error">
+              {totalFailures}
+            </Typography>
+          </Box>
+        )}
+      </Box>
       {rpsData && (
         <LineChart<IRpsData>
           colors={["#eeff00", "#0099ff"]}
@@ -351,9 +403,9 @@ export default function Timescale() {
           lines={requestLines}
           title="RPS per Request"
           charts={rpsPerRequest}
+          chartValueFormatter={perRequestValueFormatter}
         />
       )}
-      {console.log({ rpsPerRequest })}
       {avgResponseTimes && requestLines && (
         <LineChart<IPerRequestData>
           colors={[
@@ -367,6 +419,7 @@ export default function Timescale() {
           lines={requestLines}
           title="Average Response Times"
           charts={avgResponseTimes}
+          chartValueFormatter={perRequestValueFormatter}
         />
       )}
       {errorsPerRequest && requestLines && (
@@ -382,6 +435,7 @@ export default function Timescale() {
           lines={requestLines}
           title="Errors per Request"
           charts={errorsPerRequest}
+          chartValueFormatter={perRequestValueFormatter}
         />
       )}
       {perc99ResponseTimes && requestLines && (
@@ -397,6 +451,7 @@ export default function Timescale() {
           lines={requestLines}
           title="99th Percentile Response Times"
           charts={perc99ResponseTimes}
+          chartValueFormatter={perRequestValueFormatter}
         />
       )}
       {responseLength && requestLines && (
@@ -412,6 +467,7 @@ export default function Timescale() {
           lines={requestLines}
           title="Response Length"
           charts={responseLength}
+          chartValueFormatter={perRequestValueFormatter}
         />
       )}
     </div>

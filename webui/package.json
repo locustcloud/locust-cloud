@@ -14,7 +14,6 @@
     "@emotion/styled": "^11.11.5",
     "@mui/icons-material": "^5.16.4",
     "@mui/material": "^5.16.4",
-    "body-parser": "^1.20.2",
     "locust-ui": "../../locust/locust/webui/locust-ui-v1.0.0.tgz",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
