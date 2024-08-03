@@ -8,10 +8,8 @@ import {
   IRootState,
   SWARM_STATE,
 } from "locust-ui";
-import { useCallback, useState } from "react";
+import { useState } from "react";
 import { useSelector } from "react-redux";
-
-const startTime = new Date(new Date().getTime() - 5 * 60 * 1000).toISOString();
 
 interface IRequestBody {
   start: string;
@@ -43,21 +41,13 @@ interface IFailuresData {
 interface IRpsResponse {
   users: number;
   rps: number;
+  errorRate: number;
   time: string;
 }
 
 interface IRpsData {
   users: number[];
   rps: number[];
-  time: string[];
-}
-
-interface IErrorPerSecondResponse {
-  errorRate: number;
-  time: string;
-}
-
-interface IErrorPerSecondData {
   errorRate: number[];
   time: string[];
 }
@@ -120,8 +110,15 @@ function makeRequest<ResponseType>(
     .catch(console.error);
 }
 
+function perRequestValueFormatter(
+  value: string | number | string[] | number[]
+) {
+  return Number((value as string[])[1]), 2;
+}
+
 export default function Timescale() {
   const swarmState = useSelector(({ swarm }: IRootState) => swarm.state);
+  const startTime = useSelector(({ swarm }: IRootState) => swarm.startTime);
 
   const [timestamp, setTimestamp] = useState(new Date().toISOString());
   const [totalRequests, setTotalRequests] = useState<number>();
@@ -131,7 +128,6 @@ export default function Timescale() {
   const [statsData, setStatsData] = useState<IStatsData[]>();
   const [failuresData, setFailuresData] = useState<IFailuresData[]>();
   const [rpsData, setRpsData] = useState<IRpsData>();
-  const [errorsPerSecond, setErrorsPerSecond] = useState<IErrorPerSecondData>();
   const [rpsPerRequest, setRpsPerRequest] = useState<IPerRequestData>();
   const [avgResponseTimes, setAvgResponseTimes] = useState<IPerRequestData>();
   const [errorsPerRequest, setErrorsPerRequest] = useState<IPerRequestData>();
@@ -163,29 +159,15 @@ export default function Timescale() {
     makeRequest<IRpsResponse[]>("/cloud-stats/rps", body, (rps) =>
       setRpsData(
         rps.reduce(
-          (rpsChart, { users, rps, time }) => ({
+          (rpsChart, { users, rps, errorRate, time }) => ({
             users: [...(rpsChart.users || []), users],
             rps: [...(rpsChart.rps || []), rps],
+            errorRate: [...(rpsChart.errorRate || []), errorRate],
             time: [...(rpsChart.time || []), time],
           }),
           {} as IRpsData
         )
       )
-    );
-  const getErrorPerSecond = (body: IRequestBody) =>
-    makeRequest<IErrorPerSecondResponse[]>(
-      "/cloud-stats/errors-per-second",
-      body,
-      (errorsPerSecond) =>
-        setErrorsPerSecond(
-          errorsPerSecond.reduce(
-            (errorChart, { errorRate, time }) => ({
-              errorRate: [...(errorChart.errorRate || []), errorRate],
-              time: [...(errorChart.time || []), time],
-            }),
-            {} as IErrorPerSecondData
-          )
-        )
     );
 
   const adaptPerNameChartData = <ChartType extends IPerRequestResponse>(
@@ -298,19 +280,19 @@ export default function Timescale() {
   useInterval(
     () => {
       const currentTimestamp = new Date().toISOString();
+
       getTotalRequests({ start: startTime, end: timestamp });
       getTotalFailures({ start: startTime, end: timestamp });
       getErrorPercentage({ start: startTime, end: timestamp });
       getRequestNames({ start: startTime, end: timestamp });
       getRequests({ start: startTime, end: timestamp });
       getFailures({ start: startTime, end: timestamp });
-      getRps({ start: startTime, end: timestamp });
-      getErrorPerSecond({ start: startTime, end: timestamp });
-      getRpsPerRequest({ start: startTime, end: timestamp });
       getAvgResponseTimes({ start: startTime, end: timestamp });
       getErrorsPerRequest({ start: startTime, end: timestamp });
       getPerc99ResponseTimes({ start: startTime, end: timestamp });
       getResponseLength({ start: startTime, end: timestamp });
+      getRps({ start: startTime, end: timestamp });
+      getRpsPerRequest({ start: startTime, end: timestamp });
 
       setTimestamp(currentTimestamp);
     },
@@ -321,11 +303,6 @@ export default function Timescale() {
         swarmState == SWARM_STATE.RUNNING,
       immediate: true,
     }
-  );
-
-  const perRequestValueFormatter = useCallback(
-    (value: string[]) => roundToDecimalPlaces(Number(value[1]), 2),
-    []
   );
 
   return (
@@ -385,7 +362,7 @@ export default function Timescale() {
             </Typography>
           </Box>
         )}
-        {!!errorPercentage && (
+        {statsData && errorPercentage !== undefined && (
           <Box sx={{ display: "flex", flex: 0.5 }}>
             <Gauge name="Error Rate" gaugeValue={errorPercentage} />
           </Box>
@@ -410,37 +387,32 @@ export default function Timescale() {
       </Box>
       {rpsData && (
         <LineChart<IRpsData>
-          colors={["#eeff00", "#0099ff"]}
+          colors={["#00ca5a", "#ff6d6d", "#0099ff"]}
           lines={[
-            { name: "RPS", key: "rps" },
-            { name: "Users", key: "users" },
+            {
+              name: "Users",
+              key: "users",
+              yAxisIndex: 0,
+            },
+            {
+              name: "Error Rate",
+              key: "errorRate",
+              yAxisIndex: 1,
+              stack: "requests",
+              areaStyle: {},
+            },
+            {
+              name: "RPS",
+              key: "rps",
+              yAxisIndex: 1,
+              stack: "requests",
+              areaStyle: {},
+            },
           ]}
-          title="RPS per User"
+          title="Total throughput / active users"
           charts={rpsData}
-        />
-      )}
-      {errorsPerSecond && (
-        <LineChart<IErrorPerSecondData>
-          colors={["#ff6d6d"]}
-          lines={[{ name: "Error Rate", key: "errorRate" }]}
-          title="Errors/s"
-          charts={errorsPerSecond}
-        />
-      )}
-      {rpsPerRequest && requestLines && (
-        <LineChart<IPerRequestData>
-          colors={[
-            "#9966CC",
-            "#8A2BE2",
-            "#8E4585",
-            "#E0B0FF",
-            "#C8A2C8",
-            "#E6E6FA",
-          ]}
-          lines={requestLines}
-          title="RPS per Request"
-          charts={rpsPerRequest}
-          chartValueFormatter={perRequestValueFormatter}
+          splitAxis
+          yAxisLabels={["Users", "RPS"]}
         />
       )}
       {avgResponseTimes && requestLines && (
@@ -456,6 +428,22 @@ export default function Timescale() {
           lines={requestLines}
           title="Average Response Times"
           charts={avgResponseTimes}
+          chartValueFormatter={perRequestValueFormatter}
+        />
+      )}
+      {rpsPerRequest && requestLines && (
+        <LineChart<IPerRequestData>
+          colors={[
+            "#9966CC",
+            "#8A2BE2",
+            "#8E4585",
+            "#E0B0FF",
+            "#C8A2C8",
+            "#E6E6FA",
+          ]}
+          lines={requestLines}
+          title="RPS per Request"
+          charts={rpsPerRequest}
           chartValueFormatter={perRequestValueFormatter}
         />
       )}

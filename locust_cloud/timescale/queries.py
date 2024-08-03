@@ -39,7 +39,16 @@ WITH user_count_agg AS (
 request_count_agg AS (
   SELECT
     time_bucket('5.000s', bucket) AS time,
-    count(*)/5 as rps
+    SUM(count)/5.00 as rps
+  FROM requests_summary
+  WHERE bucket BETWEEN %(start)s AND %(end)s
+  GROUP BY 1
+  ORDER BY 1
+),
+errors_per_s_agg AS (
+  SELECT
+    time_bucket('5.000s', bucket) AS time,
+    SUM(failed_count)/5.00 as error_rate
   FROM requests_summary
   WHERE bucket BETWEEN %(start)s AND %(end)s
   GROUP BY 1
@@ -48,9 +57,11 @@ request_count_agg AS (
 SELECT
   u.time,
   u.users,
-  r.rps
+  r.rps,
+  e.error_rate as "errorRate"
 FROM user_count_agg u
 JOIN request_count_agg r ON u.time = r.time
+JOIN errors_per_s_agg e on u.time = e.time
 ORDER BY u.time;
 """
 
@@ -78,23 +89,11 @@ FROM requests_summary
 WHERE bucket BETWEEN %(start)s AND %(end)s
  """
 
-
-errors_per_second = """
-SELECT
-    time_bucket('5.000s', bucket) AS time,
-    SUM(failed_count)/5 as "errorRate"
-FROM requests_summary
-WHERE bucket BETWEEN %(start)s AND %(end)s
-GROUP BY 1
-ORDER BY 1
-"""
-
-
 rps_per_request = """
 SELECT
-    bucket as time,
+    time_bucket('5.000s', bucket) AS time,
     name,
-    SUM(count) as throughput
+    SUM(count)/5.00 as throughput
 FROM requests_summary
 WHERE bucket BETWEEN %(start)s AND %(end)s
 GROUP BY 1, name
@@ -163,7 +162,6 @@ queries = {
     "total-requests": total_requests,
     "total-failures": total_failed,
     "error-percentage": error_percentage,
-    "errors-per-second": errors_per_second,
     "rps-per-request": rps_per_request,
     "avg-response-times": avg_response_times,
     "errors-per-request": errors_per_request,
