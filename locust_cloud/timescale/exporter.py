@@ -152,7 +152,7 @@ class Timescale:
                 with self.dbcursor() as cur:
                     cur.execute(
                         """INSERT INTO number_of_users(time, run_id, user_count) VALUES (%s, %s, %s)""",
-                        (datetime.now(UTC), self._run_id, self.env.runner.user_count),
+                        (datetime.now(UTC).isoformat(), self._run_id, self.env.runner.user_count),
                     )
             except psycopg2.Error as error:
                 logging.error("Failed to write user count to Postgresql: " + repr(error))
