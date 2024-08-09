@@ -1,4 +1,4 @@
-import { Box, Button, Typography } from "@mui/material";
+import { Box, Typography } from "@mui/material";
 import Gauge from "components/Gauge/Gauge";
 import {
   LineChart,
@@ -8,13 +8,16 @@ import {
   IRootState,
   SWARM_STATE,
 } from "locust-ui";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
-
-interface IRequestBody {
-  start: string;
-  end: string;
-}
+import {
+  IRequestBody,
+  adaptPerNameChartData,
+  fetchQuery,
+  IPerRequestResponse,
+  IPerRequestData,
+  perRequestValueFormatter,
+} from "utils/api";
 
 interface IRequestLines {
   name: string;
@@ -52,15 +55,6 @@ interface IRpsData {
   time: string[];
 }
 
-interface IPerRequestResponse {
-  name: string;
-  time: string;
-}
-
-type IPerRequestData = {
-  [key: string]: string[][];
-} & { time: string[] };
-
 interface IRpsPerRequestResponse extends IPerRequestResponse {
   throughput: number;
 }
@@ -93,29 +87,6 @@ interface IErrorPercentageResponse {
   errorPercentage: number;
 }
 
-function makeRequest<ResponseType>(
-  url: string,
-  body: IRequestBody,
-  onSuccess: (response: ResponseType) => void
-) {
-  fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(body),
-  })
-    .then((res) => res.json())
-    .then((data) => data && data.length && onSuccess(data))
-    .catch(console.error);
-}
-
-function perRequestValueFormatter(
-  value: string | number | string[] | number[]
-) {
-  return Number((value as string[])[1]), 2;
-}
-
 export default function Timescale() {
   const swarmState = useSelector(({ swarm }: IRootState) => swarm.state);
   const startTime = useSelector(({ swarm }: IRootState) => swarm.startTime);
@@ -136,7 +107,7 @@ export default function Timescale() {
   const [responseLength, setResponseLength] = useState<IPerRequestData>();
 
   const getRequestNames = (body: IRequestBody) =>
-    makeRequest<{ name: string }[]>(
+    fetchQuery<{ name: string }[]>(
       "/cloud-stats/request-names",
       body,
       (requestNames) =>
@@ -148,15 +119,11 @@ export default function Timescale() {
         )
     );
   const getRequests = (body: IRequestBody) =>
-    makeRequest<IStatsData[]>("/cloud-stats/requests", body, setStatsData);
+    fetchQuery<IStatsData[]>("/cloud-stats/requests", body, setStatsData);
   const getFailures = (body: IRequestBody) =>
-    makeRequest<IFailuresData[]>(
-      "/cloud-stats/failures",
-      body,
-      setFailuresData
-    );
+    fetchQuery<IFailuresData[]>("/cloud-stats/failures", body, setFailuresData);
   const getRps = (body: IRequestBody) =>
-    makeRequest<IRpsResponse[]>("/cloud-stats/rps", body, (rps) =>
+    fetchQuery<IRpsResponse[]>("/cloud-stats/rps", body, (rps) =>
       setRpsData(
         rps.reduce(
           (rpsChart, { users, rps, errorRate, time }) => ({
@@ -170,34 +137,8 @@ export default function Timescale() {
       )
     );
 
-  const adaptPerNameChartData = <ChartType extends IPerRequestResponse>(
-    chartData: ChartType[],
-    key: keyof ChartType
-  ) =>
-    chartData.reduce((chart, data) => {
-      const { name, time } = data;
-      const value = data[key] as string;
-      const timeAxis = chart.time || [];
-      timeAxis.push(time);
-
-      if (!chart[name]) {
-        return {
-          ...chart,
-          [name]: [[time, value]],
-          time: timeAxis,
-        } as IPerRequestData;
-      }
-
-      chart[name].push([time, value]);
-
-      return {
-        ...chart,
-        time: timeAxis,
-      } as IPerRequestData;
-    }, {} as IPerRequestData);
-
   const getRpsPerRequest = (body: IRequestBody) =>
-    makeRequest<IRpsPerRequestResponse[]>(
+    fetchQuery<IRpsPerRequestResponse[]>(
       "/cloud-stats/rps-per-request",
       body,
       (rpsPerRequest) =>
@@ -209,7 +150,7 @@ export default function Timescale() {
         )
     );
   const getAvgResponseTimes = (body: IRequestBody) =>
-    makeRequest<IAvgResponseTimesResponse[]>(
+    fetchQuery<IAvgResponseTimesResponse[]>(
       "/cloud-stats/avg-response-times",
       body,
       (avgResponseTimes) =>
@@ -221,7 +162,7 @@ export default function Timescale() {
         )
     );
   const getErrorsPerRequest = (body: IRequestBody) =>
-    makeRequest<IErrorsPerRequestResponse[]>(
+    fetchQuery<IErrorsPerRequestResponse[]>(
       "/cloud-stats/errors-per-request",
       body,
       (errorsPerRequest) =>
@@ -233,7 +174,7 @@ export default function Timescale() {
         )
     );
   const getPerc99ResponseTimes = (body: IRequestBody) =>
-    makeRequest<IPerc99ResponseTimesResponse[]>(
+    fetchQuery<IPerc99ResponseTimesResponse[]>(
       "/cloud-stats/perc99-response-times",
       body,
       (perc99ResponseTimes) =>
@@ -245,7 +186,7 @@ export default function Timescale() {
         )
     );
   const getResponseLength = (body: IRequestBody) =>
-    makeRequest<IResponseLengthResponse[]>(
+    fetchQuery<IResponseLengthResponse[]>(
       "/cloud-stats/response-length",
       body,
       (responseLength) =>
@@ -258,52 +199,52 @@ export default function Timescale() {
     );
 
   const getTotalRequests = (body: IRequestBody) =>
-    makeRequest<ITotalRequestsResponse[]>(
+    fetchQuery<ITotalRequestsResponse[]>(
       "/cloud-stats/total-requests",
       body,
       ([{ totalRequests }]) => setTotalRequests(totalRequests)
     );
   const getTotalFailures = (body: IRequestBody) =>
-    makeRequest<ITotalFailuresResponse[]>(
+    fetchQuery<ITotalFailuresResponse[]>(
       "/cloud-stats/total-failures",
       body,
       ([{ totalFailures }]) => setTotalFailures(totalFailures)
     );
   const getErrorPercentage = (body: IRequestBody) =>
-    makeRequest<IErrorPercentageResponse[]>(
+    fetchQuery<IErrorPercentageResponse[]>(
       "/cloud-stats/error-percentage",
       body,
       ([{ errorPercentage }]) =>
         setErrorPercentage(roundToDecimalPlaces(errorPercentage, 2))
     );
 
-  useInterval(
-    () => {
-      const currentTimestamp = new Date().toISOString();
+  const fetchTimescaleGraphs = () => {
+    const currentTimestamp = new Date().toISOString();
 
-      getTotalRequests({ start: startTime, end: timestamp });
-      getTotalFailures({ start: startTime, end: timestamp });
-      getErrorPercentage({ start: startTime, end: timestamp });
-      getRequestNames({ start: startTime, end: timestamp });
-      getRequests({ start: startTime, end: timestamp });
-      getFailures({ start: startTime, end: timestamp });
-      getAvgResponseTimes({ start: startTime, end: timestamp });
-      getErrorsPerRequest({ start: startTime, end: timestamp });
-      getPerc99ResponseTimes({ start: startTime, end: timestamp });
-      getResponseLength({ start: startTime, end: timestamp });
-      getRps({ start: startTime, end: timestamp });
-      getRpsPerRequest({ start: startTime, end: timestamp });
+    getTotalRequests({ start: startTime, end: timestamp });
+    getTotalFailures({ start: startTime, end: timestamp });
+    getErrorPercentage({ start: startTime, end: timestamp });
+    getRequestNames({ start: startTime, end: timestamp });
+    getRequests({ start: startTime, end: timestamp });
+    getFailures({ start: startTime, end: timestamp });
+    getAvgResponseTimes({ start: startTime, end: timestamp });
+    getErrorsPerRequest({ start: startTime, end: timestamp });
+    getPerc99ResponseTimes({ start: startTime, end: timestamp });
+    getResponseLength({ start: startTime, end: timestamp });
+    getRps({ start: startTime, end: timestamp });
+    getRpsPerRequest({ start: startTime, end: timestamp });
 
-      setTimestamp(currentTimestamp);
-    },
-    1000,
-    {
-      shouldRunInterval:
-        swarmState === SWARM_STATE.SPAWNING ||
-        swarmState == SWARM_STATE.RUNNING,
-      immediate: true,
-    }
-  );
+    setTimestamp(currentTimestamp);
+  };
+
+  useInterval(fetchTimescaleGraphs, 1000, {
+    shouldRunInterval:
+      swarmState === SWARM_STATE.SPAWNING || swarmState == SWARM_STATE.RUNNING,
+  });
+
+  useEffect(() => {
+    fetchTimescaleGraphs();
+  }, []);
 
   return (
     <div>
@@ -387,7 +328,7 @@ export default function Timescale() {
       </Box>
       {rpsData && (
         <LineChart<IRpsData>
-          colors={["#00ca5a", "#ff6d6d", "#0099ff"]}
+          colors={["#00ca5a", "#0099ff", "#ff6d6d"]}
           lines={[
             {
               name: "Users",
@@ -395,24 +336,23 @@ export default function Timescale() {
               yAxisIndex: 0,
             },
             {
-              name: "Error Rate",
-              key: "errorRate",
+              name: "Requests per Second",
+              key: "rps",
               yAxisIndex: 1,
-              stack: "requests",
               areaStyle: {},
             },
             {
-              name: "RPS",
-              key: "rps",
+              name: "Errors per Second",
+              key: "errorRate",
               yAxisIndex: 1,
-              stack: "requests",
               areaStyle: {},
             },
           ]}
-          title="Total throughput / active users"
+          title="Throughput / active users"
           charts={rpsData}
           splitAxis
           yAxisLabels={["Users", "RPS"]}
+          chartValueFormatter={(v) => roundToDecimalPlaces(v, 2)}
         />
       )}
       {avgResponseTimes && requestLines && (
@@ -428,7 +368,9 @@ export default function Timescale() {
           lines={requestLines}
           title="Average Response Times"
           charts={avgResponseTimes}
-          chartValueFormatter={perRequestValueFormatter}
+          chartValueFormatter={(v) =>
+            `${roundToDecimalPlaces(Number((v as string[])[1]), 2)}ms`
+          }
         />
       )}
       {rpsPerRequest && requestLines && (

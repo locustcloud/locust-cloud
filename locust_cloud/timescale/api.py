@@ -7,6 +7,13 @@ from flask import jsonify, request
 from psycopg2 import pool
 
 
+def adapt_timestamp(result):
+    if result.get("time", False):
+        return {**result, "time": str(result["time"])}
+
+    return result
+
+
 class Api:
     def __init__(self, app, pg_host, pg_user, pg_password, pg_database, pg_port):
         self.app = app
@@ -54,7 +61,8 @@ class Api:
                     cursor.execute(queries[query], sql_params)
 
                     results = [
-                        dict(zip([column[0] for column in cursor.description], row)) for row in cursor.fetchall()
+                        adapt_timestamp(dict(zip([column[0] for column in cursor.description], row)))
+                        for row in cursor.fetchall()
                     ]
 
                     cursor.close()

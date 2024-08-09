@@ -91,9 +91,9 @@ WHERE bucket BETWEEN %(start)s AND %(end)s
 
 rps_per_request = """
 SELECT
-    time_bucket('5.000s', bucket) AS time,
+    time_bucket_gapfill('5.000s', bucket) AS time,
     name,
-    SUM(count)/5.00 as throughput
+    COALESCE(SUM(count)/5.00, 0) as throughput
 FROM requests_summary
 WHERE bucket BETWEEN %(start)s AND %(end)s
 GROUP BY 1, name
@@ -112,12 +112,11 @@ GROUP BY 1, name
 ORDER BY 1, 2
 """
 
-
 errors_per_request = """
 SELECT
-    bucket as time,
+    time_bucket_gapfill('5.000s', bucket) AS time,
     name,
-    SUM(failed_count) as "errorRate"
+    COALESCE(SUM(failed_count)/5.00, 0) as "errorRate"
 FROM requests_summary
 WHERE bucket BETWEEN %(start)s AND %(end)s
 GROUP BY 1, name
@@ -153,6 +152,23 @@ FROM requests
 WHERE time BETWEEN %(start)s AND %(end)s
 """
 
+scatterplot = """
+SELECT
+ time,
+ name,
+ response_time as "responseTime"
+FROM requests
+WHERE time BETWEEN %(start)s AND %(end)s
+ORDER BY 1,2
+"""
+
+requests_table = """
+SELECT name, time, response_time, exception, context ->> 'ssn' as ssn,context ->> 'account_id' as account_id, context ->> 'env' as env, context ->> 'request_id' as request_id, url
+FROM "request"
+WHERE time BETWEEN %(start)s AND %(end)s and
+ testplan = '' and (exception is not null or not false)
+ORDER BY time DESC
+"""
 
 queries = {
     "request-names": request_names,
@@ -167,4 +183,5 @@ queries = {
     "errors-per-request": errors_per_request,
     "perc99-response-times": perc99_response_times,
     "response-length": response_length,
+    "scatterplot": scatterplot,
 }
