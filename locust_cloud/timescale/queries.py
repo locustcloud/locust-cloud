@@ -141,7 +141,6 @@ SELECT
     name
 FROM requests_summary
 WHERE bucket BETWEEN %(start)s AND %(end)s
-AND response_length > 0
 ORDER BY 1
 """
 

@@ -124,6 +124,6 @@ export default function Gauge({ name, gaugeValue }: IGauge) {
   }, [gauge, isDarkMode]);
 
   return (
-    <div ref={gaugeContainer} style={{ width: "100%", height: "300px" }}></div>
+    <div ref={gaugeContainer} style={{ width: "100%", height: "250px" }}></div>
   );
 }
