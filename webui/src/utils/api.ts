@@ -3,6 +3,7 @@ import { roundToDecimalPlaces } from "locust-ui";
 export interface IRequestBody {
   start: string;
   end: string;
+  resolution?: number;
 }
 
 export function fetchQuery<ResponseType>(
@@ -29,7 +30,7 @@ export interface IPerRequestResponse {
 
 export type IPerRequestData = {
   [key: string]: string[][];
-} & { time: string[] };
+};
 
 export const adaptPerNameChartData = <ChartType extends IPerRequestResponse>(
   chartData: ChartType[],
@@ -38,26 +39,20 @@ export const adaptPerNameChartData = <ChartType extends IPerRequestResponse>(
   chartData.reduce((chart, data) => {
     const { name, time } = data;
     const value = data[key] as string;
-    const timeAxis = chart.time || [];
-    timeAxis.push(time);
 
     if (!chart[name]) {
       return {
         ...chart,
         [name]: [[time, value]],
-        time: timeAxis,
       } as IPerRequestData;
     }
 
     chart[name].push([time, value]);
 
-    return {
-      ...chart,
-      time: timeAxis,
-    } as IPerRequestData;
+    return chart;
   }, {} as IPerRequestData);
 
-export function perRequestValueFormatter(
+export function chartValueFormatter(
   value: string | number | string[] | number[]
 ) {
   return roundToDecimalPlaces(Number((value as string[])[1]), 2);

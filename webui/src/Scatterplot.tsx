@@ -7,7 +7,7 @@ import {
   IRequestBody,
   adaptPerNameChartData,
   fetchQuery,
-  perRequestValueFormatter,
+  chartValueFormatter,
 } from "utils/api";
 
 interface IScatterplotData {
@@ -106,7 +106,7 @@ export default function Scatterplot() {
           scatterplot
           title="Scatterplot"
           charts={scatterplot}
-          chartValueFormatter={perRequestValueFormatter}
+          chartValueFormatter={chartValueFormatter}
         />
       )}
     </div>
