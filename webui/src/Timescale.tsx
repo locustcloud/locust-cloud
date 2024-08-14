@@ -1,4 +1,4 @@
-import { Box, Typography } from "@mui/material";
+import { Box, SelectChangeEvent, Typography } from "@mui/material";
 import Gauge from "components/Gauge/Gauge";
 import {
   LineChart,
@@ -7,6 +7,7 @@ import {
   roundToDecimalPlaces,
   IRootState,
   SWARM_STATE,
+  Select,
 } from "locust-ui";
 import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
@@ -16,7 +17,7 @@ import {
   fetchQuery,
   IPerRequestResponse,
   IPerRequestData,
-  perRequestValueFormatter,
+  chartValueFormatter,
 } from "utils/api";
 
 interface IRequestLines {
@@ -49,10 +50,9 @@ interface IRpsResponse {
 }
 
 interface IRpsData {
-  users: number[];
-  rps: number[];
-  errorRate: number[];
-  time: string[];
+  users: [string, number][];
+  rps: [string, number][];
+  errorRate: [string, number][];
 }
 
 interface IRpsPerRequestResponse extends IPerRequestResponse {
@@ -92,6 +92,7 @@ export default function Timescale() {
   const startTime = useSelector(({ swarm }: IRootState) => swarm.startTime);
 
   const [timestamp, setTimestamp] = useState(new Date().toISOString());
+  const [resolution, setResolution] = useState(5);
   const [totalRequests, setTotalRequests] = useState<number>();
   const [totalFailures, setTotalFailures] = useState<number>();
   const [errorPercentage, setErrorPercentage] = useState<number>();
@@ -127,10 +128,9 @@ export default function Timescale() {
       setRpsData(
         rps.reduce(
           (rpsChart, { users, rps, errorRate, time }) => ({
-            users: [...(rpsChart.users || []), users],
-            rps: [...(rpsChart.rps || []), rps],
-            errorRate: [...(rpsChart.errorRate || []), errorRate],
-            time: [...(rpsChart.time || []), time],
+            users: [...(rpsChart.users || []), [time, users]],
+            rps: [...(rpsChart.rps || []), [time, rps]],
+            errorRate: [...(rpsChart.errorRate || []), [time, errorRate]],
           }),
           {} as IRpsData
         )
@@ -227,12 +227,12 @@ export default function Timescale() {
     getRequestNames({ start: startTime, end: timestamp });
     getRequests({ start: startTime, end: timestamp });
     getFailures({ start: startTime, end: timestamp });
+    getRpsPerRequest({ start: startTime, end: timestamp, resolution });
     getAvgResponseTimes({ start: startTime, end: timestamp });
-    getErrorsPerRequest({ start: startTime, end: timestamp });
-    getPerc99ResponseTimes({ start: startTime, end: timestamp });
+    getErrorsPerRequest({ start: startTime, end: timestamp, resolution });
+    getPerc99ResponseTimes({ start: startTime, end: timestamp, resolution });
     getResponseLength({ start: startTime, end: timestamp });
-    getRps({ start: startTime, end: timestamp });
-    getRpsPerRequest({ start: startTime, end: timestamp });
+    getRps({ start: startTime, end: timestamp, resolution });
 
     setTimestamp(currentTimestamp);
   };
@@ -248,6 +248,19 @@ export default function Timescale() {
 
   return (
     <div>
+      <Box sx={{ my: 4 }}>
+        <Select
+          defaultValue={"5"}
+          label="Resolution"
+          name="resolution"
+          sx={{ width: "150px" }}
+          onChange={(e: SelectChangeEvent<unknown>) =>
+            setResolution(Number(e.target.value))
+          }
+          options={["1", "2", "5", "10", "30"]}
+        />
+      </Box>
+
       {statsData && (
         <Box mb={2}>
           <Typography component="h2" mb={1} variant="h6">
@@ -352,7 +365,7 @@ export default function Timescale() {
           charts={rpsData}
           splitAxis
           yAxisLabels={["Users", "RPS"]}
-          chartValueFormatter={(v) => roundToDecimalPlaces(v, 2)}
+          chartValueFormatter={chartValueFormatter}
         />
       )}
       {avgResponseTimes && requestLines && (
@@ -386,7 +399,7 @@ export default function Timescale() {
           lines={requestLines}
           title="RPS per Request"
           charts={rpsPerRequest}
-          chartValueFormatter={perRequestValueFormatter}
+          chartValueFormatter={chartValueFormatter}
         />
       )}
       {errorsPerRequest && requestLines && (
@@ -402,7 +415,7 @@ export default function Timescale() {
           lines={requestLines}
           title="Errors per Request"
           charts={errorsPerRequest}
-          chartValueFormatter={perRequestValueFormatter}
+          chartValueFormatter={chartValueFormatter}
         />
       )}
       {perc99ResponseTimes && requestLines && (
@@ -418,7 +431,7 @@ export default function Timescale() {
           lines={requestLines}
           title="99th Percentile Response Times"
           charts={perc99ResponseTimes}
-          chartValueFormatter={perRequestValueFormatter}
+          chartValueFormatter={chartValueFormatter}
         />
       )}
       {responseLength && requestLines && (
@@ -434,7 +447,7 @@ export default function Timescale() {
           lines={requestLines}
           title="Response Length"
           charts={responseLength}
-          chartValueFormatter={perRequestValueFormatter}
+          chartValueFormatter={chartValueFormatter}
         />
       )}
     </div>

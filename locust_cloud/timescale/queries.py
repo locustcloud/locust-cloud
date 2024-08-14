@@ -29,7 +29,7 @@ GROUP BY "name",left(exception,300)
 requests_per_second = """
 WITH user_count_agg AS (
   SELECT
-    time_bucket('5.000s', time) AS time,
+    time_bucket('%(resolution)ss', time) AS time,
     avg(user_count) as users
   FROM number_of_users
   WHERE time BETWEEN %(start)s AND %(end)s
@@ -38,8 +38,8 @@ WITH user_count_agg AS (
 ),
 request_count_agg AS (
   SELECT
-    time_bucket('5.000s', bucket) AS time,
-    SUM(count)/5.00 as rps
+    time_bucket('%(resolution)ss', bucket) AS time,
+    SUM(count)/%(resolution)s as rps
   FROM requests_summary
   WHERE bucket BETWEEN %(start)s AND %(end)s
   GROUP BY 1
@@ -47,8 +47,8 @@ request_count_agg AS (
 ),
 errors_per_s_agg AS (
   SELECT
-    time_bucket('5.000s', bucket) AS time,
-    SUM(failed_count)/5.00 as error_rate
+    time_bucket('%(resolution)ss', bucket) AS time,
+    SUM(failed_count)/%(resolution)s as error_rate
   FROM requests_summary
   WHERE bucket BETWEEN %(start)s AND %(end)s
   GROUP BY 1
@@ -91,9 +91,9 @@ WHERE bucket BETWEEN %(start)s AND %(end)s
 
 rps_per_request = """
 SELECT
-    time_bucket_gapfill('5.000s', bucket) AS time,
+    time_bucket_gapfill('%(resolution)ss', bucket) AS time,
     name,
-    COALESCE(SUM(count)/5.00, 0) as throughput
+    COALESCE(SUM(count)/%(resolution)s, 0) as throughput
 FROM requests_summary
 WHERE bucket BETWEEN %(start)s AND %(end)s
 GROUP BY 1, name
@@ -114,9 +114,9 @@ ORDER BY 1, 2
 
 errors_per_request = """
 SELECT
-    time_bucket_gapfill('5.000s', bucket) AS time,
+    time_bucket_gapfill('%(resolution)ss', bucket) AS time,
     name,
-    COALESCE(SUM(failed_count)/5.00, 0) as "errorRate"
+    COALESCE(SUM(failed_count)/%(resolution)s, 0) as "errorRate"
 FROM requests_summary
 WHERE bucket BETWEEN %(start)s AND %(end)s
 GROUP BY 1, name
@@ -125,7 +125,7 @@ ORDER BY 1
 
 
 perc99_response_times = """
-SELECT time_bucket('5.000s', time) AS time,
+SELECT time_bucket('%(resolution)ss', time) AS time,
   name,
   percentile_cont(0.99) within group (order by response_time) as perc99
 FROM requests

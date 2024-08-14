@@ -2241,7 +2241,7 @@ load-json-file@^4.0.0:
 
 locust-ui@../../locust/locust/webui/locust-ui-v1.0.0.tgz:
   version "1.0.0"
-  resolved "../../locust/locust/webui/locust-ui-v1.0.0.tgz#4bfe0bdfd2a16e39b76d9cc3576ca4fcdaf8982a"
+  resolved "../../locust/locust/webui/locust-ui-v1.0.0.tgz#a94dd8dfb2779e534a066d32d25ed8ce0c6a52e0"
   dependencies:
     "@emotion/react" "^11.11.1"
     "@emotion/styled" "^11.11.0"
