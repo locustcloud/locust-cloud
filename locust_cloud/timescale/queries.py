@@ -165,7 +165,7 @@ testruns = """
 SELECT
   id
 FROM testruns
-ORDER BY id ASC
+ORDER BY id DESC
 """
 
 queries = {

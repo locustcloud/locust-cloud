@@ -61,11 +61,11 @@ interface IResponseLengthResponse extends IPerRequestResponse {
 const RESOLUTION_OPTIONS = ['1', '2', '5', '10', '30'];
 
 export default function Charts() {
-  const swarmState = useSelector(({ swarm }: IRootState) => swarm.state);
-  const startTime = useSelector(({ swarm }: IRootState) => swarm.startTime);
+  const { state: swarmState } = useSelector(({ swarm }: IRootState) => swarm);
 
   const [timestamp, setTimestamp] = useState(new Date().toISOString());
   const [testruns, setTestruns] = useState<string[]>([]);
+  const [previousTestrun, setPreviousTestrun] = useState<string>();
   const [currentTestrun, setCurrentTestrun] = useState<string>();
   const [resolution, setResolution] = useState(5);
   const [requestLines, setRequestLines] = useState<IRequestLines[]>([]);
@@ -139,33 +139,48 @@ export default function Charts() {
     );
 
   const fetchCharts = () => {
-    const currentTimestamp = new Date().toISOString();
+    if (currentTestrun) {
+      const currentTimestamp = new Date().toISOString();
 
-    getRequestNames({ start: startTime, end: timestamp });
-    getRpsPerRequest({ start: startTime, end: timestamp, resolution });
-    getAvgResponseTimes({ start: startTime, end: timestamp });
-    getErrorsPerRequest({ start: startTime, end: timestamp, resolution });
-    getPerc99ResponseTimes({ start: startTime, end: timestamp, resolution });
-    getResponseLength({ start: startTime, end: timestamp });
-    getRps({ start: startTime, end: timestamp, resolution });
+      getRequestNames({ start: currentTestrun, end: timestamp });
+      getRpsPerRequest({ start: currentTestrun, end: timestamp, resolution });
+      getAvgResponseTimes({ start: currentTestrun, end: timestamp });
+      getErrorsPerRequest({ start: currentTestrun, end: timestamp, resolution });
+      getPerc99ResponseTimes({ start: currentTestrun, end: timestamp, resolution });
+      getResponseLength({ start: currentTestrun, end: timestamp });
+      getRps({ start: currentTestrun, end: timestamp, resolution });
 
-    setTimestamp(currentTimestamp);
+      setTimestamp(currentTimestamp);
+    }
   };
 
   const fetchTestruns = () => {
-    fetchQuery<{ id: string }[]>('/cloud-stats/testruns', {}, testruns =>
-      setTestruns(testruns.map(({ id }) => id)),
-    );
+    fetchQuery<{ id: string }[]>('/cloud-stats/testruns', {}, testrunIds => {
+      const testruns = testrunIds.map(({ id }) => new Date(id).toLocaleString());
+      setTestruns(testruns);
+      setCurrentTestrun(testrunIds[0].id);
+    });
   };
 
   useInterval(fetchCharts, 1000, {
     shouldRunInterval: swarmState === SWARM_STATE.SPAWNING || swarmState == SWARM_STATE.RUNNING,
   });
 
+  useInterval(fetchTestruns, 500, {
+    shouldRunInterval: !testruns.length || (!!previousTestrun && testruns[0] <= previousTestrun),
+  });
+
   useEffect(() => {
+    // handle initial load
     fetchCharts();
-    fetchTestruns();
   }, []);
+
+  useEffect(() => {
+    if (swarmState === SWARM_STATE.STOPPED && testruns) {
+      setCurrentTestrun(undefined);
+      setPreviousTestrun(testruns[0]);
+    }
+  }, [swarmState, testruns]);
 
   return (
     <>
@@ -184,7 +199,7 @@ export default function Charts() {
             name='testrun'
             onChange={(e: SelectChangeEvent<string>) => setCurrentTestrun(e.target.value)}
             options={testruns}
-            sx={{ width: '300px' }}
+            sx={{ width: '250px' }}
           />
         )}
       </Box>
