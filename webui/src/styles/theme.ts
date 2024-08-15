@@ -1,7 +1,7 @@
 export const theme = {
   palette: {
     primary: {
-      main: "#ffd700",
+      main: "#b78727",
     },
   },
 };

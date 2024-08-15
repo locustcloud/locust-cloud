@@ -1,23 +1,24 @@
-import LocustUi, { tabConfig } from "locust-ui";
+import LocustUi, { tabConfig } from 'locust-ui';
 
-import Charts from "tabs/Charts";
-import Scatterplot from "tabs/Scatterplot";
-import Stats from "tabs/Stats";
+import { theme } from 'styles/theme';
+import Charts from 'tabs/Charts';
+import Scatterplot from 'tabs/Scatterplot';
+import Stats from 'tabs/Stats';
 
 const tabs = [
   {
-    title: "Charts",
-    key: "charts",
+    title: 'Charts',
+    key: 'charts',
     component: Charts,
   },
   {
-    title: "Stats",
-    key: "stats",
+    title: 'Stats',
+    key: 'stats',
     component: Stats,
   },
   {
-    title: "Scatterplot",
-    key: "scatterplot",
+    title: 'Scatterplot',
+    key: 'scatterplot',
     component: Scatterplot,
   },
   tabConfig.exceptions,
@@ -28,5 +29,5 @@ const tabs = [
 ];
 
 export default function App() {
-  return <LocustUi tabs={tabs} />;
+  return <LocustUi extendedTheme={theme} tabs={tabs} />;
 }
