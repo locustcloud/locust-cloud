@@ -1,15 +1,10 @@
-import { Box, Paper, Typography } from "@mui/material";
-import Gauge from "components/Gauge/Gauge";
-import {
-  Table,
-  useInterval,
-  roundToDecimalPlaces,
-  IRootState,
-  SWARM_STATE,
-} from "locust-ui";
-import { useEffect, useState } from "react";
-import { useSelector } from "react-redux";
-import { IRequestBody, fetchQuery } from "utils/api";
+import { useEffect, useState } from 'react';
+import { Box, Paper, Typography } from '@mui/material';
+import { Table, useInterval, roundToDecimalPlaces, IRootState, SWARM_STATE } from 'locust-ui';
+import { useSelector } from 'react-redux';
+
+import Gauge from 'components/Gauge/Gauge';
+import { IRequestBody, fetchQuery } from 'utils/api';
 
 interface IStatsData {
   method: string;
@@ -52,27 +47,26 @@ export default function Stats() {
   const [failuresData, setFailuresData] = useState<IFailuresData[]>([]);
 
   const getRequests = (body: IRequestBody) =>
-    fetchQuery<IStatsData[]>("/cloud-stats/requests", body, setStatsData);
+    fetchQuery<IStatsData[]>('/cloud-stats/requests', body, setStatsData);
   const getFailures = (body: IRequestBody) =>
-    fetchQuery<IFailuresData[]>("/cloud-stats/failures", body, setFailuresData);
+    fetchQuery<IFailuresData[]>('/cloud-stats/failures', body, setFailuresData);
   const getTotalRequests = (body: IRequestBody) =>
     fetchQuery<ITotalRequestsResponse[]>(
-      "/cloud-stats/total-requests",
+      '/cloud-stats/total-requests',
       body,
-      ([{ totalRequests }]) => setTotalRequests(totalRequests)
+      ([{ totalRequests }]) => setTotalRequests(totalRequests),
     );
   const getTotalFailures = (body: IRequestBody) =>
     fetchQuery<ITotalFailuresResponse[]>(
-      "/cloud-stats/total-failures",
+      '/cloud-stats/total-failures',
       body,
-      ([{ totalFailures }]) => setTotalFailures(totalFailures)
+      ([{ totalFailures }]) => setTotalFailures(totalFailures),
     );
   const getErrorPercentage = (body: IRequestBody) =>
     fetchQuery<IErrorPercentageResponse[]>(
-      "/cloud-stats/error-percentage",
+      '/cloud-stats/error-percentage',
       body,
-      ([{ errorPercentage }]) =>
-        setErrorPercentage(roundToDecimalPlaces(errorPercentage, 2))
+      ([{ errorPercentage }]) => setErrorPercentage(roundToDecimalPlaces(errorPercentage, 2)),
     );
 
   const fetchTimescaleGraphs = () => {
@@ -88,8 +82,7 @@ export default function Stats() {
   };
 
   useInterval(fetchTimescaleGraphs, 1000, {
-    shouldRunInterval:
-      swarmState === SWARM_STATE.SPAWNING || swarmState == SWARM_STATE.RUNNING,
+    shouldRunInterval: swarmState === SWARM_STATE.SPAWNING || swarmState == SWARM_STATE.RUNNING,
   });
 
   useEffect(() => {
@@ -98,77 +91,74 @@ export default function Stats() {
 
   return (
     <>
-      <Paper
-        elevation={3}
-        sx={{ display: "flex", justifyContent: "space-between", px: 4, mb: 4 }}
-      >
+      <Paper elevation={3} sx={{ display: 'flex', justifyContent: 'space-between', px: 4, mb: 4 }}>
         <Box
           sx={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
           }}
         >
-          <Typography noWrap component="p" mb={1} variant="h6">
+          <Typography component='p' mb={1} noWrap variant='h6'>
             Total Requests
           </Typography>
-          <Typography component="p" mb={1} variant="h6" color="success.main">
+          <Typography color='success.main' component='p' mb={1} variant='h6'>
             {totalRequests}
           </Typography>
         </Box>
-        <Box sx={{ display: "flex", flex: 0.5 }}>
-          <Gauge name="Error Rate" gaugeValue={errorPercentage} />
+        <Box sx={{ display: 'flex', flex: 0.5 }}>
+          <Gauge gaugeValue={errorPercentage} name='Error Rate' />
         </Box>
         <Box
           sx={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
           }}
         >
-          <Typography noWrap component="p" mb={1} variant="h6">
+          <Typography component='p' mb={1} noWrap variant='h6'>
             Total Failures
           </Typography>
-          <Typography component="p" mb={1} variant="h6" color="error">
+          <Typography color='error' component='p' mb={1} variant='h6'>
             {totalFailures}
           </Typography>
         </Box>
       </Paper>
 
-      <Box sx={{ display: "flex", flexDirection: "column", rowGap: 4 }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', rowGap: 4 }}>
         <Box>
-          <Typography component="h2" mb={1} variant="h6">
+          <Typography component='h2' mb={1} variant='h6'>
             Request Statistics
           </Typography>
           <Table
+            rows={statsData}
             structure={[
-              { key: "name", title: "Name" },
-              { key: "method", title: "Type" },
-              { key: "requests", title: "Requests" },
-              { key: "failed", title: "Failed" },
-              { key: "max", title: "Max", round: 2 },
+              { key: 'name', title: 'Name' },
+              { key: 'method', title: 'Type' },
+              { key: 'requests', title: 'Requests' },
+              { key: 'failed', title: 'Failed' },
+              { key: 'max', title: 'Max', round: 2 },
               {
-                key: "errorPercentage",
-                title: "Error Percentage (%)",
+                key: 'errorPercentage',
+                title: 'Error Percentage (%)',
                 round: 2,
               },
             ]}
-            rows={statsData}
           />
         </Box>
         <Box>
-          <Typography component="h2" mb={1} variant="h6">
+          <Typography component='h2' mb={1} variant='h6'>
             Failure Statistics
           </Typography>
           <Table
-            structure={[
-              { key: "name", title: "Name" },
-              { key: "exception", title: "Message" },
-              { key: "count", title: "Count" },
-            ]}
             rows={failuresData}
+            structure={[
+              { key: 'name', title: 'Name' },
+              { key: 'exception', title: 'Message' },
+              { key: 'count', title: 'Count' },
+            ]}
           />
         </Box>
       </Box>

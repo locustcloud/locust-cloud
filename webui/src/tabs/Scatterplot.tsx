@@ -1,6 +1,7 @@
-import { LineChart, useInterval, IRootState, SWARM_STATE } from "locust-ui";
-import { useEffect, useState } from "react";
-import { useSelector } from "react-redux";
+import { useEffect, useState } from 'react';
+import { LineChart, useInterval, IRootState, SWARM_STATE } from 'locust-ui';
+import { useSelector } from 'react-redux';
+
 import {
   IPerRequestData,
   IPerRequestResponse,
@@ -8,7 +9,7 @@ import {
   adaptPerNameChartData,
   fetchQuery,
   chartValueFormatter,
-} from "utils/api";
+} from 'utils/api';
 
 interface IScatterplotData {
   name: string;
@@ -34,36 +35,22 @@ export default function Scatterplot() {
   const [requestLines, setRequestLines] = useState<IRequestLines[]>();
 
   const getScatterplot = (body: IRequestBody) =>
-    fetchQuery<IScatterplotData[]>(
-      "/cloud-stats/scatterplot",
-      body,
-      (scatterplot) =>
-        setScatterplot(
-          adaptPerNameChartData<IScatterplotResponse>(
-            scatterplot,
-            "responseTime"
-          )
-        )
+    fetchQuery<IScatterplotData[]>('/cloud-stats/scatterplot', body, scatterplot =>
+      setScatterplot(adaptPerNameChartData<IScatterplotResponse>(scatterplot, 'responseTime')),
     );
 
   const getRequestNames = (body: IRequestBody) =>
-    fetchQuery<{ name: string }[]>(
-      "/cloud-stats/request-names",
-      body,
-      (requestNames) => {
-        (!requestLines ||
-          (requestLines &&
-            !requestNames.every(
-              ({ name }, index) => requestLines[index].name === name
-            ))) &&
-          setRequestLines(
-            requestNames.map(({ name: requestName }) => ({
-              name: `${requestName}`,
-              key: requestName,
-            }))
-          );
-      }
-    );
+    fetchQuery<{ name: string }[]>('/cloud-stats/request-names', body, requestNames => {
+      (!requestLines ||
+        (requestLines &&
+          !requestNames.every(({ name }, index) => requestLines[index].name === name))) &&
+        setRequestLines(
+          requestNames.map(({ name: requestName }) => ({
+            name: `${requestName}`,
+            key: requestName,
+          })),
+        );
+    });
 
   const fetchScatterplot = () => {
     const currentTimestamp = new Date().toISOString();
@@ -80,10 +67,8 @@ export default function Scatterplot() {
     },
     5000,
     {
-      shouldRunInterval:
-        swarmState === SWARM_STATE.SPAWNING ||
-        swarmState == SWARM_STATE.RUNNING,
-    }
+      shouldRunInterval: swarmState === SWARM_STATE.SPAWNING || swarmState == SWARM_STATE.RUNNING,
+    },
   );
 
   useEffect(() => {
@@ -94,19 +79,12 @@ export default function Scatterplot() {
     <div>
       {scatterplot && requestLines && (
         <LineChart<IPerRequestData>
-          colors={[
-            "#8A2BE2",
-            "#0000FF",
-            "#00ca5a",
-            "#FFA500",
-            "#FFFF00",
-            "#EE82EE",
-          ]}
+          chartValueFormatter={chartValueFormatter}
+          charts={scatterplot}
+          colors={['#8A2BE2', '#0000FF', '#00ca5a', '#FFA500', '#FFFF00', '#EE82EE']}
           lines={requestLines}
           scatterplot
-          title="Scatterplot"
-          charts={scatterplot}
-          chartValueFormatter={chartValueFormatter}
+          title='Scatterplot'
         />
       )}
     </div>
