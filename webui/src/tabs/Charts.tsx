@@ -1,15 +1,15 @@
-import { Box, SelectChangeEvent } from "@mui/material";
+import { useEffect, useState } from 'react';
+import { Box, SelectChangeEvent } from '@mui/material';
 import {
   LineChart,
-  Table,
   useInterval,
   roundToDecimalPlaces,
   IRootState,
   SWARM_STATE,
   Select,
-} from "locust-ui";
-import { useEffect, useState } from "react";
-import { useSelector } from "react-redux";
+} from 'locust-ui';
+import { useSelector } from 'react-redux';
+
 import {
   IRequestBody,
   adaptPerNameChartData,
@@ -17,7 +17,7 @@ import {
   IPerRequestResponse,
   IPerRequestData,
   chartValueFormatter,
-} from "utils/api";
+} from 'utils/api';
 
 interface IRequestLines {
   name: string;
@@ -35,6 +35,7 @@ interface IRpsData {
   users: [string, number][];
   rps: [string, number][];
   errorRate: [string, number][];
+  time: string[];
 }
 
 interface IRpsPerRequestResponse extends IPerRequestResponse {
@@ -57,109 +58,87 @@ interface IResponseLengthResponse extends IPerRequestResponse {
   responseLength: number;
 }
 
-export default function Timescale() {
+const RESOLUTION_OPTIONS = ['1', '2', '5', '10', '30'];
+
+export default function Charts() {
   const swarmState = useSelector(({ swarm }: IRootState) => swarm.state);
   const startTime = useSelector(({ swarm }: IRootState) => swarm.startTime);
 
   const [timestamp, setTimestamp] = useState(new Date().toISOString());
+  const [testruns, setTestruns] = useState<string[]>([]);
+  const [currentTestrun, setCurrentTestrun] = useState<string>();
   const [resolution, setResolution] = useState(5);
   const [requestLines, setRequestLines] = useState<IRequestLines[]>([]);
   const [rpsData, setRpsData] = useState<IRpsData>({} as IRpsData);
   const [rpsPerRequest, setRpsPerRequest] = useState<IPerRequestData>({});
   const [avgResponseTimes, setAvgResponseTimes] = useState<IPerRequestData>({});
   const [errorsPerRequest, setErrorsPerRequest] = useState<IPerRequestData>({});
-  const [perc99ResponseTimes, setPerc99ResponseTimes] =
-    useState<IPerRequestData>({});
+  const [perc99ResponseTimes, setPerc99ResponseTimes] = useState<IPerRequestData>({});
   const [responseLength, setResponseLength] = useState<IPerRequestData>({});
 
   const getRequestNames = (body: IRequestBody) =>
-    fetchQuery<{ name: string }[]>(
-      "/cloud-stats/request-names",
-      body,
-      (requestNames) =>
-        setRequestLines(
-          requestNames.map(({ name: requestName }) => ({
-            name: `${requestName}`,
-            key: requestName,
-          }))
-        )
+    fetchQuery<{ name: string }[]>('/cloud-stats/request-names', body, requestNames =>
+      setRequestLines(
+        requestNames.map(({ name: requestName }) => ({
+          name: `${requestName}`,
+          key: requestName,
+        })),
+      ),
     );
   const getRps = (body: IRequestBody) =>
-    fetchQuery<IRpsResponse[]>("/cloud-stats/rps", body, (rps) =>
+    fetchQuery<IRpsResponse[]>('/cloud-stats/rps', body, rps =>
       setRpsData(
         rps.reduce(
           (rpsChart, { users, rps, errorRate, time }) => ({
             users: [...(rpsChart.users || []), [time, users]],
             rps: [...(rpsChart.rps || []), [time, rps]],
             errorRate: [...(rpsChart.errorRate || []), [time, errorRate]],
+            time: [...(rpsChart.time || []), time],
           }),
-          {} as IRpsData
-        )
-      )
+          {} as IRpsData,
+        ),
+      ),
     );
 
   const getRpsPerRequest = (body: IRequestBody) =>
-    fetchQuery<IRpsPerRequestResponse[]>(
-      "/cloud-stats/rps-per-request",
-      body,
-      (rpsPerRequest) =>
-        setRpsPerRequest(
-          adaptPerNameChartData<IRpsPerRequestResponse>(
-            rpsPerRequest,
-            "throughput"
-          )
-        )
+    fetchQuery<IRpsPerRequestResponse[]>('/cloud-stats/rps-per-request', body, rpsPerRequest =>
+      setRpsPerRequest(adaptPerNameChartData<IRpsPerRequestResponse>(rpsPerRequest, 'throughput')),
     );
   const getAvgResponseTimes = (body: IRequestBody) =>
     fetchQuery<IAvgResponseTimesResponse[]>(
-      "/cloud-stats/avg-response-times",
+      '/cloud-stats/avg-response-times',
       body,
-      (avgResponseTimes) =>
+      avgResponseTimes =>
         setAvgResponseTimes(
-          adaptPerNameChartData<IAvgResponseTimesResponse>(
-            avgResponseTimes,
-            "responseTime"
-          )
-        )
+          adaptPerNameChartData<IAvgResponseTimesResponse>(avgResponseTimes, 'responseTime'),
+        ),
     );
   const getErrorsPerRequest = (body: IRequestBody) =>
     fetchQuery<IErrorsPerRequestResponse[]>(
-      "/cloud-stats/errors-per-request",
+      '/cloud-stats/errors-per-request',
       body,
-      (errorsPerRequest) =>
+      errorsPerRequest =>
         setErrorsPerRequest(
-          adaptPerNameChartData<IErrorsPerRequestResponse>(
-            errorsPerRequest,
-            "errorRate"
-          )
-        )
+          adaptPerNameChartData<IErrorsPerRequestResponse>(errorsPerRequest, 'errorRate'),
+        ),
     );
   const getPerc99ResponseTimes = (body: IRequestBody) =>
     fetchQuery<IPerc99ResponseTimesResponse[]>(
-      "/cloud-stats/perc99-response-times",
+      '/cloud-stats/perc99-response-times',
       body,
-      (perc99ResponseTimes) =>
+      perc99ResponseTimes =>
         setPerc99ResponseTimes(
-          adaptPerNameChartData<IPerc99ResponseTimesResponse>(
-            perc99ResponseTimes,
-            "perc99"
-          )
-        )
+          adaptPerNameChartData<IPerc99ResponseTimesResponse>(perc99ResponseTimes, 'perc99'),
+        ),
     );
   const getResponseLength = (body: IRequestBody) =>
-    fetchQuery<IResponseLengthResponse[]>(
-      "/cloud-stats/response-length",
-      body,
-      (responseLength) =>
-        setResponseLength(
-          adaptPerNameChartData<IResponseLengthResponse>(
-            responseLength,
-            "responseLength"
-          )
-        )
+    fetchQuery<IResponseLengthResponse[]>('/cloud-stats/response-length', body, responseLength =>
+      setResponseLength(
+        adaptPerNameChartData<IResponseLengthResponse>(responseLength, 'responseLength'),
+      ),
     );
 
-  const fetchTimescaleGraphs = () => {
+  const fetchCharts = () => {
     const currentTimestamp = new Date().toISOString();
 
     getRequestNames({ start: startTime, end: timestamp });
@@ -173,128 +152,104 @@ export default function Timescale() {
     setTimestamp(currentTimestamp);
   };
 
-  useInterval(fetchTimescaleGraphs, 1000, {
-    shouldRunInterval:
-      swarmState === SWARM_STATE.SPAWNING || swarmState == SWARM_STATE.RUNNING,
+  const fetchTestruns = () => {
+    fetchQuery<{ id: string }[]>('/cloud-stats/testruns', {}, testruns =>
+      setTestruns(testruns.map(({ id }) => id)),
+    );
+  };
+
+  useInterval(fetchCharts, 1000, {
+    shouldRunInterval: swarmState === SWARM_STATE.SPAWNING || swarmState == SWARM_STATE.RUNNING,
   });
 
   useEffect(() => {
-    fetchTimescaleGraphs();
+    fetchCharts();
+    fetchTestruns();
   }, []);
 
   return (
     <>
-      <Box sx={{ my: 4 }}>
+      <Box sx={{ my: 4, display: 'flex', columnGap: 4 }}>
         <Select
-          defaultValue={"5"}
-          label="Resolution"
-          name="resolution"
-          sx={{ width: "150px" }}
-          onChange={(e: SelectChangeEvent<unknown>) =>
-            setResolution(Number(e.target.value))
-          }
-          options={["1", "2", "5", "10", "30"]}
+          defaultValue={'5'}
+          label='Resolution'
+          name='resolution'
+          onChange={(e: SelectChangeEvent<string>) => setResolution(Number(e.target.value))}
+          options={RESOLUTION_OPTIONS}
+          sx={{ width: '150px' }}
         />
+        {!!testruns.length && (
+          <Select
+            label='Test Run'
+            name='testrun'
+            onChange={(e: SelectChangeEvent<string>) => setCurrentTestrun(e.target.value)}
+            options={testruns}
+            sx={{ width: '300px' }}
+          />
+        )}
       </Box>
 
       <LineChart<IRpsData>
-        colors={["#00ca5a", "#0099ff", "#ff6d6d"]}
+        chartValueFormatter={chartValueFormatter}
+        charts={rpsData}
+        colors={['#00ca5a', '#0099ff', '#ff6d6d']}
         lines={[
           {
-            name: "Users",
-            key: "users",
+            name: 'Users',
+            key: 'users',
             yAxisIndex: 0,
           },
           {
-            name: "Requests per Second",
-            key: "rps",
+            name: 'Requests per Second',
+            key: 'rps',
             yAxisIndex: 1,
             areaStyle: {},
           },
           {
-            name: "Errors per Second",
-            key: "errorRate",
+            name: 'Errors per Second',
+            key: 'errorRate',
             yAxisIndex: 1,
             areaStyle: {},
           },
         ]}
-        title="Throughput / active users"
-        charts={rpsData}
         splitAxis
-        yAxisLabels={["Users", "RPS"]}
-        chartValueFormatter={chartValueFormatter}
+        title='Throughput / active users'
+        yAxisLabels={['Users', 'RPS']}
       />
       <LineChart<IPerRequestData>
-        colors={[
-          "#9966CC",
-          "#8A2BE2",
-          "#8E4585",
-          "#E0B0FF",
-          "#C8A2C8",
-          "#E6E6FA",
-        ]}
-        lines={requestLines}
-        title="Average Response Times"
+        chartValueFormatter={v => `${roundToDecimalPlaces(Number((v as string[])[1]), 2)}ms`}
         charts={avgResponseTimes}
-        chartValueFormatter={(v) =>
-          `${roundToDecimalPlaces(Number((v as string[])[1]), 2)}ms`
-        }
+        colors={['#9966CC', '#8A2BE2', '#8E4585', '#E0B0FF', '#C8A2C8', '#E6E6FA']}
+        lines={requestLines}
+        title='Average Response Times'
       />
       <LineChart<IPerRequestData>
-        colors={[
-          "#9966CC",
-          "#8A2BE2",
-          "#8E4585",
-          "#E0B0FF",
-          "#C8A2C8",
-          "#E6E6FA",
-        ]}
-        lines={requestLines}
-        title="RPS per Request"
+        chartValueFormatter={chartValueFormatter}
         charts={rpsPerRequest}
-        chartValueFormatter={chartValueFormatter}
+        colors={['#9966CC', '#8A2BE2', '#8E4585', '#E0B0FF', '#C8A2C8', '#E6E6FA']}
+        lines={requestLines}
+        title='RPS per Request'
       />
       <LineChart<IPerRequestData>
-        colors={[
-          "#ff8080",
-          "#ff4d4d",
-          "#ff1a1a",
-          "#e60000",
-          "#b30000",
-          "#800000",
-        ]}
-        lines={requestLines}
-        title="Errors per Request"
+        chartValueFormatter={chartValueFormatter}
         charts={errorsPerRequest}
-        chartValueFormatter={chartValueFormatter}
+        colors={['#ff8080', '#ff4d4d', '#ff1a1a', '#e60000', '#b30000', '#800000']}
+        lines={requestLines}
+        title='Errors per Request'
       />
       <LineChart<IPerRequestData>
-        colors={[
-          "#9966CC",
-          "#8A2BE2",
-          "#8E4585",
-          "#E0B0FF",
-          "#C8A2C8",
-          "#E6E6FA",
-        ]}
-        lines={requestLines}
-        title="99th Percentile Response Times"
+        chartValueFormatter={chartValueFormatter}
         charts={perc99ResponseTimes}
-        chartValueFormatter={chartValueFormatter}
+        colors={['#9966CC', '#8A2BE2', '#8E4585', '#E0B0FF', '#C8A2C8', '#E6E6FA']}
+        lines={requestLines}
+        title='99th Percentile Response Times'
       />
       <LineChart<IPerRequestData>
-        colors={[
-          "#9966CC",
-          "#8A2BE2",
-          "#8E4585",
-          "#E0B0FF",
-          "#C8A2C8",
-          "#E6E6FA",
-        ]}
-        lines={requestLines}
-        title="Response Length"
-        charts={responseLength}
         chartValueFormatter={chartValueFormatter}
+        charts={responseLength}
+        colors={['#9966CC', '#8A2BE2', '#8E4585', '#E0B0FF', '#C8A2C8', '#E6E6FA']}
+        lines={requestLines}
+        title='Response Length'
       />
     </>
   );

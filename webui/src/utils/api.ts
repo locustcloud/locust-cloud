@@ -1,8 +1,8 @@
 import { roundToDecimalPlaces } from "locust-ui";
 
 export interface IRequestBody {
-  start: string;
-  end: string;
+  start?: string;
+  end?: string;
   resolution?: number;
 }
 

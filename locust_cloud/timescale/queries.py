@@ -161,12 +161,11 @@ WHERE time BETWEEN %(start)s AND %(end)s
 ORDER BY 1,2
 """
 
-requests_table = """
-SELECT name, time, response_time, exception, context ->> 'ssn' as ssn,context ->> 'account_id' as account_id, context ->> 'env' as env, context ->> 'request_id' as request_id, url
-FROM "request"
-WHERE time BETWEEN %(start)s AND %(end)s and
- testplan = '' and (exception is not null or not false)
-ORDER BY time DESC
+testruns = """
+SELECT
+  id
+FROM testruns
+ORDER BY id ASC
 """
 
 queries = {
@@ -183,4 +182,5 @@ queries = {
     "perc99-response-times": perc99_response_times,
     "response-length": response_length,
     "scatterplot": scatterplot,
+    "testruns": testruns,
 }
