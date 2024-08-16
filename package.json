@@ -1,0 +1,10 @@
+{
+  "name": "locust-cloud",
+  "private": true,
+  "scripts": {
+    "webui:install": "cd webui && yarn install",
+    "webui:build": "cd webui && yarn build",
+    "webui:lint": "cd webui && yarn lint",
+    "webui:type-check": "cd webui && yarn type-check"
+  }
+}

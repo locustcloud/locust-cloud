@@ -10,6 +10,7 @@ SELECT
 	SUM(failed_count) / SUM(count) * 100 as "errorPercentage"
 FROM requests_summary
 WHERE bucket BETWEEN %(start)s AND %(end)s
+AND run_id = %(testrun)s
 GROUP BY name, method
 """
 
@@ -22,6 +23,7 @@ SELECT
 FROM requests
 WHERE time BETWEEN %(start)s AND %(end)s AND
  exception is not null
+AND run_id = %(testrun)s
 GROUP BY "name",left(exception,300)
 """
 
@@ -33,6 +35,7 @@ WITH user_count_agg AS (
     avg(user_count) as users
   FROM number_of_users
   WHERE time BETWEEN %(start)s AND %(end)s
+  AND run_id = %(testrun)s
   GROUP BY 1
   ORDER BY 1
 ),
@@ -42,6 +45,7 @@ request_count_agg AS (
     SUM(count)/%(resolution)s as rps
   FROM requests_summary
   WHERE bucket BETWEEN %(start)s AND %(end)s
+  AND run_id = %(testrun)s
   GROUP BY 1
   ORDER BY 1
 ),
@@ -51,6 +55,7 @@ errors_per_s_agg AS (
     SUM(failed_count)/%(resolution)s as error_rate
   FROM requests_summary
   WHERE bucket BETWEEN %(start)s AND %(end)s
+  AND run_id = %(testrun)s
   GROUP BY 1
   ORDER BY 1
 )
@@ -71,6 +76,7 @@ SELECT
  SUM(count) as "totalRequests"
 FROM requests_summary
 WHERE bucket BETWEEN %(start)s AND %(end)s
+AND run_id = %(testrun)s
 """
 
 
@@ -79,6 +85,7 @@ SELECT
  SUM(failed_count) as "totalFailures"
 FROM requests_summary
 WHERE bucket BETWEEN %(start)s AND %(end)s
+AND run_id = %(testrun)s
 """
 
 
@@ -87,7 +94,8 @@ SELECT
 	SUM(failed_count) / SUM(count) * 100 "errorPercentage"
 FROM requests_summary
 WHERE bucket BETWEEN %(start)s AND %(end)s
- """
+AND run_id = %(testrun)s
+"""
 
 rps_per_request = """
 SELECT
@@ -96,6 +104,7 @@ SELECT
     COALESCE(SUM(count)/%(resolution)s, 0) as throughput
 FROM requests_summary
 WHERE bucket BETWEEN %(start)s AND %(end)s
+AND run_id = %(testrun)s
 GROUP BY 1, name
 ORDER BY 1,2
 """
@@ -108,6 +117,7 @@ SELECT
     avg(average) as "responseTime"
 FROM requests_summary
 WHERE bucket BETWEEN %(start)s AND %(end)s
+AND run_id = %(testrun)s
 GROUP BY 1, name
 ORDER BY 1, 2
 """
@@ -119,6 +129,7 @@ SELECT
     COALESCE(SUM(failed_count)/%(resolution)s, 0) as "errorRate"
 FROM requests_summary
 WHERE bucket BETWEEN %(start)s AND %(end)s
+AND run_id = %(testrun)s
 GROUP BY 1, name
 ORDER BY 1
 """
@@ -130,6 +141,7 @@ SELECT time_bucket('%(resolution)ss', time) AS time,
   percentile_cont(0.99) within group (order by response_time) as perc99
 FROM requests
 WHERE time BETWEEN %(start)s AND %(end)s
+AND run_id = %(testrun)s
 GROUP BY 1, name
 """
 
@@ -141,7 +153,7 @@ SELECT
     name
 FROM requests_summary
 WHERE bucket BETWEEN %(start)s AND %(end)s
-AND response_length > 0
+AND run_id = %(testrun)s
 ORDER BY 1
 """
 
@@ -150,6 +162,7 @@ request_names = """
 SELECT DISTINCT name
 FROM requests
 WHERE time BETWEEN %(start)s AND %(end)s
+AND run_id = %(testrun)s
 """
 
 scatterplot = """
@@ -162,12 +175,11 @@ WHERE time BETWEEN %(start)s AND %(end)s
 ORDER BY 1,2
 """
 
-requests_table = """
-SELECT name, time, response_time, exception, context ->> 'ssn' as ssn,context ->> 'account_id' as account_id, context ->> 'env' as env, context ->> 'request_id' as request_id, url
-FROM "request"
-WHERE time BETWEEN %(start)s AND %(end)s and
- testplan = '' and (exception is not null or not false)
-ORDER BY time DESC
+testruns = """
+SELECT
+  id as "runId"
+FROM testruns
+ORDER BY id DESC
 """
 
 queries = {
@@ -184,4 +196,5 @@ queries = {
     "perc99-response-times": perc99_response_times,
     "response-length": response_length,
     "scatterplot": scatterplot,
+    "testruns": testruns,
 }

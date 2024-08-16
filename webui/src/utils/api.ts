@@ -1,25 +1,26 @@
-import { roundToDecimalPlaces } from "locust-ui";
+import { roundToDecimalPlaces } from 'locust-ui';
 
 export interface IRequestBody {
-  start: string;
-  end: string;
+  start?: string;
+  end?: string;
   resolution?: number;
+  testrun?: string;
 }
 
 export function fetchQuery<ResponseType>(
   url: string,
   body: IRequestBody,
-  onSuccess: (response: ResponseType) => void
+  onSuccess: (response: ResponseType) => void,
 ) {
   fetch(url, {
-    method: "POST",
+    method: 'POST',
     headers: {
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
     },
     body: JSON.stringify(body),
   })
-    .then((res) => res.json())
-    .then((data) => data && data.length && onSuccess(data))
+    .then(res => res.json())
+    .then(data => data && data.length && onSuccess(data))
     .catch(console.error);
 }
 
@@ -34,7 +35,7 @@ export type IPerRequestData = {
 
 export const adaptPerNameChartData = <ChartType extends IPerRequestResponse>(
   chartData: ChartType[],
-  key: keyof ChartType
+  key: keyof ChartType,
 ) =>
   chartData.reduce((chart, data) => {
     const { name, time } = data;
@@ -52,8 +53,6 @@ export const adaptPerNameChartData = <ChartType extends IPerRequestResponse>(
     return chart;
   }, {} as IPerRequestData);
 
-export function chartValueFormatter(
-  value: string | number | string[] | number[]
-) {
+export function chartValueFormatter(value: string | number | string[] | number[]) {
   return roundToDecimalPlaces(Number((value as string[])[1]), 2);
 }

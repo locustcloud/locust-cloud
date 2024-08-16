@@ -1,8 +1,7 @@
-import { useEffect, useRef, useState } from "react";
-
-import { init, dispose, ECharts } from "echarts";
-import { useSelector } from "react-redux";
-import { IRootState } from "locust-ui";
+import { useEffect, useRef, useState } from 'react';
+import { init, dispose, ECharts } from 'echarts';
+import { IRootState } from 'locust-ui';
+import { useSelector } from 'react-redux';
 
 interface IGauge {
   name: string;
@@ -10,26 +9,27 @@ interface IGauge {
 }
 
 const colors = [
-  [0, "#00C853"],
-  [10, "#ffc40c"],
-  [50, "#f44336"],
-  [99, "#a91409"],
-  [1, "#790e07"],
+  [0, '#00C853'],
+  [10, '#ffc40c'],
+  [50, '#f44336'],
+  [99, '#a91409'],
+  [1, '#790e07'],
 ];
 
 const getColor = (value: string | number) => {
-  const color = colors.find(
-    ([threshold, color]) => Number(value) <= (threshold as number)
-  ) as (number | string)[];
+  const color = colors.find(([threshold, color]) => Number(value) <= (threshold as number)) as (
+    | number
+    | string
+  )[];
 
   return color ? color[1] : colors[colors.length - 1][1];
 };
 
-const createOptions = ({ name }: { name: IGauge["name"] }) => ({
+const createOptions = ({ name }: { name: IGauge['name'] }) => ({
   series: [
     {
-      type: "gauge",
-      center: ["50%", "60%"],
+      type: 'gauge',
+      center: ['50%', '60%'],
       startAngle: 200,
       endAngle: -20,
       min: 0,
@@ -48,14 +48,14 @@ const createOptions = ({ name }: { name: IGauge["name"] }) => ({
       },
       detail: {
         valueAnimation: true,
-        width: "60%",
+        width: '60%',
         lineHeight: 40,
         borderRadius: 8,
-        offsetCenter: [0, "-15%"],
+        offsetCenter: [0, '-15%'],
         fontSize: 40,
-        fontWeight: "bolder",
-        formatter: "{value}%",
-        color: "inherit",
+        fontWeight: 'bolder',
+        formatter: '{value}%',
+        color: 'inherit',
       },
       data: [{ value: 0, name }],
     },
@@ -63,9 +63,7 @@ const createOptions = ({ name }: { name: IGauge["name"] }) => ({
 });
 
 export default function Gauge({ name, gaugeValue }: IGauge) {
-  const isDarkMode = useSelector(
-    ({ theme: { isDarkMode } }: IRootState) => isDarkMode
-  );
+  const isDarkMode = useSelector(({ theme: { isDarkMode } }: IRootState) => isDarkMode);
   const [gauge, setGauge] = useState<ECharts | null>(null);
 
   const gaugeContainer = useRef<HTMLDivElement | null>(null);
@@ -75,17 +73,17 @@ export default function Gauge({ name, gaugeValue }: IGauge) {
       return;
     }
 
-    const initGauge = init(gaugeContainer.current, "locust");
+    const initGauge = init(gaugeContainer.current, 'locust');
     initGauge.setOption(createOptions({ name }));
 
     const handleChartResize = () => initGauge.resize();
-    window.addEventListener("resize", handleChartResize);
+    window.addEventListener('resize', handleChartResize);
 
     setGauge(initGauge);
 
     return () => {
       dispose(initGauge);
-      window.removeEventListener("resize", handleChartResize);
+      window.removeEventListener('resize', handleChartResize);
     };
   }, []);
 
@@ -104,8 +102,7 @@ export default function Gauge({ name, gaugeValue }: IGauge) {
 
   useEffect(() => {
     if (gauge) {
-      const chartTextColor = isDarkMode ? "#b3c3bc" : "#000";
-      const chartAxisColor = isDarkMode ? "#b3c3bc" : "#000";
+      const chartTextColor = isDarkMode ? '#b3c3bc' : '#000';
 
       gauge.setOption({
         textStyle: { color: chartTextColor },
@@ -123,7 +120,5 @@ export default function Gauge({ name, gaugeValue }: IGauge) {
     }
   }, [gauge, isDarkMode]);
 
-  return (
-    <div ref={gaugeContainer} style={{ width: "100%", height: "300px" }}></div>
-  );
+  return <div ref={gaugeContainer} style={{ width: '100%', height: '250px' }}></div>;
 }
