@@ -6,6 +6,7 @@ CREATE MATERIALIZED VIEW requests_summary
 WITH (timescaledb.continuous) AS
 SELECT 
     name,
+    run_id,
     request_type,
     time_bucket(INTERVAL '1s', time) AS bucket,
     AVG(response_length) as response_length,
@@ -17,6 +18,6 @@ SELECT
     count(*),
     count(exception) as failed_count
 FROM requests
-GROUP BY name, bucket, request_type;
+GROUP BY name, run_id, bucket, request_type;
 
 ALTER MATERIALIZED VIEW requests_summary set (timescaledb.materialized_only = false);

@@ -10,6 +10,8 @@ from psycopg2 import pool
 def adapt_timestamp(result):
     if result.get("time", False):
         return {**result, "time": str(result["time"])}
+    if result.get("runId", False):
+        return {**result, "runId": str(result["runId"])}
 
     return result
 
@@ -57,6 +59,7 @@ class Api:
                     cursor = conn.cursor()
 
                     sql_params = request.get_json()
+                    print(sql_params)
 
                     cursor.execute(queries[query], sql_params)
 

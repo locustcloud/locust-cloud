@@ -4,6 +4,7 @@ export interface IRequestBody {
   start?: string;
   end?: string;
   resolution?: number;
+  testrun?: string;
 }
 
 export function fetchQuery<ResponseType>(

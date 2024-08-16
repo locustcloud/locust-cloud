@@ -65,6 +65,7 @@ export default function Charts() {
 
   const [timestamp, setTimestamp] = useState(new Date().toISOString());
   const [testruns, setTestruns] = useState<string[]>([]);
+  const [testrunsForDisplay, setTestrunsForDisplay] = useState<string[]>([]);
   const [previousTestrun, setPreviousTestrun] = useState<string>();
   const [currentTestrun, setCurrentTestrun] = useState<string>();
   const [resolution, setResolution] = useState(5);
@@ -141,24 +142,31 @@ export default function Charts() {
   const fetchCharts = () => {
     if (currentTestrun) {
       const currentTimestamp = new Date().toISOString();
+      const payload = {
+        start: currentTestrun,
+        end: timestamp,
+        resolution,
+        testrun: currentTestrun,
+      };
 
-      getRequestNames({ start: currentTestrun, end: timestamp });
-      getRpsPerRequest({ start: currentTestrun, end: timestamp, resolution });
-      getAvgResponseTimes({ start: currentTestrun, end: timestamp });
-      getErrorsPerRequest({ start: currentTestrun, end: timestamp, resolution });
-      getPerc99ResponseTimes({ start: currentTestrun, end: timestamp, resolution });
-      getResponseLength({ start: currentTestrun, end: timestamp });
-      getRps({ start: currentTestrun, end: timestamp, resolution });
+      getRequestNames(payload);
+      getRpsPerRequest(payload);
+      getAvgResponseTimes(payload);
+      getErrorsPerRequest(payload);
+      getPerc99ResponseTimes(payload);
+      getResponseLength(payload);
+      getRps(payload);
 
       setTimestamp(currentTimestamp);
     }
   };
 
   const fetchTestruns = () => {
-    fetchQuery<{ id: string }[]>('/cloud-stats/testruns', {}, testrunIds => {
-      const testruns = testrunIds.map(({ id }) => new Date(id).toLocaleString());
+    fetchQuery<{ runId: string }[]>('/cloud-stats/testruns', {}, testrunIds => {
+      const testruns = testrunIds.map(({ runId }) => runId);
       setTestruns(testruns);
-      setCurrentTestrun(testrunIds[0].id);
+      setTestrunsForDisplay(testruns.map(runId => new Date(runId).toLocaleString()));
+      setCurrentTestrun(testruns[0]);
     });
   };
 
@@ -167,7 +175,9 @@ export default function Charts() {
   });
 
   useInterval(fetchTestruns, 500, {
-    shouldRunInterval: !testruns.length || (!!previousTestrun && testruns[0] <= previousTestrun),
+    shouldRunInterval:
+      !testruns.length ||
+      (!!previousTestrun && swarmState == SWARM_STATE.RUNNING && testruns[0] <= previousTestrun),
   });
 
   useEffect(() => {
@@ -176,8 +186,12 @@ export default function Charts() {
   }, []);
 
   useEffect(() => {
+    console.log({ currentTestrun });
+    fetchCharts();
+  }, [currentTestrun]);
+
+  useEffect(() => {
     if (swarmState === SWARM_STATE.STOPPED && testruns) {
-      setCurrentTestrun(undefined);
       setPreviousTestrun(testruns[0]);
     }
   }, [swarmState, testruns]);
@@ -193,12 +207,15 @@ export default function Charts() {
           options={RESOLUTION_OPTIONS}
           sx={{ width: '150px' }}
         />
-        {!!testruns.length && (
+        {!!testrunsForDisplay.length && (
           <Select
             label='Test Run'
             name='testrun'
-            onChange={(e: SelectChangeEvent<string>) => setCurrentTestrun(e.target.value)}
-            options={testruns}
+            onChange={(e: SelectChangeEvent<string>) => {
+              // find in test runs to get correct date format
+              setCurrentTestrun(testruns[testrunsForDisplay.indexOf(e.target.value)]);
+            }}
+            options={testrunsForDisplay}
             sx={{ width: '250px' }}
           />
         )}
