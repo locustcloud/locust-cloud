@@ -25,16 +25,16 @@ interface IRequestLines {
 }
 
 interface IRpsResponse {
-  users: number;
-  rps: number;
-  errorRate: number;
+  users: string;
+  rps: string;
+  errorRate: string;
   time: string;
 }
 
 interface IRpsData {
-  users: [string, number][];
-  rps: [string, number][];
-  errorRate: [string, number][];
+  users: [string, string][];
+  rps: [string, string][];
+  errorRate: [string, string][];
   time: string[];
 }
 
@@ -186,7 +186,6 @@ export default function Charts() {
   }, []);
 
   useEffect(() => {
-    console.log({ currentTestrun });
     fetchCharts();
   }, [currentTestrun]);
 
@@ -220,7 +219,6 @@ export default function Charts() {
           />
         )}
       </Box>
-
       <LineChart<IRpsData>
         chartValueFormatter={chartValueFormatter}
         charts={rpsData}
