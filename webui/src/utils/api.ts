@@ -3,7 +3,7 @@ import { roundToDecimalPlaces } from 'locust-ui';
 export interface IRequestBody {
   start?: string;
   end?: string;
-  resolution?: number;
+  resolution?: string;
   testrun?: string;
 }
 
@@ -31,7 +31,7 @@ export interface IPerRequestResponse {
 
 export type IPerRequestData = {
   [key: string]: string[][];
-};
+} & { time: string[] };
 
 export const adaptPerNameChartData = <ChartType extends IPerRequestResponse>(
   chartData: ChartType[],
