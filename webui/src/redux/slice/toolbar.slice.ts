@@ -1,20 +1,22 @@
 import { PayloadAction, createSlice } from '@reduxjs/toolkit';
 
+import { updateStateWithPayload } from 'redux/utils';
+
 export interface IToolbarState {
-  resolution?: string;
+  resolution?: number;
 }
 
 export type ToolbarAction = PayloadAction<IToolbarState>;
 
 const initialState = {
-  resolution: '5',
+  resolution: 5,
 };
 
 const toolbarSlice = createSlice({
   name: 'toolbar',
   initialState,
   reducers: {
-    setToolbar: (_, { payload }) => payload,
+    setToolbar: updateStateWithPayload,
   },
 });
 

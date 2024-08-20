@@ -61,14 +61,22 @@ export default function Charts() {
   const [previousTestrun, setPreviousTestrun] = useState<string>();
   const [currentTestrun, setCurrentTestrun] = useState<string>();
   const [requestLines, setRequestLines] = useState<IRequestLines[]>([]);
-  const [rpsData, setRpsData] = useState<IRpsData>({} as IRpsData);
-  const [rpsPerRequest, setRpsPerRequest] = useState<IPerRequestData>({} as IPerRequestData);
-  const [avgResponseTimes, setAvgResponseTimes] = useState<IPerRequestData>({} as IPerRequestData);
-  const [errorsPerRequest, setErrorsPerRequest] = useState<IPerRequestData>({} as IPerRequestData);
-  const [perc99ResponseTimes, setPerc99ResponseTimes] = useState<IPerRequestData>(
-    {} as IPerRequestData,
-  );
-  const [responseLength, setResponseLength] = useState<IPerRequestData>({} as IPerRequestData);
+  const [rpsData, setRpsData] = useState<IRpsData>({ time: [] as string[] } as IRpsData);
+  const [rpsPerRequest, setRpsPerRequest] = useState<IPerRequestData>({
+    time: [],
+  } as IPerRequestData);
+  const [avgResponseTimes, setAvgResponseTimes] = useState<IPerRequestData>({
+    time: [],
+  } as IPerRequestData);
+  const [errorsPerRequest, setErrorsPerRequest] = useState<IPerRequestData>({
+    time: [],
+  } as IPerRequestData);
+  const [perc99ResponseTimes, setPerc99ResponseTimes] = useState<IPerRequestData>({
+    time: [],
+  } as IPerRequestData);
+  const [responseLength, setResponseLength] = useState<IPerRequestData>({
+    time: [],
+  } as IPerRequestData);
 
   const getRequestNames = (body: IRequestBody) =>
     fetchQuery<{ name: string }[]>('/cloud-stats/request-names', body, requestNames =>
