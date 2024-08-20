@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Box, Paper, Typography } from '@mui/material';
-import { Table, useInterval, roundToDecimalPlaces, IRootState, SWARM_STATE } from 'locust-ui';
-import { useSelector } from 'react-redux';
+import { Table, useInterval, roundToDecimalPlaces, SWARM_STATE } from 'locust-ui';
 
 import Gauge from 'components/Gauge/Gauge';
+import { useLocustSelector, useSelector } from 'redux/hooks';
 import { IRequestBody, fetchQuery } from 'utils/api';
 
 interface IStatsData {
@@ -36,8 +36,8 @@ interface IErrorPercentageResponse {
 }
 
 export default function Stats() {
-  const swarmState = useSelector(({ swarm }: IRootState) => swarm.state);
-  const startTime = useSelector(({ swarm }: IRootState) => swarm.startTime);
+  const swarmState = useLocustSelector(({ swarm }) => swarm.state);
+  const { currentTestrun } = useSelector(({ toolbar }) => toolbar);
 
   const [timestamp, setTimestamp] = useState(new Date().toISOString());
   const [totalRequests, setTotalRequests] = useState<number>(0);
@@ -71,12 +71,17 @@ export default function Stats() {
 
   const fetchTimescaleGraphs = () => {
     const currentTimestamp = new Date().toISOString();
+    const payload = {
+      start: currentTestrun,
+      end: timestamp,
+      testrun: currentTestrun,
+    };
 
-    getTotalRequests({ start: startTime, end: timestamp });
-    getTotalFailures({ start: startTime, end: timestamp });
-    getErrorPercentage({ start: startTime, end: timestamp });
-    getRequests({ start: startTime, end: timestamp });
-    getFailures({ start: startTime, end: timestamp });
+    getTotalRequests(payload);
+    getTotalFailures(payload);
+    getErrorPercentage(payload);
+    getRequests(payload);
+    getFailures(payload);
 
     setTimestamp(currentTimestamp);
   };

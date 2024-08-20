@@ -18,24 +18,24 @@
           {
             "pattern": "react",
             "group": "external",
-            "position": "before"
+            "position": "before",
           },
           {
             "pattern": "App",
-            "group": "internal"
+            "group": "internal",
           },
           {
             "pattern": "Report",
-            "group": "internal"
+            "group": "internal",
           },
           {
-            "pattern": "{components,styles,tabs,utils}/**",
-            "group": "internal"
-          }
+            "pattern": "{components,redux,styles,tabs,utils}/**",
+            "group": "internal",
+          },
         ],
         "distinctGroup": false,
-        "pathGroupsExcludedImportTypes": ["internal"]
-      }
-    ]
-  }
+        "pathGroupsExcludedImportTypes": ["internal"],
+      },
+    ],
+  },
 }

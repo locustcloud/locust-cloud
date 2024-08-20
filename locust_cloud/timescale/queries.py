@@ -172,6 +172,7 @@ SELECT
  response_time as "responseTime"
 FROM requests
 WHERE time BETWEEN %(start)s AND %(end)s
+AND run_id = %(testrun)s
 ORDER BY 1,2
 """
 

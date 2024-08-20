@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { LineChart, useInterval, IRootState, SWARM_STATE } from 'locust-ui';
-import { useSelector } from 'react-redux';
+import { LineChart, useInterval, SWARM_STATE } from 'locust-ui';
 
+import { useLocustSelector, useSelector } from 'redux/hooks';
 import {
   IPerRequestData,
   IPerRequestResponse,
@@ -27,8 +27,8 @@ interface IRequestLines {
 }
 
 export default function Scatterplot() {
-  const swarmState = useSelector(({ swarm }: IRootState) => swarm.state);
-  const startTime = useSelector(({ swarm }: IRootState) => swarm.startTime);
+  const swarmState = useLocustSelector(({ swarm }) => swarm.state);
+  const { currentTestrun } = useSelector(({ toolbar }) => toolbar);
 
   const [timestamp, setTimestamp] = useState(new Date().toISOString());
   const [scatterplot, setScatterplot] = useState<IPerRequestData>();
@@ -54,9 +54,14 @@ export default function Scatterplot() {
 
   const fetchScatterplot = () => {
     const currentTimestamp = new Date().toISOString();
+    const payload = {
+      start: currentTestrun,
+      end: timestamp,
+      testrun: currentTestrun,
+    };
 
-    getRequestNames({ start: startTime, end: timestamp });
-    getScatterplot({ start: startTime, end: timestamp });
+    getRequestNames(payload);
+    getScatterplot(payload);
 
     setTimestamp(currentTimestamp);
   };

@@ -17,7 +17,7 @@ const colors = [
 ];
 
 const getColor = (value: string | number) => {
-  const color = colors.find(([threshold, color]) => Number(value) <= (threshold as number)) as (
+  const color = colors.find(([threshold]) => Number(value) <= (threshold as number)) as (
     | number
     | string
   )[];

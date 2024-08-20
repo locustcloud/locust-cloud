@@ -1,15 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Box, SelectChangeEvent } from '@mui/material';
-import {
-  LineChart,
-  useInterval,
-  roundToDecimalPlaces,
-  IRootState,
-  SWARM_STATE,
-  Select,
-} from 'locust-ui';
-import { useSelector } from 'react-redux';
+import { LineChart, useInterval, roundToDecimalPlaces, SWARM_STATE } from 'locust-ui';
 
+import { useLocustSelector, useSelector } from 'redux/hooks';
 import {
   IRequestBody,
   adaptPerNameChartData,
@@ -58,24 +50,28 @@ interface IResponseLengthResponse extends IPerRequestResponse {
   responseLength: number;
 }
 
-const RESOLUTION_OPTIONS = ['1', '2', '5', '10', '30'];
-
 export default function Charts() {
-  const { state: swarmState } = useSelector(({ swarm }: IRootState) => swarm);
+  const { state: swarmState } = useLocustSelector(({ swarm }) => swarm);
+  const { resolution, currentTestrun } = useSelector(({ toolbar }) => toolbar);
 
   const [timestamp, setTimestamp] = useState(new Date().toISOString());
-  const [testruns, setTestruns] = useState<string[]>([]);
-  const [testrunsForDisplay, setTestrunsForDisplay] = useState<string[]>([]);
-  const [previousTestrun, setPreviousTestrun] = useState<string>();
-  const [currentTestrun, setCurrentTestrun] = useState<string>();
-  const [resolution, setResolution] = useState(5);
   const [requestLines, setRequestLines] = useState<IRequestLines[]>([]);
-  const [rpsData, setRpsData] = useState<IRpsData>({} as IRpsData);
-  const [rpsPerRequest, setRpsPerRequest] = useState<IPerRequestData>({});
-  const [avgResponseTimes, setAvgResponseTimes] = useState<IPerRequestData>({});
-  const [errorsPerRequest, setErrorsPerRequest] = useState<IPerRequestData>({});
-  const [perc99ResponseTimes, setPerc99ResponseTimes] = useState<IPerRequestData>({});
-  const [responseLength, setResponseLength] = useState<IPerRequestData>({});
+  const [rpsData, setRpsData] = useState<IRpsData>({ time: [] as string[] } as IRpsData);
+  const [rpsPerRequest, setRpsPerRequest] = useState<IPerRequestData>({
+    time: [],
+  } as IPerRequestData);
+  const [avgResponseTimes, setAvgResponseTimes] = useState<IPerRequestData>({
+    time: [],
+  } as IPerRequestData);
+  const [errorsPerRequest, setErrorsPerRequest] = useState<IPerRequestData>({
+    time: [],
+  } as IPerRequestData);
+  const [perc99ResponseTimes, setPerc99ResponseTimes] = useState<IPerRequestData>({
+    time: [],
+  } as IPerRequestData);
+  const [responseLength, setResponseLength] = useState<IPerRequestData>({
+    time: [],
+  } as IPerRequestData);
 
   const getRequestNames = (body: IRequestBody) =>
     fetchQuery<{ name: string }[]>('/cloud-stats/request-names', body, requestNames =>
@@ -161,23 +157,8 @@ export default function Charts() {
     }
   };
 
-  const fetchTestruns = () => {
-    fetchQuery<{ runId: string }[]>('/cloud-stats/testruns', {}, testrunIds => {
-      const testruns = testrunIds.map(({ runId }) => runId);
-      setTestruns(testruns);
-      setTestrunsForDisplay(testruns.map(runId => new Date(runId).toLocaleString()));
-      setCurrentTestrun(testruns[0]);
-    });
-  };
-
   useInterval(fetchCharts, 1000, {
     shouldRunInterval: swarmState === SWARM_STATE.SPAWNING || swarmState == SWARM_STATE.RUNNING,
-  });
-
-  useInterval(fetchTestruns, 500, {
-    shouldRunInterval:
-      !testruns.length ||
-      (!!previousTestrun && swarmState == SWARM_STATE.RUNNING && testruns[0] <= previousTestrun),
   });
 
   useEffect(() => {
@@ -189,36 +170,8 @@ export default function Charts() {
     fetchCharts();
   }, [currentTestrun]);
 
-  useEffect(() => {
-    if (swarmState === SWARM_STATE.STOPPED && testruns) {
-      setPreviousTestrun(testruns[0]);
-    }
-  }, [swarmState, testruns]);
-
   return (
     <>
-      <Box sx={{ my: 4, display: 'flex', columnGap: 4 }}>
-        <Select
-          defaultValue={'5'}
-          label='Resolution'
-          name='resolution'
-          onChange={(e: SelectChangeEvent<string>) => setResolution(Number(e.target.value))}
-          options={RESOLUTION_OPTIONS}
-          sx={{ width: '150px' }}
-        />
-        {!!testrunsForDisplay.length && (
-          <Select
-            label='Test Run'
-            name='testrun'
-            onChange={(e: SelectChangeEvent<string>) => {
-              // find in test runs to get correct date format
-              setCurrentTestrun(testruns[testrunsForDisplay.indexOf(e.target.value)]);
-            }}
-            options={testrunsForDisplay}
-            sx={{ width: '250px' }}
-          />
-        )}
-      </Box>
       <LineChart<IRpsData>
         chartValueFormatter={chartValueFormatter}
         charts={rpsData}

@@ -1,9 +1,23 @@
-import LocustUi, { tabConfig } from 'locust-ui';
+import CssBaseline from '@mui/material/CssBaseline';
+import { ThemeProvider } from '@mui/material/styles';
+import useFetchTestruns from 'hooks/useFetchTestruns';
+import {
+  SWARM_STATE,
+  SwarmForm,
+  tabConfig,
+  Tabs,
+  useCreateTheme,
+  useFetchExceptions,
+  useFetchStats,
+  useFetchTasks,
+  useLogViewer,
+} from 'locust-ui';
 
-import { theme } from 'styles/theme';
-import Charts from 'tabs/Charts';
-import Scatterplot from 'tabs/Scatterplot';
-import Stats from 'tabs/Stats';
+import Layout from 'components/Layout/Layout';
+import Charts from 'components/tabs/Charts';
+import Scatterplot from 'components/tabs/Scatterplot';
+import Stats from 'components/tabs/Stats';
+import { useLocustSelector } from 'redux/hooks';
 
 const tabs = [
   {
@@ -29,5 +43,20 @@ const tabs = [
 ];
 
 export default function App() {
-  return <LocustUi extendedTheme={theme} tabs={tabs} />;
+  useFetchStats();
+  useFetchExceptions();
+  useFetchTasks();
+  useLogViewer();
+  useFetchTestruns();
+
+  const swarmState = useLocustSelector(({ swarm }) => swarm.state);
+
+  const theme = useCreateTheme();
+
+  return (
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <Layout>{swarmState === SWARM_STATE.READY ? <SwarmForm /> : <Tabs tabs={tabs} />}</Layout>
+    </ThemeProvider>
+  );
 }
