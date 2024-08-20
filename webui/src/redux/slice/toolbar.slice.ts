@@ -3,14 +3,14 @@ import { PayloadAction, createSlice } from '@reduxjs/toolkit';
 import { updateStateWithPayload } from 'redux/utils';
 
 export interface IToolbarState {
-  resolution?: number;
+  resolution: number;
   currentTestrun?: string;
   previousTestrun?: string;
   testruns?: string[];
   testrunsForDisplay?: string[];
 }
 
-export type ToolbarAction = PayloadAction<IToolbarState>;
+export type ToolbarAction = PayloadAction<Partial<IToolbarState>>;
 
 const initialState = {
   resolution: 5,

@@ -1,8 +1,8 @@
 import { configureStore } from '@reduxjs/toolkit';
 
-import rootReducer from 'redux/slice/root.slice';
+import rootReducer, { IRootState, Action } from 'redux/slice/root.slice';
 
-export const store = configureStore({
+export const store = configureStore<IRootState, Action>({
   reducer: rootReducer,
   middleware: getDefaultMiddleware => getDefaultMiddleware(),
 });

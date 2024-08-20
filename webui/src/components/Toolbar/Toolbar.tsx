@@ -25,7 +25,6 @@ export default function Toolbar() {
           options={TOOLBAR_RESOLUTION_OPTIONS}
           sx={{ width: '150px' }}
         />
-        {console.log({ testrunsForDisplay })}
         {!!testrunsForDisplay.length && (
           <Select
             label='Test Run'
