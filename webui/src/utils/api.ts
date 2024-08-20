@@ -21,6 +21,7 @@ export function fetchQuery<ResponseType>(
   })
     .then(res => res.json())
     .then(data => data && data.length && onSuccess(data))
+    // eslint-disable-next-line no-console
     .catch(console.error);
 }
 

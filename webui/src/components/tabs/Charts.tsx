@@ -167,7 +167,6 @@ export default function Charts() {
   }, []);
 
   useEffect(() => {
-    console.log('here!');
     fetchCharts();
   }, [currentTestrun]);
 
@@ -200,7 +199,6 @@ export default function Charts() {
         title='Throughput / active users'
         yAxisLabels={['Users', 'RPS']}
       />
-      {console.log({ resolution })}
       <LineChart<IPerRequestData>
         chartValueFormatter={v => `${roundToDecimalPlaces(Number((v as string[])[1]), 2)}ms`}
         charts={avgResponseTimes}

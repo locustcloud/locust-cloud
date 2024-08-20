@@ -8,11 +8,9 @@ import { fetchQuery } from 'utils/api';
 export default function useFetchTestruns() {
   const setToolbar = useAction(toolbarActions.setToolbar);
   const swarmState = useLocustSelector(({ swarm }) => swarm.state);
-  console.log({ swarmState });
   const { testruns = [], previousTestrun } = useSelector(({ toolbar }) => toolbar);
 
   const fetchTestruns = () => {
-    console.log('fetch?');
     fetchQuery<{ runId: string }[]>('/cloud-stats/testruns', {}, testrunIds => {
       const testruns = testrunIds.map(({ runId }) => runId);
 
