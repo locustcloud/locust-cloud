@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Box, SelectChangeEvent } from '@mui/material';
-import { LineChart, useInterval, roundToDecimalPlaces, SWARM_STATE, Select } from 'locust-ui';
+import { LineChart, useInterval, roundToDecimalPlaces, SWARM_STATE } from 'locust-ui';
 
 import { useLocustSelector, useSelector } from 'redux/hooks';
 import {
@@ -53,13 +52,10 @@ interface IResponseLengthResponse extends IPerRequestResponse {
 
 export default function Charts() {
   const { state: swarmState } = useLocustSelector(({ swarm }) => swarm);
-  const { resolution } = useSelector(({ toolbar }) => toolbar);
+  const toolbar = useSelector(({ toolbar }) => toolbar);
+  const { resolution, currentTestrun } = toolbar;
 
   const [timestamp, setTimestamp] = useState(new Date().toISOString());
-  const [testruns, setTestruns] = useState<string[]>([]);
-  const [testrunsForDisplay, setTestrunsForDisplay] = useState<string[]>([]);
-  const [previousTestrun, setPreviousTestrun] = useState<string>();
-  const [currentTestrun, setCurrentTestrun] = useState<string>();
   const [requestLines, setRequestLines] = useState<IRequestLines[]>([]);
   const [rpsData, setRpsData] = useState<IRpsData>({ time: [] as string[] } as IRpsData);
   const [rpsPerRequest, setRpsPerRequest] = useState<IPerRequestData>({
@@ -141,6 +137,7 @@ export default function Charts() {
     );
 
   const fetchCharts = () => {
+    console.log({ currentTestrun });
     if (currentTestrun) {
       const currentTimestamp = new Date().toISOString();
       const payload = {
@@ -162,23 +159,8 @@ export default function Charts() {
     }
   };
 
-  const fetchTestruns = () => {
-    fetchQuery<{ runId: string }[]>('/cloud-stats/testruns', {}, testrunIds => {
-      const testruns = testrunIds.map(({ runId }) => runId);
-      setTestruns(testruns);
-      setTestrunsForDisplay(testruns.map(runId => new Date(runId).toLocaleString()));
-      setCurrentTestrun(testruns[0]);
-    });
-  };
-
   useInterval(fetchCharts, 1000, {
     shouldRunInterval: swarmState === SWARM_STATE.SPAWNING || swarmState == SWARM_STATE.RUNNING,
-  });
-
-  useInterval(fetchTestruns, 500, {
-    shouldRunInterval:
-      !testruns.length ||
-      (!!previousTestrun && swarmState == SWARM_STATE.RUNNING && testruns[0] <= previousTestrun),
   });
 
   useEffect(() => {
@@ -187,31 +169,12 @@ export default function Charts() {
   }, []);
 
   useEffect(() => {
+    console.log('here!');
     fetchCharts();
   }, [currentTestrun]);
 
-  useEffect(() => {
-    if (swarmState === SWARM_STATE.STOPPED && testruns) {
-      setPreviousTestrun(testruns[0]);
-    }
-  }, [swarmState, testruns]);
-
   return (
     <>
-      <Box sx={{ my: 4, display: 'flex', columnGap: 4 }}>
-        {!!testrunsForDisplay.length && (
-          <Select
-            label='Test Run'
-            name='testrun'
-            onChange={(e: SelectChangeEvent<string>) => {
-              // find in test runs to get correct date format
-              setCurrentTestrun(testruns[testrunsForDisplay.indexOf(e.target.value)]);
-            }}
-            options={testrunsForDisplay}
-            sx={{ width: '250px' }}
-          />
-        )}
-      </Box>
       <LineChart<IRpsData>
         chartValueFormatter={chartValueFormatter}
         charts={rpsData}
@@ -239,6 +202,7 @@ export default function Charts() {
         title='Throughput / active users'
         yAxisLabels={['Users', 'RPS']}
       />
+      {console.log({ resolution })}
       <LineChart<IPerRequestData>
         chartValueFormatter={v => `${roundToDecimalPlaces(Number((v as string[])[1]), 2)}ms`}
         charts={avgResponseTimes}

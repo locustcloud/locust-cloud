@@ -1,7 +1,7 @@
 import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeProvider } from '@mui/material/styles';
+import useFetchTestruns from 'hooks/useFetchTestruns';
 import {
-  IRootState,
   SWARM_STATE,
   SwarmForm,
   tabConfig,
@@ -47,8 +47,9 @@ export default function App() {
   useFetchExceptions();
   useFetchTasks();
   useLogViewer();
+  useFetchTestruns();
 
-  const swarmState = useLocustSelector(({ swarm }: IRootState) => swarm.state);
+  const swarmState = useLocustSelector(({ swarm }) => swarm.state);
 
   const theme = useCreateTheme();
 

@@ -4,6 +4,10 @@ import { updateStateWithPayload } from 'redux/utils';
 
 export interface IToolbarState {
   resolution?: number;
+  currentTestrun?: string;
+  previousTestrun?: string;
+  testruns?: string[];
+  testrunsForDisplay?: string[];
 }
 
 export type ToolbarAction = PayloadAction<IToolbarState>;
