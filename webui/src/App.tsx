@@ -15,9 +15,9 @@ import {
 
 import Layout from 'components/Layout/Layout';
 import Charts from 'components/tabs/Charts';
+import Scatterplot from 'components/tabs/Scatterplot';
+import Stats from 'components/tabs/Stats';
 import { useLocustSelector } from 'redux/hooks';
-// import Scatterplot from 'components/tabs/Scatterplot';
-// import Stats from 'components/tabs/Stats';
 
 const tabs = [
   {
@@ -25,16 +25,16 @@ const tabs = [
     key: 'charts',
     component: Charts,
   },
-  // {
-  //   title: 'Stats',
-  //   key: 'stats',
-  //   component: Stats,
-  // },
-  // {
-  //   title: 'Scatterplot',
-  //   key: 'scatterplot',
-  //   component: Scatterplot,
-  // },
+  {
+    title: 'Stats',
+    key: 'stats',
+    component: Stats,
+  },
+  {
+    title: 'Scatterplot',
+    key: 'scatterplot',
+    component: Scatterplot,
+  },
   tabConfig.exceptions,
   tabConfig.logs,
   tabConfig.ratios,

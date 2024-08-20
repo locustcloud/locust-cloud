@@ -52,8 +52,7 @@ interface IResponseLengthResponse extends IPerRequestResponse {
 
 export default function Charts() {
   const { state: swarmState } = useLocustSelector(({ swarm }) => swarm);
-  const toolbar = useSelector(({ toolbar }) => toolbar);
-  const { resolution, currentTestrun } = toolbar;
+  const { resolution, currentTestrun } = useSelector(({ toolbar }) => toolbar);
 
   const [timestamp, setTimestamp] = useState(new Date().toISOString());
   const [requestLines, setRequestLines] = useState<IRequestLines[]>([]);
@@ -137,7 +136,6 @@ export default function Charts() {
     );
 
   const fetchCharts = () => {
-    console.log({ currentTestrun });
     if (currentTestrun) {
       const currentTimestamp = new Date().toISOString();
       const payload = {
