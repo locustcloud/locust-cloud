@@ -1,4 +1,3 @@
-from locust_cloud.timescale.api import Api
 from locust_cloud.timescale.exporter import Timescale
 
 import os
@@ -47,13 +46,3 @@ def on_locust_init(environment, **args):
             pg_database=PG_DATABASE,
             pg_port=PG_PORT,
         )
-
-        if environment.web_ui:
-            Api(
-                environment.web_ui.app,
-                pg_user=PG_USER,
-                pg_host=PG_HOST,
-                pg_password=PG_PASSWORD,
-                pg_database=PG_DATABASE,
-                pg_port=PG_PORT,
-            )
