@@ -29,7 +29,7 @@
             "group": "internal",
           },
           {
-            "pattern": "{components,redux,styles,tabs,utils}/**",
+            "pattern": "{components,hooks,redux,utils}/**",
             "group": "internal",
           },
         ],

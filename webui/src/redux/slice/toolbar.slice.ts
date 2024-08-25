@@ -6,14 +6,16 @@ export interface IToolbarState {
   resolution: number;
   currentTestrun?: string;
   previousTestrun?: string;
-  testruns?: string[];
-  testrunsForDisplay?: string[];
+  testruns: string[];
+  testrunsForDisplay: string[];
 }
 
 export type ToolbarAction = PayloadAction<Partial<IToolbarState>>;
 
 const initialState = {
   resolution: 5,
+  testruns: [] as string[],
+  testrunsForDisplay: [] as string[],
 };
 
 const toolbarSlice = createSlice({
