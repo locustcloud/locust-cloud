@@ -69,7 +69,7 @@ export default function Stats() {
       ([{ errorPercentage }]) => setErrorPercentage(roundToDecimalPlaces(errorPercentage, 2)),
     );
 
-  const fetchTimescaleGraphs = () => {
+  const fetchStats = () => {
     const currentTimestamp = new Date().toISOString();
     const payload = {
       start: currentTestrun,
@@ -86,12 +86,12 @@ export default function Stats() {
     setTimestamp(currentTimestamp);
   };
 
-  useInterval(fetchTimescaleGraphs, 1000, {
+  useInterval(fetchStats, 1000, {
     shouldRunInterval: swarmState === SWARM_STATE.SPAWNING || swarmState == SWARM_STATE.RUNNING,
   });
 
   useEffect(() => {
-    fetchTimescaleGraphs();
+    fetchStats();
   }, []);
 
   return (

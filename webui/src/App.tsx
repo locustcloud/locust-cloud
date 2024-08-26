@@ -1,6 +1,5 @@
 import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeProvider } from '@mui/material/styles';
-import useFetchTestruns from 'hooks/useFetchTestruns';
 import {
   SWARM_STATE,
   SwarmForm,
@@ -17,6 +16,8 @@ import Layout from 'components/Layout/Layout';
 import Charts from 'components/tabs/Charts';
 import Scatterplot from 'components/tabs/Scatterplot';
 import Stats from 'components/tabs/Stats';
+import Testruns from 'components/tabs/Testruns';
+import useFetchTestruns from 'hooks/useFetchTestruns';
 import { useLocustSelector } from 'redux/hooks';
 
 const tabs = [
@@ -29,6 +30,11 @@ const tabs = [
     title: 'Stats',
     key: 'stats',
     component: Stats,
+  },
+  {
+    title: 'Testruns',
+    key: 'testruns',
+    component: Testruns,
   },
   {
     title: 'Scatterplot',

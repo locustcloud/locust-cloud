@@ -10,7 +10,7 @@ import { toolbarActions } from 'redux/slice/toolbar.slice';
 
 export default function Toolbar() {
   const setToolbar = useAction(toolbarActions.setToolbar);
-  const { testruns = [], testrunsForDisplay = [] } = useSelector(({ toolbar }) => toolbar);
+  const { testruns, testrunsForDisplay } = useSelector(({ toolbar }) => toolbar);
 
   return (
     <Paper elevation={3}>
