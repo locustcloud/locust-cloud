@@ -1,4 +1,16 @@
-import LocustUi, { tabConfig } from 'locust-ui';
+import { CssBaseline, ThemeProvider } from '@mui/material';
+import LocustUi, {
+  Layout,
+  SWARM_STATE,
+  SwarmForm,
+  tabConfig,
+  Tabs,
+  useCreateTheme,
+  useFetchExceptions,
+  useFetchStats,
+  useFetchTasks,
+  useLogViewer,
+} from 'locust-ui';
 
 import Charts from 'components/tabs/Charts';
 import Scatterplot from 'components/tabs/Scatterplot';
@@ -35,7 +47,20 @@ const tabs = [
 ];
 
 export default function App() {
+  useFetchStats();
+  useFetchExceptions();
+  useFetchTasks();
+  useLogViewer();
   useFetchTestruns();
 
-  return <LocustUi tabs={tabs} />;
+  const theme = useCreateTheme();
+
+  return (
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <Layout>
+        <Tabs tabs={tabs} />
+      </Layout>
+    </ThemeProvider>
+  );
 }
