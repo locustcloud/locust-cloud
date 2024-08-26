@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { LineChart, useInterval, roundToDecimalPlaces, SWARM_STATE } from 'locust-ui';
 
+import Toolbar from 'components/Toolbar/Toolbar';
 import { useLocustSelector, useSelector } from 'redux/hooks';
 import {
   IRequestBody,
@@ -172,6 +173,7 @@ export default function Charts() {
 
   return (
     <>
+      <Toolbar />
       <LineChart<IRpsData>
         chartValueFormatter={chartValueFormatter}
         charts={rpsData}

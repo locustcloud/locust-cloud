@@ -1,4 +1,4 @@
-import { Container, Paper, SelectChangeEvent } from '@mui/material';
+import { Box, SelectChangeEvent } from '@mui/material';
 import { Select } from 'locust-ui';
 
 import {
@@ -13,31 +13,37 @@ export default function Toolbar() {
   const { testruns, testrunsForDisplay } = useSelector(({ toolbar }) => toolbar);
 
   return (
-    <Paper elevation={3}>
-      <Container maxWidth='xl' sx={{ display: 'flex', alignItems: 'center', columnGap: 2, py: 2 }}>
+    <Box
+      sx={{
+        display: 'flex',
+        columnGap: 2,
+        mb: 1,
+      }}
+    >
+      <Select
+        defaultValue={TOOLBAR_DEFAULT_RESOLUTION}
+        label='Resolution'
+        name='resolution'
+        onChange={(e: SelectChangeEvent<string>) =>
+          setToolbar({ resolution: Number(e.target.value) })
+        }
+        options={TOOLBAR_RESOLUTION_OPTIONS}
+        size='small'
+        sx={{ width: '150px' }}
+      />
+      {!!testrunsForDisplay.length && (
         <Select
-          defaultValue={TOOLBAR_DEFAULT_RESOLUTION}
-          label='Resolution'
-          name='resolution'
-          onChange={(e: SelectChangeEvent<string>) =>
-            setToolbar({ resolution: Number(e.target.value) })
-          }
-          options={TOOLBAR_RESOLUTION_OPTIONS}
-          sx={{ width: '150px' }}
+          label='Test Run'
+          name='testrun'
+          onChange={(e: SelectChangeEvent<string>) => {
+            // find in test runs to get correct date format
+            setToolbar({ currentTestrun: testruns[testrunsForDisplay.indexOf(e.target.value)] });
+          }}
+          options={testrunsForDisplay}
+          size='small'
+          sx={{ width: '250px' }}
         />
-        {!!testrunsForDisplay.length && (
-          <Select
-            label='Test Run'
-            name='testrun'
-            onChange={(e: SelectChangeEvent<string>) => {
-              // find in test runs to get correct date format
-              setToolbar({ currentTestrun: testruns[testrunsForDisplay.indexOf(e.target.value)] });
-            }}
-            options={testrunsForDisplay}
-            sx={{ width: '250px' }}
-          />
-        )}
-      </Container>
-    </Paper>
+      )}
+    </Box>
   );
 }

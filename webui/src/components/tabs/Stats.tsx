@@ -3,6 +3,7 @@ import { Box, Paper, Typography } from '@mui/material';
 import { Table, useInterval, roundToDecimalPlaces, SWARM_STATE } from 'locust-ui';
 
 import Gauge from 'components/Gauge/Gauge';
+import Toolbar from 'components/Toolbar/Toolbar';
 import { useLocustSelector, useSelector } from 'redux/hooks';
 import { IRequestBody, fetchQuery } from 'utils/api';
 
@@ -66,7 +67,10 @@ export default function Stats() {
     fetchQuery<IErrorPercentageResponse[]>(
       '/cloud-stats/error-percentage',
       body,
-      ([{ errorPercentage }]) => setErrorPercentage(roundToDecimalPlaces(errorPercentage, 2)),
+      ([{ errorPercentage }]) => {
+        const roundedPercentage = roundToDecimalPlaces(errorPercentage, 2);
+        setErrorPercentage(isNaN(roundedPercentage) ? 0 : roundedPercentage);
+      },
     );
 
   const fetchStats = () => {
@@ -96,6 +100,7 @@ export default function Stats() {
 
   return (
     <>
+      <Toolbar />
       <Paper elevation={3} sx={{ display: 'flex', justifyContent: 'space-between', px: 4, mb: 4 }}>
         <Box
           sx={{

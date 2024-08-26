@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { LineChart, useInterval, SWARM_STATE } from 'locust-ui';
 
+import Toolbar from 'components/Toolbar/Toolbar';
 import { useLocustSelector, useSelector } from 'redux/hooks';
 import {
   IPerRequestData,
@@ -81,16 +82,18 @@ export default function Scatterplot() {
   }, []);
 
   return (
-    scatterplot &&
-    requestLines && (
-      <LineChart<IPerRequestData>
-        chartValueFormatter={chartValueFormatter}
-        charts={scatterplot}
-        colors={['#8A2BE2', '#0000FF', '#00ca5a', '#FFA500', '#FFFF00', '#EE82EE']}
-        lines={requestLines}
-        scatterplot
-        title='Scatterplot'
-      />
-    )
+    <>
+      <Toolbar />
+      {scatterplot && requestLines && (
+        <LineChart<IPerRequestData>
+          chartValueFormatter={chartValueFormatter}
+          charts={scatterplot}
+          colors={['#8A2BE2', '#0000FF', '#00ca5a', '#FFA500', '#FFFF00', '#EE82EE']}
+          lines={requestLines}
+          scatterplot
+          title='Scatterplot'
+        />
+      )}
+    </>
   );
 }

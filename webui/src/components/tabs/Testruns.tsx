@@ -3,10 +3,10 @@ import { Box } from '@mui/material';
 import { LineChart, Table } from 'locust-ui';
 
 import { useSelector } from 'redux/hooks';
-import { IRequestBody, chartValueFormatter, fetchQuery } from 'utils/api';
+import { chartValueFormatter, fetchQuery } from 'utils/api';
 
 interface ITestrunsTable {
-  id: string;
+  runId: string;
   arguments: string;
   startTimeEpoch: string;
   numUsers: string;
@@ -45,9 +45,8 @@ interface ITestrunsResponseTime {
 }
 
 export default function Testruns() {
-  const { testruns, currentTestrun } = useSelector(({ toolbar }) => toolbar);
+  const { testruns } = useSelector(({ toolbar }) => toolbar);
 
-  const [timestamp, setTimestamp] = useState(new Date().toISOString());
   const [testrunsTableData, setTestrunsTableData] = useState<ITestrunsTable[]>([]);
   const [testrunsRps, setTestrunsRps] = useState<ITestrunsRps>({
     time: [] as string[],
@@ -56,10 +55,18 @@ export default function Testruns() {
     time: [] as string[],
   } as ITestrunsResponseTime);
 
-  const getTestrunsTable = (body: IRequestBody) =>
-    fetchQuery<ITestrunsTable[]>('/cloud-stats/testruns-table', body, setTestrunsTableData);
-  const getTestrunsRps = (body: IRequestBody) =>
-    fetchQuery<ITestrunsRpsResponse[]>('/cloud-stats/testruns-rps', body, response =>
+  const getTestrunsTable = () =>
+    fetchQuery<ITestrunsTable[]>('/cloud-stats/testruns-table', {}, testruns =>
+      setTestrunsTableData(
+        testruns.map(({ runId, ...testrunData }) => ({
+          ...testrunData,
+          runId: new Date(runId).toLocaleString(),
+        })),
+      ),
+    );
+
+  const getTestrunsRps = () =>
+    fetchQuery<ITestrunsRpsResponse[]>('/cloud-stats/testruns-rps', {}, response =>
       setTestrunsRps(
         response.reduce(
           (rpsChart, { avgRps, avgRpsFailed, time }) => ({
@@ -72,10 +79,10 @@ export default function Testruns() {
         ),
       ),
     );
-  const getTestrunsResponseTime = (body: IRequestBody) =>
+  const getTestrunsResponseTime = () =>
     fetchQuery<ITestrunsResponseTimeResponse[]>(
       '/cloud-stats/testruns-response-time',
-      body,
+      {},
       response =>
         setTestrunsResponseTime(
           response.reduce(
@@ -96,23 +103,10 @@ export default function Testruns() {
         ),
     );
 
-  const fetchTestruns = () => {
-    const currentTimestamp = new Date().toISOString();
-    const payload = {
-      start: currentTestrun,
-      end: timestamp,
-      testrun: currentTestrun,
-    };
-
-    getTestrunsTable(payload);
-    getTestrunsRps(payload);
-    getTestrunsResponseTime(payload);
-
-    setTimestamp(currentTimestamp);
-  };
-
   useEffect(() => {
-    fetchTestruns();
+    getTestrunsTable();
+    getTestrunsRps();
+    getTestrunsResponseTime();
   }, [testruns]);
 
   return (
@@ -121,16 +115,12 @@ export default function Testruns() {
         <Table
           rows={testrunsTableData}
           structure={[
-            { key: 'id', title: 'Run Id' },
-            { key: 'arguments', title: 'Arguments' },
-            { key: 'startTimeEpoch', title: 'Start Time Epoch' },
+            { key: 'runId', title: 'Run Id' },
             { key: 'numUsers', title: '# Users' },
             { key: 'requests', title: '# Requests' },
             { key: 'respTime', title: 'Response Time' },
             { key: 'rpsAvg', title: 'Average RPS' },
             { key: 'failRatio', title: 'Fail Ratio' },
-            { key: 'endTime', title: 'End Time' },
-            { key: 'endTimeEpoch', title: 'End Time Epoch' },
             { key: 'exitCode', title: 'Exit Code' },
             { key: 'runTime', title: 'Run Time' },
           ]}
