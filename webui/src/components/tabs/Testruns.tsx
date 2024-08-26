@@ -136,10 +136,6 @@ export default function Testruns() {
               name: 'Average RPS',
               key: 'avgRps',
             },
-            {
-              name: 'Average RPS Failed',
-              key: 'avgRpsFailed',
-            },
           ]}
           title='Throughput'
         />
@@ -151,10 +147,6 @@ export default function Testruns() {
             {
               name: 'Average Response Time',
               key: 'avgResponseTime',
-            },
-            {
-              name: 'Average Response Time Failed',
-              key: 'avgResponseTimeFailed',
             },
           ]}
           title='Response Time'
