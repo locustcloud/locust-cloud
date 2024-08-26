@@ -8,29 +8,37 @@ import { fetchQuery } from 'utils/api';
 export default function useFetchTestruns() {
   const setToolbar = useAction(toolbarActions.setToolbar);
   const swarmState = useLocustSelector(({ swarm }) => swarm.state);
-  const { testruns = [], previousTestrun } = useSelector(({ toolbar }) => toolbar);
+  const { testrunsForDisplay, previousTestrun } = useSelector(({ toolbar }) => toolbar);
 
   const fetchTestruns = () => {
-    fetchQuery<{ runId: string }[]>('/cloud-stats/testruns', {}, testrunIds => {
-      const testruns = testrunIds.map(({ runId }) => runId);
+    fetchQuery<{ runId: string; endTime: string }[]>('/cloud-stats/testruns', {}, testrunIds => {
+      const testruns = testrunIds.reduce(
+        (testrunMap, { runId, endTime }) => ({
+          ...testrunMap,
+          [new Date(runId).toLocaleString()]: { runId, endTime },
+        }),
+        {},
+      );
 
       setToolbar({
         testruns,
-        currentTestrun: testruns[0],
-        testrunsForDisplay: testruns.map(runId => new Date(runId).toLocaleString()),
+        currentTestrun: testrunIds[0].runId,
+        testrunsForDisplay: testrunIds.map(({ runId }) => new Date(runId).toLocaleString()),
       });
     });
   };
 
   useInterval(fetchTestruns, 500, {
     shouldRunInterval:
-      !testruns.length ||
-      (!!previousTestrun && swarmState == SWARM_STATE.RUNNING && testruns[0] <= previousTestrun),
+      !testrunsForDisplay.length ||
+      (!!previousTestrun &&
+        swarmState == SWARM_STATE.RUNNING &&
+        testrunsForDisplay[0] <= previousTestrun),
   });
 
   useEffect(() => {
-    if (swarmState === SWARM_STATE.STOPPED && testruns) {
-      setToolbar({ previousTestrun: testruns[0] });
+    if (swarmState === SWARM_STATE.STOPPED && testrunsForDisplay) {
+      setToolbar({ previousTestrun: testrunsForDisplay[0] });
     }
-  }, [swarmState, testruns]);
+  }, [swarmState, testrunsForDisplay]);
 }

@@ -45,7 +45,7 @@ interface ITestrunsResponseTime {
 }
 
 export default function Testruns() {
-  const { testruns } = useSelector(({ toolbar }) => toolbar);
+  const { testrunsForDisplay } = useSelector(({ toolbar }) => toolbar);
 
   const [testrunsTableData, setTestrunsTableData] = useState<ITestrunsTable[]>([]);
   const [testrunsRps, setTestrunsRps] = useState<ITestrunsRps>({
@@ -107,7 +107,7 @@ export default function Testruns() {
     getTestrunsTable();
     getTestrunsRps();
     getTestrunsResponseTime();
-  }, [testruns]);
+  }, [testrunsForDisplay]);
 
   return (
     <Box>
