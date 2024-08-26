@@ -32,14 +32,14 @@ const tabs = [
     component: Stats,
   },
   {
-    title: 'Testruns',
-    key: 'testruns',
-    component: Testruns,
-  },
-  {
     title: 'Scatterplot',
     key: 'scatterplot',
     component: Scatterplot,
+  },
+  {
+    title: 'Testruns',
+    key: 'testruns',
+    component: Testruns,
   },
   tabConfig.exceptions,
   tabConfig.logs,
