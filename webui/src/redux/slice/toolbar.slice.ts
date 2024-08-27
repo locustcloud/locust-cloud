@@ -2,11 +2,18 @@ import { PayloadAction, createSlice } from '@reduxjs/toolkit';
 
 import { updateStateWithPayload } from 'redux/utils';
 
+export interface ITestrunsMap {
+  [key: string]: {
+    runId: string;
+    endTime: string;
+  };
+}
+
 export interface IToolbarState {
   resolution: number;
   currentTestrun?: string;
   previousTestrun?: string;
-  testruns: string[];
+  testruns: ITestrunsMap;
   testrunsForDisplay: string[];
 }
 
@@ -14,7 +21,7 @@ export type ToolbarAction = PayloadAction<Partial<IToolbarState>>;
 
 const initialState = {
   resolution: 5,
-  testruns: [] as string[],
+  testruns: {},
   testrunsForDisplay: [] as string[],
 };
 

@@ -37,7 +37,7 @@ export default function Toolbar() {
           name='testrun'
           onChange={(e: SelectChangeEvent<string>) => {
             // find in test runs to get correct date format
-            setToolbar({ currentTestrun: testruns[testrunsForDisplay.indexOf(e.target.value)] });
+            setToolbar({ currentTestrun: testruns[e.target.value].runId });
           }}
           options={testrunsForDisplay}
           size='small'
