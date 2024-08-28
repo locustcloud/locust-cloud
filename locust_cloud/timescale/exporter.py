@@ -191,7 +191,7 @@ class Timescale:
             logging.error("Failed to write samples to Postgresql timescale database: " + repr(error))
             sys.exit(1)
 
-    def on_test_stop(self):
+    def on_test_stop(self, environment):
         if getattr(self, "_user_count_logger", False):
             self._user_count_logger.kill()
         self.log_stop_test_run()
