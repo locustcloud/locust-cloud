@@ -163,16 +163,15 @@ export default function Charts() {
   });
 
   useEffect(() => {
-    // handle initial load
-    fetchCharts();
-  }, []);
-
-  useEffect(() => {
     if (currentTestrun) {
       const { endTime } = testruns[new Date(currentTestrun).toLocaleString()];
+      // handle re-fetch on testrun or resolution change
       fetchCharts(endTime);
+    } else {
+      // handle initial load or resolution change
+      fetchCharts();
     }
-  }, [currentTestrun]);
+  }, [currentTestrun, resolution]);
 
   return (
     <>
