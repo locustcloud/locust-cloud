@@ -96,7 +96,7 @@ export default function Stats() {
 
   useEffect(() => {
     fetchStats();
-  }, []);
+  }, [currentTestrun]);
 
   return (
     <>

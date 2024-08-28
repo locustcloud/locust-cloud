@@ -68,6 +68,7 @@ class Timescale:
 
         events = self.env.events
         events.test_start.add_listener(self.on_test_start)
+        events.test_stop.add_listener(self.on_test_stop)
         events.request.add_listener(self.on_request)
         events.cpu_warning.add_listener(self.on_cpu_warning)
         events.quit.add_listener(self.on_quit)
@@ -190,6 +191,11 @@ class Timescale:
             logging.error("Failed to write samples to Postgresql timescale database: " + repr(error))
             sys.exit(1)
 
+    def on_test_stop(self):
+        if getattr(self, "_user_count_logger", False):
+            self._user_count_logger.kill()
+        self.log_stop_test_run()
+
     def on_quit(self, exit_code, **kwargs):
         self._finished = True
         atexit._clear()  # make sure we dont capture additional ctrl-c:s
@@ -257,7 +263,7 @@ class Timescale:
                 "INSERT INTO testruns (id, num_users, description, arguments) VALUES (%s,%s,%s,%s)",
                 (
                     self._run_id,
-                    self.env.parsed_options.num_users or 0,
+                    self.env.parsed_options.num_users or self.env.runner.user_count or 0,
                     "self.env.parsed_options.description",
                     " ".join(cmd),
                 ),

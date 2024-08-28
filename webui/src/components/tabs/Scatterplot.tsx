@@ -79,7 +79,7 @@ export default function Scatterplot() {
 
   useEffect(() => {
     fetchScatterplot();
-  }, []);
+  }, [currentTestrun]);
 
   return (
     <>

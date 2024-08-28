@@ -40,7 +40,7 @@ export const adaptPerNameChartData = <ChartType extends IPerRequestResponse>(
 ) =>
   chartData.reduce((chart, data) => {
     const { name, time } = data;
-    const value = data[key] as string;
+    const value = (data[key] as string) || '0';
     const timeAxis = chart.time || [];
     timeAxis.push(time);
 
