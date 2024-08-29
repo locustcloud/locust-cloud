@@ -1,6 +1,8 @@
 import { CssBaseline, ThemeProvider } from '@mui/material';
 import {
   Layout,
+  SWARM_STATE,
+  SwarmForm,
   tabConfig,
   Tabs,
   useCreateTheme,
@@ -15,6 +17,7 @@ import Scatterplot from 'components/tabs/Scatterplot';
 import Stats from 'components/tabs/Stats';
 import Testruns from 'components/tabs/Testruns';
 import useFetchTestruns from 'hooks/useFetchTestruns';
+import { useLocustSelector } from 'redux/hooks';
 
 const tabs = [
   {
@@ -51,14 +54,14 @@ export default function App() {
   useLogViewer();
   useFetchTestruns();
 
+  const swarmState = useLocustSelector(({ swarm }) => swarm.state);
+
   const theme = useCreateTheme();
 
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Layout>
-        <Tabs tabs={tabs} />
-      </Layout>
+      <Layout>{swarmState === SWARM_STATE.READY ? <SwarmForm /> : <Tabs tabs={tabs} />}</Layout>
     </ThemeProvider>
   );
 }
