@@ -160,6 +160,7 @@ export default function Charts() {
 
   useInterval(fetchCharts, 1000, {
     shouldRunInterval: swarmState === SWARM_STATE.SPAWNING || swarmState == SWARM_STATE.RUNNING,
+    immediate: true,
   });
 
   useEffect(() => {

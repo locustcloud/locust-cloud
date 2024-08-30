@@ -30,7 +30,7 @@ export default function useFetchTestruns() {
 
   useInterval(fetchTestruns, 500, {
     shouldRunInterval:
-      !testrunsForDisplay.length ||
+      (swarmState != SWARM_STATE.READY && !testrunsForDisplay.length) ||
       (!!previousTestrun &&
         swarmState == SWARM_STATE.RUNNING &&
         testrunsForDisplay[0] <= previousTestrun),
