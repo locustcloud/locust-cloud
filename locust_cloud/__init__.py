@@ -4,7 +4,6 @@ import os
 
 from locust import events
 from locust.argument_parser import LocustArgumentParser
-from locust.runner import STATE_STOPPED
 
 PG_USER = os.environ.get("PG_USER")
 PG_HOST = os.environ.get("PG_HOST")
@@ -38,8 +37,6 @@ def add_arguments(parser: LocustArgumentParser):
 
 @events.init.add_listener
 def on_locust_init(environment, **args):
-    environment.runner.state = STATE_STOPPED
-
     if environment.parsed_options.exporter:
         Timescale(
             environment,
