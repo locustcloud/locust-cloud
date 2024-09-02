@@ -39,10 +39,9 @@ dependencies = [
     "requests==2.32.3",
     "requests-oauthlib==2.0.0",
     "rsa==4.9",
-    "ruff==0.4.9",
+    "ruff==0.4.9", # lets move this to dev-dependencies later
     "s3transfer==0.10.1",
     "six==1.16.0",
-    "tox==4.15.1",
     "typing_extensions==4.12.2",
     "urllib3==2.2.1",
     "virtualenv==20.26.2",
