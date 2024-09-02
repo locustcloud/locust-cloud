@@ -19,7 +19,6 @@ jobs:
           cmd: install
           dir: locust_cloud/webui
       - run: uv venv
-      - run: uv pip install .
       - run: uv run ruff check
       - run: uv run mypy locust_cloud/
       - run: uvx --from build pyproject-build --wheel --installer uv
