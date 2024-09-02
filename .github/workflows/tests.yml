@@ -6,22 +6,25 @@ permissions:
   contents: read
 
 jobs:
-  tests:
+  build_and_cache:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
-        with:
-          python-version: "3.11"
-
-      - run: pip install -r requirements.txt
-
+      - name: Set up uv
+        run: curl -LsSf https://astral.sh/uv/0.4.2/install.sh | sh
+      - name: Install project
+        run: uv pip install .
       - name: Lint
-        run: python -m tox -e ruff
-
+        run: uv run ruff
       - name: Mypy
-        run: python -m tox -e mypy
-
+        run: uv run mypy
+      - name: build
+        run: uvx --from build pyproject-build --wheel --installer uv
+      - name: Upload Python dist as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          path: dist/*
+          
   lint_typecheck_webui:
     runs-on: ubuntu-latest
     steps:
