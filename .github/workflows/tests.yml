@@ -53,6 +53,8 @@ jobs:
     needs: [build_and_cache, lint_typecheck_webui]
     if: startsWith(github.event.ref, 'refs/tags')
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
     steps:
       - uses: actions/setup-python@v4
         with:
@@ -62,5 +64,3 @@ jobs:
         with:
           path: dist
       - uses: pypa/gh-action-pypi-publish@release/v1
-        permissions:
-          id-token: write
