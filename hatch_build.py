@@ -7,7 +7,7 @@ class BuildFrontend(BuildHookInterface):
     def initialize(self, version, build_data):
         
         try:
-            subprocess.check_output("yarn build", cwd="locust_cloud/webui",shell=True,stderr=subprocess.STDOUT)
+            subprocess.check_output("yarn build", cwd="locust_cloud/webui", shell=True, stderr=subprocess.STDOUT)
         except subprocess.CalledProcessError as e:
             raise RuntimeError("command '{}' return with error (code {}): {}".format(e.cmd, e.returncode, e.output)
 
