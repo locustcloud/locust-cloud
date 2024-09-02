@@ -20,7 +20,7 @@ jobs:
           dir: locust_cloud/webui
       - run: uv venv
       - run: uv pip install .
-      - run: uv run ruff
+      - run: uv run ruff check
       - run: uv run mypy
       - run: uvx --from build pyproject-build --wheel --installer uv
       - uses: actions/upload-artifact@v4
