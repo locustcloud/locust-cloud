@@ -11,7 +11,9 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - run: curl -LsSf https://astral.sh/uv/0.4.2/install.sh | sh
-      - uses: actions/setup-node@v4  
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
       - uses: borales/actions-yarn@v5
         with:
           cmd: install
