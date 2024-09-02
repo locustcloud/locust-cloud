@@ -9,7 +9,7 @@ jobs:
   build_and_cache:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - run: curl -LsSf https://astral.sh/uv/0.4.2/install.sh | sh
       - uses: actions/setup-node@v4
         with:
