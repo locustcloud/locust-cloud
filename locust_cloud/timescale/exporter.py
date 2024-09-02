@@ -116,9 +116,9 @@ class Timescale:
             logging.error(e)
             sys.exit(1)
 
-        if not self.env.parsed_options.worker:
-            environment._run_id = datetime.now(UTC)
-            msg = environment._run_id.strftime("%Y-%m-%d, %H:%M:%S.%f")
+        if not self.env.parsed_options or not self.env.parsed_options.worker:
+            environment._run_id = datetime.now(UTC)  # type: ignore
+            msg = environment._run_id.strftime("%Y-%m-%d, %H:%M:%S.%f")  # type: ignore
             if environment.runner is not None:
                 logging.debug(f"about to send run_id to workers: {msg}")
                 environment.runner.send_message("run_id", msg)
