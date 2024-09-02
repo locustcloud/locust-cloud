@@ -15,8 +15,8 @@ jobs:
       - run: uv pip install .
       - run: uv run ruff
       - run: uv run mypy
-      - run: npm install -g yarn
       - uses: actions/setup-node@v4  
+      - run: npm install -g yarn
       - run: uvx --from build pyproject-build --wheel --installer uv
       - uses: actions/upload-artifact@v4
         with:
