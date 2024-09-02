@@ -57,7 +57,10 @@ build-backend = "hatchling.build"
 include = [
     "locust_cloud/**/*"
 ]
+version = "dynamic"
 
+[tool.hatch.version]
+source = "git"
 
 [tool.hatch.build.hooks.custom]
 [tool.hatch.build.targets.BuildFrontend.hooks.custom]
