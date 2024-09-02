@@ -1,6 +1,6 @@
 [project]
 name = "locust-cloud"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -50,17 +50,16 @@ dependencies = [
 ]
 
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling", "hatch-vcs"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 include = [
     "locust_cloud/**/*"
 ]
-version = "dynamic"
 
 [tool.hatch.version]
-source = "git"
+source = "vcs"
 
 [tool.hatch.build.hooks.custom]
 [tool.hatch.build.targets.BuildFrontend.hooks.custom]
