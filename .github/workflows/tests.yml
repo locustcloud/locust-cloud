@@ -6,7 +6,7 @@ permissions:
   contents: read
 
 jobs:
-  build_and_cache:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -31,8 +31,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Set Node.js 20.x
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20.x
       - uses: borales/actions-yarn@v5
@@ -49,8 +48,8 @@ jobs:
           dir: locust_cloud/webui  
     
   publish:
-    name: PyPI - Publish if this is a tagged commit
-    needs: [build_and_cache, lint_typecheck_webui]
+    name: Publish to PyPI
+    needs: [build, lint_typecheck_webui]
     if: startsWith(github.event.ref, 'refs/tags')
     runs-on: ubuntu-latest
     permissions:
