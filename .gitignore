@@ -1,7 +1,4 @@
 venv
-.chalice/deployments/
-.chalice/venv/
-.chalice/policy*.json
 **/__pycache__
 locust_cloud.egg*
 .eggs

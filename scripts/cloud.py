@@ -172,6 +172,7 @@ def main():
             region_name=options.aws_region_name,
             aws_access_key_id=aws_access_key_id,
             aws_secret_access_key=aws_secret_access_key,
+            aws_session_token=aws_session_token,
         )
         locustfile_url = upload_file(
             session,
@@ -379,7 +380,7 @@ def teardown_cluster(
         raise Exception("Error tearing down Locust")
 
 
-def teardown_s3(session, s3_bucket, aws_access_key_id, aws_secret_access_key):
+def teardown_s3(session, s3_bucket):
     s3 = session.resource("s3")
     bucket = s3.Bucket(s3_bucket)
 
