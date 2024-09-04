@@ -102,6 +102,18 @@ parser.add_argument(
     env_var="AWS_SECRET_ACCESS_KEY",
 )
 parser.add_argument(
+    "--username",
+    type=str,
+    help="Authentication for deploying with Locust Cloud",
+    env_var="AWS_ACCESS_KEY_ID",
+)
+parser.add_argument(
+    "--password",
+    type=str,
+    help="Authentication for deploying with Locust Cloud",
+    env_var="AWS_SECRET_ACCESS_KEY",
+)
+parser.add_argument(
     "--aws-region-name",
     type=str,
     default=DEFAULT_REGION_NAME,
@@ -127,17 +139,39 @@ options, locust_options = parser.parse_known_args()
 
 
 def main():
-    if not options.aws_access_key_id or not options.aws_secret_access_key:
-        sys.stderr.write("aws-access-key-id and aws-secret-access-key need to be set to use Locust Cloud\n")
+    aws_access_key_id = options.aws_access_key_id
+    aws_secret_access_key = options.aws_secret_access_key
+    aws_session_token = None
+
+    if not ((options.aws_access_key_id and options.aws_secret_access_key) or (options.username and options.password)):
+        sys.stderr.write(
+            "Authentication is required to use Locust Cloud. Ensure your username and password are provided, or provide an aws_access_key_id and aws_secret_access_key directly.\n"
+        )
         sys.exit(1)
+
+    logging.info("Logging you into Locust cloud...")
+    if options.username and options.password:
+        response = requests.post(
+            "http://127.0.0.1:5000/login", json={"username": options.username, "password": options.password}
+        )
+
+        if response.status_code == 200:
+            credentials = response.json()
+            aws_access_key_id = credentials["aws_access_key_id"]
+            aws_secret_access_key = credentials["aws_secret_access_key"]
+            aws_session_token = credentials["aws_session_token"]
+
+        else:
+            sys.stderr.write("Authentication failed!\n")
+            sys.exit(1)
 
     s3_bucket = f"{options.kube_cluster_name}-{options.kube_namespace}"
 
     try:
         session = boto3.session.Session(
             region_name=options.aws_region_name,
-            aws_access_key_id=options.aws_access_key_id,
-            aws_secret_access_key=options.aws_secret_access_key,
+            aws_access_key_id=aws_access_key_id,
+            aws_secret_access_key=aws_secret_access_key,
         )
         locustfile_url = upload_file(
             session,
@@ -156,8 +190,9 @@ def main():
             )
 
         deployed_pods = deploy(
-            options.aws_access_key_id,
-            options.aws_secret_access_key,
+            aws_access_key_id,
+            aws_secret_access_key,
+            aws_session_token,
             locustfile_url,
             region_name=options.aws_region_name,
             cluster_name=options.kube_cluster_name,
@@ -178,8 +213,9 @@ def main():
     try:
         logging.info("Tearing down Locust cloud...")
         teardown_cluster(
-            options.aws_access_key_id,
-            options.aws_secret_access_key,
+            aws_access_key_id,
+            aws_secret_access_key,
+            aws_session_token,
             region_name=options.aws_region_name,
             cluster_name=options.kube_cluster_name,
             namespace=options.kube_namespace,
@@ -187,12 +223,10 @@ def main():
         teardown_s3(
             session,
             s3_bucket=s3_bucket,
-            aws_access_key_id=options.aws_access_key_id,
-            aws_secret_access_key=options.aws_secret_access_key,
+            aws_access_key_id=aws_access_key_id,
         )
-    except Exception as e:
-        print(e)
-        sys.stderr.write("Could not tear down Locust Cloud\n")
+    except Exception:
+        sys.stderr.write("Could not automatically tear down Locust Cloud.\n")
         sys.exit(1)
 
 
@@ -222,6 +256,7 @@ def upload_file(session, s3_bucket, region_name, filename, remote_filename=None)
 def deploy(
     aws_access_key_id,
     aws_secret_access_key,
+    aws_session_token,
     locustfile,
     region_name=None,
     cluster_name=DEFAULT_CLUSTER_NAME,
@@ -240,6 +275,7 @@ def deploy(
         headers={
             "AWS_ACCESS_KEY_ID": aws_access_key_id,
             "AWS_SECRET_ACCESS_KEY": aws_secret_access_key,
+            "AWS_SESSION_TOKEN": aws_session_token,
         },
         json={
             "locust_args": [
@@ -324,6 +360,7 @@ def stream_pod_logs(
 def teardown_cluster(
     aws_access_key_id,
     aws_secret_access_key,
+    aws_session_token,
     region_name=None,
     cluster_name=DEFAULT_CLUSTER_NAME,
     namespace=None,
@@ -333,6 +370,7 @@ def teardown_cluster(
         headers={
             "AWS_ACCESS_KEY_ID": aws_access_key_id,
             "AWS_SECRET_ACCESS_KEY": aws_secret_access_key,
+            "AWS_SESSION_TOKEN": aws_session_token,
         },
         params={"region_name": region_name, "namespace": namespace},
     )
