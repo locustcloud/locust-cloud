@@ -142,18 +142,17 @@ def main():
         locustfile_url = upload_file(
             session,
             s3_bucket=s3_bucket,
-            filename=options.locustfile,
-            remote_filename="locustfile.py",
             region_name=options.aws_region_name,
+            filename=options.locustfile,
         )
         requirements_url = ""
         if options.requirements:
             requirements_url = upload_file(
                 session,
                 s3_bucket=s3_bucket,
+                region_name=options.aws_region_name,
                 filename=options.requirements,
                 remote_filename="requirements.txt",
-                region_name=options.aws_region_name,
             )
 
         deployed_pods = deploy(
@@ -173,9 +172,8 @@ def main():
         )
     except KeyboardInterrupt:
         pass
-    except Exception as e:
-        print(e)
-        sys.stderr.write("An unkown error occured during deployment. Please contact an administrator\n")
+    except Exception:
+        sys.stderr.write("An unkown error occured during deployment. Please contact an administrator.\n")
 
     try:
         logging.info("Tearing down Locust cloud...")
@@ -198,14 +196,24 @@ def main():
         sys.exit(1)
 
 
-def upload_file(session, s3_bucket, filename, remote_filename, region_name):
+def upload_file(session, s3_bucket, region_name, filename, remote_filename=None):
+    if not remote_filename:
+        remote_filename = filename.split("/")[-1]
+
     logging.info(f"Uploading {remote_filename}...")
 
     s3 = session.client("s3")
 
     try:
         s3.upload_file(filename, s3_bucket, remote_filename)
-        return f"https://{s3_bucket}.s3.{region_name}.amazonaws.com/{remote_filename}"
+
+        presigned_url = s3.generate_presigned_url(
+            ClientMethod="get_object",
+            Params={"Bucket": s3_bucket, "Key": remote_filename},
+            ExpiresIn=3600,  # 1 hour
+        )
+
+        return presigned_url
     except FileNotFoundError:
         sys.stderr.write(f"Could not find '{filename}'\n")
         sys.exit(1)
@@ -237,8 +245,7 @@ def deploy(
             "locust_args": [
                 {
                     "name": "LOCUST_LOCUSTFILE",
-                    # "value": locustfile,
-                    "value": "https://raw.githubusercontent.com/locustio/locust/master/examples/basic.py",
+                    "value": locustfile,
                 },
                 {"name": "LOCUST_REQUIREMENTS_URL", "value": requirements},
                 {"name": "LOCUST_FLAGS", "value": " ".join(locust_options)},
