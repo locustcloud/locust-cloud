@@ -48,6 +48,8 @@ dependencies = [
     "virtualenv==20.26.2",
     "wcwidth==0.2.13",
     "websocket-client==1.8.0",
+    "psycopg2-binary",
+    "psycogreen"
 ]
 [project.scripts]
 locust-cloud="locust_cloud.cloud:main"
