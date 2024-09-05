@@ -12,7 +12,7 @@ import configargparse
 import requests
 from botocore.exceptions import ClientError
 
-LAMBDA = "https://alpha.getlocust.com/1"
+LAMBDA = "https://deployer.locust.cloud/1"
 DEFAULT_CLUSTER_NAME = "locust"
 DEFAULT_REGION_NAME = "eu-north-1"
 
@@ -152,7 +152,7 @@ def main():
     logging.info("Logging you into Locust cloud...")
     if options.username and options.password:
         response = requests.post(
-            "http://127.0.0.1:5000/login", json={"username": options.username, "password": options.password}
+            f"{LAMBDA}/auth/login", json={"username": options.username, "password": options.password}
         )
 
         if response.status_code == 200:
