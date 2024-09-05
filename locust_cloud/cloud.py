@@ -224,7 +224,6 @@ def main():
         teardown_s3(
             session,
             s3_bucket=s3_bucket,
-            aws_access_key_id=aws_access_key_id,
         )
     except Exception:
         sys.stderr.write("Could not automatically tear down Locust Cloud.\n")
