@@ -1,7 +1,7 @@
 [project]
 name = "locust-cloud"
 dynamic = ["version"]
-description = "Add your description here"
+description = "Locust Cloud"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
@@ -48,7 +48,11 @@ dependencies = [
     "virtualenv==20.26.2",
     "wcwidth==0.2.13",
     "websocket-client==1.8.0",
+    "psycopg2-binary",
+    "psycogreen"
 ]
+[project.scripts]
+locust-cloud="locust_cloud.cloud:main"
 
 [build-system]
 requires = ["hatchling", "hatch-vcs"]
