@@ -43,7 +43,7 @@ class LocustTomlConfigParser(configargparse.TomlConfigParser):
 
 
 logging.basicConfig(
-    format="[LOCUST-CLOUD] %(message)s",
+    format="[LOCUST-CLOUD] %(levelname)s: %(message)s",
     level=logging.INFO,
 )
 
@@ -105,13 +105,13 @@ parser.add_argument(
     "--username",
     type=str,
     help="Authentication for deploying with Locust Cloud",
-    env_var="AWS_ACCESS_KEY_ID",
+    env_var="LOCUST_CLOUD_USERNAME",
 )
 parser.add_argument(
     "--password",
     type=str,
     help="Authentication for deploying with Locust Cloud",
-    env_var="AWS_SECRET_ACCESS_KEY",
+    env_var="LOCUST_CLOUD_PASSWORD",
 )
 parser.add_argument(
     "--aws-region-name",
@@ -144,13 +144,13 @@ def main():
     aws_session_token = None
 
     if not ((options.aws_access_key_id and options.aws_secret_access_key) or (options.username and options.password)):
-        sys.stderr.write(
-            "Authentication is required to use Locust Cloud. Ensure your username and password are provided, or provide an aws_access_key_id and aws_secret_access_key directly.\n"
+        logging.error(
+            "Authentication is required to use Locust Cloud. Ensure your username and password are provided, or provide an aws_access_key_id and aws_secret_access_key directly."
         )
         sys.exit(1)
 
-    logging.info("Logging you into Locust cloud...")
     if options.username and options.password:
+        logging.info("Authenticating")
         response = requests.post(
             f"{LAMBDA}/auth/login", json={"username": options.username, "password": options.password}
         )
@@ -162,7 +162,9 @@ def main():
             aws_session_token = credentials["aws_session_token"]
 
         else:
-            sys.stderr.write("Authentication failed!\n")
+            logging.error(
+                f"HTTP {response.status_code}/{response.reason} - Response: {response.text} - URL: {response.request.url}"
+            )
             sys.exit(1)
 
     s3_bucket = f"{options.kube_cluster_name}-{options.kube_namespace}"
@@ -208,8 +210,9 @@ def main():
         )
     except KeyboardInterrupt:
         pass
-    except Exception:
-        sys.stderr.write("An unkown error occured during deployment. Please contact an administrator.\n")
+    except Exception as e:
+        logging.exception(e)
+        sys.exit(1)
 
     try:
         logging.info("Tearing down Locust cloud...")
@@ -225,8 +228,8 @@ def main():
             session,
             s3_bucket=s3_bucket,
         )
-    except Exception:
-        sys.stderr.write("Could not automatically tear down Locust Cloud.\n")
+    except Exception as e:
+        logging.error(f"Could not automatically tear down Locust Cloud: {e}")
         sys.exit(1)
 
 
@@ -234,7 +237,7 @@ def upload_file(session, s3_bucket, region_name, filename, remote_filename=None)
     if not remote_filename:
         remote_filename = filename.split("/")[-1]
 
-    logging.info(f"Uploading {remote_filename}...")
+    logging.debug(f"Uploading {remote_filename}...")
 
     s3 = session.client("s3")
 
@@ -249,7 +252,7 @@ def upload_file(session, s3_bucket, region_name, filename, remote_filename=None)
 
         return presigned_url
     except FileNotFoundError:
-        sys.stderr.write(f"Could not find '{filename}'\n")
+        logging.error(f"Could not find '{filename}'")
         sys.exit(1)
 
 
@@ -263,7 +266,7 @@ def deploy(
     namespace=None,
     requirements="",
 ):
-    logging.info("Your request for deployment has been submitted, please wait...")
+    logging.info("Deploying load generators...")
     locust_env_variables = [
         {"name": env_variable, "value": str(os.environ[env_variable])}
         for env_variable in os.environ
@@ -299,7 +302,7 @@ def deploy(
 
         sys.exit(1)
 
-    logging.info("Deployment created successfully!")
+    logging.info("Load generators deployed.")
     return response.json()["pods"]
 
 
@@ -332,7 +335,7 @@ def stream_pod_logs(
             time.sleep(1)
             continue
 
-    logging.info("Pods are ready! Logging will now switch to Cloudwatch")
+    logging.info("Pods are ready, switching to Locust logs.")
 
     timestamp = int((datetime.now() - timedelta(minutes=5)).timestamp())
     while True:
@@ -376,11 +379,13 @@ def teardown_cluster(
     )
 
     if response.status_code != 200:
-        raise Exception("Error tearing down Locust")
+        logging.error(
+            f"HTTP {response.status_code}/{response.reason} - Response: {response.text} - URL: {response.request.url}"
+        )
+        sys.exit(1)
 
 
 def teardown_s3(session, s3_bucket):
     s3 = session.resource("s3")
     bucket = s3.Bucket(s3_bucket)
-
     bucket.objects.delete()
