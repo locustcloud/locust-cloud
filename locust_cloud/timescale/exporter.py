@@ -1,28 +1,18 @@
+import atexit
 import json
 import logging
 import os
 import socket
 import sys
-from contextlib import contextmanager
-
-import gevent
-import locust.env
-from gevent.lock import Semaphore
-from locust.exception import CatchResponseError
-
-try:
-    import psycogreen.gevent
-except ModuleNotFoundError as e:
-    logging.error(f"'{e}', you need to install it using 'pip install psycogreen'")
-    sys.exit(1)
-
-psycogreen.gevent.patch_psycopg()
-import atexit
 from datetime import UTC, datetime, timedelta
 
+import gevent
 import greenlet
-import psycopg2
-import psycopg2.extras
+import locust.env
+import psycopg
+import psycopg.types.json
+from locust.exception import CatchResponseError
+from psycopg_pool import ConnectionPool
 
 
 def safe_serialize(obj):
@@ -32,39 +22,29 @@ def safe_serialize(obj):
     return json.dumps(obj, default=default)
 
 
-def print_t(s):
-    print(str(s), end="\t")
-
-
 class Timescale:
-    """
-    See timescale_listener_ex.py for documentation
-    """
-
-    dblock = Semaphore()
-    first_instance = True
-
     def __init__(self, environment: locust.env.Environment, pg_user, pg_host, pg_password, pg_database, pg_port):
-        if not Timescale.first_instance:
-            # we should refactor this into a module as it is much more pythonic
-            raise Exception(
-                "You tried to initialize the Timescale listener twice, maybe both in your locustfile and using command line --timescale? Ignoring second initialization."
-            )
-        Timescale.first_instance = False
         self.env = environment
         self._run_id = ""
-        self.dbconn = None
         self._samples: list[dict] = []
         self._background = gevent.spawn(self._run)
         self._hostname = socket.gethostname()
         self._finished = False
         self._pid = os.getpid()
 
-        self.pg_user = pg_user
-        self.pg_host = pg_host
-        self.pg_password = pg_password
-        self.pg_database = pg_database
-        self.pg_port = pg_port
+        def set_autocommit(conn: psycopg.Connection):
+            conn.autocommit = True
+
+        try:
+            self.pool = ConnectionPool(
+                conninfo=f"postgres://{pg_user}:{pg_password}@{pg_host}:{pg_port}/{pg_database}?sslmode=require",
+                min_size=1,
+                max_size=5,
+                configure=set_autocommit,
+            )
+        except Exception:
+            sys.stderr.write(f"Could not connect to postgres ({pg_user}@{pg_host}:{pg_port}).")
+            sys.exit(1)
 
         events = self.env.events
         events.test_start.add_listener(self.on_test_start)
@@ -82,40 +62,18 @@ class Timescale:
         logging.debug(f"run id from master: {msg.data}")
         self._run_id = datetime.strptime(msg.data, "%Y-%m-%d, %H:%M:%S.%f").replace(tzinfo=UTC)
 
-    @contextmanager
-    def dbcursor(self):
-        with self.dblock:
-            try:
-                if self.dbconn:
-                    if self.dbconn.closed:
-                        self.dbconn = self._dbconn()
-                    yield self.dbconn.cursor()
-            except psycopg2.Error:
-                try:
-                    # try to recreate connection
-                    self.dbconn = self._dbconn()
-                except Exception:
-                    pass
-                raise
-
     def on_cpu_warning(self, environment: locust.env.Environment, cpu_usage, message=None, timestamp=None, **kwargs):
         # passing a custom message & timestamp to the event is a haxx to allow using this event for reporting generic events
         if not timestamp:
             timestamp = datetime.now(UTC).isoformat()
         if not message:
             message = f"High CPU usage ({cpu_usage}%)"
-        with self.dbcursor() as cur:
-            cur.execute(
+        with self.pool.connection() as conn:
+            conn.execute(
                 "INSERT INTO events (time, text, run_id) VALUES (%s, %s, %s)", (timestamp, message, self._run_id)
             )
 
     def on_test_start(self, environment: locust.env.Environment):
-        try:
-            self.dbconn = self._dbconn()
-        except psycopg2.OperationalError as e:
-            logging.error(e)
-            sys.exit(1)
-
         if not self.env.parsed_options or not self.env.parsed_options.worker:
             environment._run_id = datetime.now(UTC)  # type: ignore
             msg = environment._run_id.strftime("%Y-%m-%d, %H:%M:%S.%f")  # type: ignore
@@ -125,43 +83,18 @@ class Timescale:
             self.log_start_testrun()
             self._user_count_logger = gevent.spawn(self._log_user_count)
 
-    def _dbconn(self) -> psycopg2.extensions.connection:
-        try:
-            conn = psycopg2.connect(
-                host=self.pg_host,
-                user=self.pg_user,
-                password=self.pg_password,
-                database=self.pg_database,
-                port=self.pg_port,
-                keepalives_idle=120,
-                keepalives_interval=20,
-                keepalives_count=6,
-            )
-
-            conn.autocommit = True
-        except Exception:
-            sys.stderr.write(f"Could not connect to postgres ({self.pg_user}@{self.pg_host}:{self.pg_port}).")
-            sys.exit(1)
-
-        return conn
-
     def _log_user_count(self):
         while True:
             if self.env.runner is None:
                 return  # there is no runner, so nothing to log...
             try:
-                with self.dbcursor() as cur:
-                    cur.execute(
+                with self.pool.connection() as conn:
+                    conn.execute(
                         """INSERT INTO number_of_users(time, run_id, user_count) VALUES (%s, %s, %s)""",
                         (datetime.now(UTC).isoformat(), self._run_id, self.env.runner.user_count),
                     )
-            except psycopg2.Error as error:
+            except psycopg.Error as error:
                 logging.error("Failed to write user count to Postgresql: " + repr(error))
-                try:
-                    # try to recreate connection
-                    self.user_conn = self._dbconn()
-                except Exception:
-                    pass
             gevent.sleep(2.0)
 
     def _run(self):
@@ -179,17 +112,16 @@ class Timescale:
 
     def write_samples_to_db(self, samples):
         try:
-            with self.dbcursor() as cur:
-                psycopg2.extras.execute_values(
-                    cur,
-                    """INSERT INTO requests(time,run_id,greenlet_id,loadgen,name,request_type,response_time,success,response_length,exception,pid,url,context) VALUES %s""",
+            with self.pool.connection() as conn:
+                conn.cursor().executemany(
+                    """
+INSERT INTO requests (time,run_id,greenlet_id,loadgen,name,request_type,response_time,success,response_length,exception,pid,url,context)
+VALUES (%(time)s, %(run_id)s, %(greenlet_id)s, %(loadgen)s, %(name)s, %(request_type)s, %(response_time)s, %(success)s, %(response_length)s, %(exception)s, %(pid)s, %(url)s, %(context)s)
+""",
                     samples,
-                    template="(%(time)s, %(run_id)s, %(greenlet_id)s, %(loadgen)s, %(name)s, %(request_type)s, %(response_time)s, %(success)s, %(response_length)s, %(exception)s, %(pid)s, %(url)s, %(context)s)",
                 )
-
-        except psycopg2.Error as error:
+        except psycopg.Error as error:
             logging.error("Failed to write samples to Postgresql timescale database: " + repr(error))
-            sys.exit(1)
 
     def on_test_stop(self, environment):
         if getattr(self, "_user_count_logger", False):
@@ -235,7 +167,7 @@ class Timescale:
             "success": success,
             "url": url[0:255] if url else None,
             "pid": self._pid,
-            "context": psycopg2.extras.Json(context, safe_serialize),
+            "context": psycopg.types.json.Json(context, safe_serialize),
         }
 
         if response_length >= 0:
@@ -258,8 +190,8 @@ class Timescale:
 
     def log_start_testrun(self):
         cmd = sys.argv[1:]
-        with self.dbcursor() as cur:
-            cur.execute(
+        with self.pool.connection() as conn:
+            conn.execute(
                 "INSERT INTO testruns (id, num_users, description, arguments) VALUES (%s,%s,%s,%s)",
                 (
                     self._run_id,
@@ -268,7 +200,7 @@ class Timescale:
                     " ".join(cmd),
                 ),
             )
-            cur.execute(
+            conn.execute(
                 "INSERT INTO events (time, text, run_id) VALUES (%s, %s, %s)",
                 (datetime.now(UTC).isoformat(), "Test run started", self._run_id),
             )
@@ -277,12 +209,12 @@ class Timescale:
         if not self.env.parsed_options.worker:  # only log for master/standalone
             end_time = datetime.now(UTC)
             try:
-                with self.dbcursor() as cur:
-                    cur.execute(
+                with self.pool.connection() as conn:
+                    conn.execute(
                         "INSERT INTO events (time, text, run_id) VALUES (%s, %s, %s)",
                         (end_time, f"Rampup complete, {user_count} users spawned", self._run_id),
                     )
-            except psycopg2.Error as error:
+            except psycopg.Error as error:
                 logging.error(
                     "Failed to insert rampup complete event time to Postgresql timescale database: " + repr(error)
                 )
@@ -291,16 +223,14 @@ class Timescale:
         logging.debug(f"Test run id {self._run_id} stopping")
         if self.env.parsed_options.worker:
             return  # only run on master or standalone
-        if getattr(self, "dbconn", None) is None:
-            return  # test_start never ran, so there's not much for us to do
         end_time = datetime.now(UTC)
         try:
-            with self.dbcursor() as cur:
-                cur.execute(
+            with self.pool.connection() as conn:
+                conn.execute(
                     "UPDATE testruns SET end_time = %s, exit_code = %s where id = %s",
                     (end_time, exit_code, self._run_id),
                 )
-                cur.execute(
+                conn.execute(
                     "INSERT INTO events (time, text, run_id) VALUES (%s, %s, %s)",
                     (end_time, f"Finished with exit code: {exit_code}", self._run_id),
                 )
@@ -308,7 +238,7 @@ class Timescale:
                 # We dont use start_time / end_time to calculate RPS, instead we use the time between the actual first and last request
                 # (as this is a more accurate measurement of the actual test)
                 try:
-                    cur.execute(
+                    conn.execute(
                         """
 UPDATE testruns
 SET (requests, resp_time_avg, rps_avg, fail_ratio) =
@@ -316,20 +246,20 @@ SET (requests, resp_time_avg, rps_avg, fail_ratio) =
 (SELECT
  COUNT(*)::numeric AS reqs,
  AVG(response_time)::numeric as resp_time
- FROM requests WHERE run_id = %s AND time > %s) AS _,
+ FROM requests WHERE run_id = %(run_id)s AND time > %(run_id)s) AS _,
 (SELECT
- EXTRACT(epoch FROM (SELECT MAX(time)-MIN(time) FROM requests WHERE run_id = %s AND time > %s))::numeric AS duration) AS __,
+ EXTRACT(epoch FROM (SELECT MAX(time)-MIN(time) FROM requests WHERE run_id = %(run_id)s AND time > %(run_id)s))::numeric AS duration) AS __,
 (SELECT
  COUNT(*)::numeric AS fails
- FROM requests WHERE run_id = %s AND time > %s AND success = 0) AS ___
-WHERE id = %s""",
-                        [self._run_id] * 7,
+ FROM requests WHERE run_id = %(run_id)s AND time > %(run_id)s AND success = 0) AS ___
+WHERE id = %(run_id)s""",
+                        {"run_id": self._run_id},
                     )
-                except psycopg2.errors.DivisionByZero:
+                except psycopg.errors.DivisionByZero:
                     logging.info(
                         "Got DivisionByZero error when trying to update testruns, most likely because there were no requests logged"
                     )
-        except psycopg2.Error as error:
+        except psycopg.Error as error:
             logging.error(
                 "Failed to update testruns record (or events) with end time to Postgresql timescale database: "
                 + repr(error)
