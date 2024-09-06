@@ -105,13 +105,13 @@ parser.add_argument(
     "--username",
     type=str,
     help="Authentication for deploying with Locust Cloud",
-    env_var="AWS_ACCESS_KEY_ID",
+    env_var="LOCUST_CLOUD_USERNAME",
 )
 parser.add_argument(
     "--password",
     type=str,
     help="Authentication for deploying with Locust Cloud",
-    env_var="AWS_SECRET_ACCESS_KEY",
+    env_var="LOCUST_CLOUD_PASSWORD",
 )
 parser.add_argument(
     "--aws-region-name",
