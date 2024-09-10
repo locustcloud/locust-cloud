@@ -1,5 +1,7 @@
 import { roundToDecimalPlaces } from 'locust-ui';
 
+import { getCookie } from 'utils/cookie';
+
 export interface IRequestBody {
   start?: string;
   end?: string;
@@ -12,10 +14,11 @@ export function fetchQuery<ResponseType>(
   body: IRequestBody,
   onSuccess: (response: ResponseType) => void,
 ) {
-  fetch(`http://localhost:5000${url}`, {
+  fetch(`https://deployer.locust.cloud/1${url}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      Authorization: `Bearer ${getCookie('cognito_token')}`,
     },
     body: JSON.stringify(body),
   })
