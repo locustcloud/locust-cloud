@@ -150,6 +150,8 @@ def main():
         sys.exit(1)
 
     if options.username and options.password:
+        if options.aws_access_key_id or options.aws_secret_access_key:
+            logging.info("A username and password have been provided, the AWS keys will be ignored.")
         logging.info("Authenticating...")
         response = requests.post(
             f"{LAMBDA}/auth/login", json={"username": options.username, "password": options.password}
