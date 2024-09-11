@@ -14,7 +14,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20.x
-      - run: uv venv
+      - run: uv venv --python 3.11
       - run: uv run ruff check
       - run: uv run mypy --install-types --non-interactive locust_cloud/
       - run: uv run locust-cloud --help
