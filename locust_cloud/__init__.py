@@ -1,3 +1,4 @@
+from locust_cloud.auth import register_auth
 from locust_cloud.timescale.exporter import Timescale
 
 import os
@@ -47,3 +48,6 @@ def on_locust_init(environment, **args):
             pg_database=PG_DATABASE,
             pg_port=PG_PORT,
         )
+
+    if environment.web_ui:
+        register_auth(environment)

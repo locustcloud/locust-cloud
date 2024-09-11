@@ -150,7 +150,9 @@ def main():
         sys.exit(1)
 
     if options.username and options.password:
-        logging.info("Authenticating")
+        if options.aws_access_key_id or options.aws_secret_access_key:
+            logging.info("A username and password have been provided, the AWS keys will be ignored.")
+        logging.info("Authenticating...")
         response = requests.post(
             f"{LAMBDA}/auth/login", json={"username": options.username, "password": options.password}
         )
@@ -160,7 +162,7 @@ def main():
             aws_access_key_id = credentials["aws_access_key_id"]
             aws_secret_access_key = credentials["aws_secret_access_key"]
             aws_session_token = credentials["aws_session_token"]
-
+            cognito_client_id_token = credentials["cognito_client_id_token"]
         else:
             logging.error(
                 f"HTTP {response.status_code}/{response.reason} - Response: {response.text} - URL: {response.request.url}"
@@ -196,6 +198,7 @@ def main():
             aws_access_key_id,
             aws_secret_access_key,
             aws_session_token,
+            cognito_client_id_token,
             locustfile_url,
             region_name=options.aws_region_name,
             cluster_name=options.kube_cluster_name,
@@ -220,6 +223,7 @@ def main():
             aws_access_key_id,
             aws_secret_access_key,
             aws_session_token,
+            cognito_client_id_token,
             region_name=options.aws_region_name,
             cluster_name=options.kube_cluster_name,
             namespace=options.kube_namespace,
@@ -260,6 +264,7 @@ def deploy(
     aws_access_key_id,
     aws_secret_access_key,
     aws_session_token,
+    cognito_client_id_token,
     locustfile,
     region_name=None,
     cluster_name=DEFAULT_CLUSTER_NAME,
@@ -279,6 +284,7 @@ def deploy(
             "AWS_ACCESS_KEY_ID": aws_access_key_id,
             "AWS_SECRET_ACCESS_KEY": aws_secret_access_key,
             "AWS_SESSION_TOKEN": aws_session_token,
+            "Authorization": f"Bearer {cognito_client_id_token}",
         },
         json={
             "locust_args": [
@@ -364,6 +370,7 @@ def teardown_cluster(
     aws_access_key_id,
     aws_secret_access_key,
     aws_session_token,
+    cognito_client_id_token,
     region_name=None,
     cluster_name=DEFAULT_CLUSTER_NAME,
     namespace=None,
@@ -374,6 +381,7 @@ def teardown_cluster(
             "AWS_ACCESS_KEY_ID": aws_access_key_id,
             "AWS_SECRET_ACCESS_KEY": aws_secret_access_key,
             "AWS_SESSION_TOKEN": aws_session_token,
+            "Authorization": f"Bearer {cognito_client_id_token}",
         },
         params={"region_name": region_name, "namespace": namespace},
     )
