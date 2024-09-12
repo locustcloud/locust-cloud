@@ -55,13 +55,13 @@ export default function Stats() {
     fetchQuery<ITotalRequestsResponse[]>(
       '/cloud-stats/total-requests',
       body,
-      ([{ totalRequests }]) => setTotalRequests(totalRequests),
+      ([{ totalRequests }]) => setTotalRequests(totalRequests || 0),
     );
   const getTotalFailures = (body: IRequestBody) =>
     fetchQuery<ITotalFailuresResponse[]>(
       '/cloud-stats/total-failures',
       body,
-      ([{ totalFailures }]) => setTotalFailures(totalFailures),
+      ([{ totalFailures }]) => setTotalFailures(totalFailures || 0),
     );
   const getErrorPercentage = (body: IRequestBody) =>
     fetchQuery<IErrorPercentageResponse[]>(

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { LinearProgress } from '@mui/material';
 import { LineChart, useInterval, roundToDecimalPlaces, SWARM_STATE } from 'locust-ui';
 
 import Toolbar from 'components/Toolbar/Toolbar';
@@ -18,9 +19,9 @@ interface IRequestLines {
 }
 
 interface IRpsResponse {
-  users: string;
-  rps: string;
-  errorRate: string;
+  users: string | null;
+  rps: string | null;
+  errorRate: string | null;
   time: string;
 }
 
@@ -51,28 +52,31 @@ interface IResponseLengthResponse extends IPerRequestResponse {
   responseLength: number;
 }
 
+const defaultPerRequestState = { time: [] } as IPerRequestData;
+const defaultRpsDataState = { time: [] as string[] } as IRpsData;
+
+const carryLastValue = (values?: [string, string][]) => {
+  if (!values) {
+    return '0';
+  }
+
+  return values[values.length - 1][1];
+};
+
 export default function Charts() {
   const { state: swarmState } = useLocustSelector(({ swarm }) => swarm);
   const { resolution, currentTestrun, testruns } = useSelector(({ toolbar }) => toolbar);
 
+  const [isLoading, setIsLoading] = useState(true);
   const [timestamp, setTimestamp] = useState(new Date().toISOString());
   const [requestLines, setRequestLines] = useState<IRequestLines[]>([]);
-  const [rpsData, setRpsData] = useState<IRpsData>({ time: [] as string[] } as IRpsData);
-  const [rpsPerRequest, setRpsPerRequest] = useState<IPerRequestData>({
-    time: [],
-  } as IPerRequestData);
-  const [avgResponseTimes, setAvgResponseTimes] = useState<IPerRequestData>({
-    time: [],
-  } as IPerRequestData);
-  const [errorsPerRequest, setErrorsPerRequest] = useState<IPerRequestData>({
-    time: [],
-  } as IPerRequestData);
-  const [perc99ResponseTimes, setPerc99ResponseTimes] = useState<IPerRequestData>({
-    time: [],
-  } as IPerRequestData);
-  const [responseLength, setResponseLength] = useState<IPerRequestData>({
-    time: [],
-  } as IPerRequestData);
+  const [rpsData, setRpsData] = useState<IRpsData>(defaultRpsDataState);
+  const [rpsPerRequest, setRpsPerRequest] = useState<IPerRequestData>(defaultPerRequestState);
+  const [avgResponseTimes, setAvgResponseTimes] = useState<IPerRequestData>(defaultPerRequestState);
+  const [errorsPerRequest, setErrorsPerRequest] = useState<IPerRequestData>(defaultPerRequestState);
+  const [perc99ResponseTimes, setPerc99ResponseTimes] =
+    useState<IPerRequestData>(defaultPerRequestState);
+  const [responseLength, setResponseLength] = useState<IPerRequestData>(defaultPerRequestState);
 
   const getRequestNames = (body: IRequestBody) =>
     fetchQuery<{ name: string }[]>('/cloud-stats/request-names', body, requestNames =>
@@ -88,9 +92,9 @@ export default function Charts() {
       setRpsData(
         rps.reduce(
           (rpsChart, { users, rps, errorRate, time }) => ({
-            users: [...(rpsChart.users || []), [time, users]],
-            rps: [...(rpsChart.rps || []), [time, rps]],
-            errorRate: [...(rpsChart.errorRate || []), [time, errorRate]],
+            users: [...(rpsChart.users || []), [time, users || carryLastValue(rpsChart.users)]],
+            rps: [...(rpsChart.rps || []), [time, rps || '0']],
+            errorRate: [...(rpsChart.errorRate || []), [time, errorRate || '0']],
             time: [...(rpsChart.time || []), time],
           }),
           {} as IRpsData,
@@ -106,10 +110,14 @@ export default function Charts() {
     fetchQuery<IAvgResponseTimesResponse[]>(
       '/cloud-stats/avg-response-times',
       body,
-      avgResponseTimes =>
+      avgResponseTimes => {
         setAvgResponseTimes(
           adaptPerNameChartData<IAvgResponseTimesResponse>(avgResponseTimes, 'responseTime'),
-        ),
+        );
+        if (isLoading) {
+          setIsLoading(false);
+        }
+      },
     );
   const getErrorsPerRequest = (body: IRequestBody) =>
     fetchQuery<IErrorsPerRequestResponse[]>(
@@ -173,6 +181,16 @@ export default function Charts() {
       fetchCharts();
     }
   }, [currentTestrun, resolution]);
+
+  useEffect(() => {
+    if (swarmState === SWARM_STATE.RUNNING) {
+      setIsLoading(true);
+    }
+  }, [swarmState]);
+
+  if (isLoading) {
+    return <LinearProgress />;
+  }
 
   return (
     <>

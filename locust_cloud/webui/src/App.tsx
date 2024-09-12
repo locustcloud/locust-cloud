@@ -1,6 +1,5 @@
 import { CssBaseline, ThemeProvider } from '@mui/material';
 import {
-  Layout,
   SWARM_STATE,
   SwarmForm,
   tabConfig,
@@ -12,6 +11,7 @@ import {
   useLogViewer,
 } from 'locust-ui';
 
+import Layout from 'components/Layout/Layout';
 import Charts from 'components/tabs/Charts';
 import Scatterplot from 'components/tabs/Scatterplot';
 import Stats from 'components/tabs/Stats';
