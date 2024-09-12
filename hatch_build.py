@@ -1,6 +1,6 @@
 import subprocess
 
-from hatchling.builders.hooks.plugin.interface import BuildHookInterface
+from hatchling.builders.hooks.plugin.interface import BuildHookInterface  # type: ignore
 
 
 class BuildFrontend(BuildHookInterface):
