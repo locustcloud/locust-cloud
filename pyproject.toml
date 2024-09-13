@@ -23,8 +23,6 @@ dependencies = [
     "inquirer==2.10.1",
     "jmespath==1.0.1",
     "kubernetes==29.0.0",
-    "mypy==1.10.0",
-    "mypy-extensions==1.0.0",
     "oauthlib==3.2.2",
     "packaging==24.1",
     "platformdirs==4.2.2",
@@ -39,8 +37,6 @@ dependencies = [
     "requests==2.32.3",
     "requests-oauthlib==2.0.0",
     "rsa==4.9",
-    # lets move ruff to dev-dependencies later
-    "ruff==0.5.2",
     "s3transfer==0.10.1",
     "six==1.16.0",
     "typing_extensions==4.12.2",
@@ -89,3 +85,14 @@ locust_cloud = ["locust_cloud"]
 ignore_missing_imports = true
 python_version = "3.11"
 
+[tool.uv]
+dev-dependencies = [
+    "ruff>=0.6.4",
+    "pyright>=1.1.380",
+    "types-boto3>=1.0.2",
+]
+
+
+[tool.pyright]
+reportOptionalMemberAccess = "warning"
+reportPossiblyUnboundVariable = "warning"
