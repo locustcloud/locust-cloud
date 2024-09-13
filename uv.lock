@@ -566,7 +566,7 @@ wheels = [
 
 [[package]]
 name = "locust-cloud"
-version = "1.0.3.dev1+g197ccd0.d20240912"
+version = "1.0.4.dev0+g9afa425.d20240913"
 source = { editable = "." }
 dependencies = [
     { name = "blessed", marker = "python_full_version >= '3.11'" },
@@ -637,7 +637,7 @@ requires-dist = [
     { name = "inquirer", specifier = "==2.10.1" },
     { name = "jmespath", specifier = "==1.0.1" },
     { name = "kubernetes", specifier = "==29.0.0" },
-    { name = "locust", specifier = "==2.31.5" },
+    { name = "locust", specifier = ">=2.31.5" },
     { name = "oauthlib", specifier = "==3.2.2" },
     { name = "packaging", specifier = "==24.1" },
     { name = "platformdirs", specifier = "==4.2.2" },
