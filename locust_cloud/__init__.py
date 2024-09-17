@@ -6,8 +6,6 @@ import os
 from locust import events
 from locust.argument_parser import LocustArgumentParser
 
-os.environ["LOCUST_BUILD_PATH"] = os.path.join(os.path.dirname(__file__), "webui/dist")
-os.environ["LOCUST_WEB_LOGIN"] = "1"
 PG_USER = os.environ.get("PG_USER")
 PG_HOST = os.environ.get("PG_HOST")
 PG_PASSWORD = os.environ.get("PG_PASSWORD")
@@ -40,6 +38,8 @@ def add_arguments(parser: LocustArgumentParser):
 
 @events.init.add_listener
 def on_locust_init(environment, **args):
+    os.environ["LOCUST_BUILD_PATH"] = os.path.join(os.path.dirname(__file__), "webui/dist")
+
     if environment.parsed_options.exporter:
         Timescale(
             environment,
