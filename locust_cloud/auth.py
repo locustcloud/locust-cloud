@@ -5,7 +5,7 @@ import requests
 from flask import redirect, request, url_for
 from flask_login import UserMixin, current_user, login_user
 
-LAMBDA = "http://127.0.0.1:8000/1"
+LAMBDA = "https://deployer.locust.cloud/1"
 
 
 class AuthUser(UserMixin):
