@@ -15,6 +15,7 @@ from botocore.exceptions import ClientError
 LAMBDA = "https://deployer.locust.cloud/1"
 DEFAULT_CLUSTER_NAME = "locust"
 DEFAULT_REGION_NAME = "eu-north-1"
+LOCUST_ENV_VARIABLE_IGNORE_LIST = ["LOCUST_BUILD_PATH", "LOCUST_SKIP_MONKEY_PATCH"]
 
 
 class LocustTomlConfigParser(configargparse.TomlConfigParser):
@@ -275,7 +276,7 @@ def deploy(
     locust_env_variables = [
         {"name": env_variable, "value": str(os.environ[env_variable])}
         for env_variable in os.environ
-        if env_variable.startswith("LOCUST_")
+        if env_variable.startswith("LOCUST_") and env_variable not in LOCUST_ENV_VARIABLE_IGNORE_LIST
     ]
 
     response = requests.post(

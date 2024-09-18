@@ -12,6 +12,8 @@ PG_PASSWORD = os.environ.get("PG_PASSWORD")
 PG_DATABASE = os.environ.get("PG_DATABASE")
 PG_PORT = os.environ.get("PG_PORT", 5432)
 
+os.environ["LOCUST_BUILD_PATH"] = os.path.join(os.path.dirname(__file__), "webui/dist")
+
 
 @events.init_command_line_parser.add_listener
 def add_arguments(parser: LocustArgumentParser):
@@ -38,8 +40,6 @@ def add_arguments(parser: LocustArgumentParser):
 
 @events.init.add_listener
 def on_locust_init(environment, **args):
-    os.environ["LOCUST_BUILD_PATH"] = os.path.join(os.path.dirname(__file__), "webui/dist")
-
     if environment.parsed_options.exporter:
         Timescale(
             environment,
