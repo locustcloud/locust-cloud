@@ -25,7 +25,7 @@ def safe_serialize(obj):
 class Timescale:
     def __init__(self, environment: locust.env.Environment, pg_user, pg_host, pg_password, pg_database, pg_port):
         self.env = environment
-        self._run_id = ""
+        self._run_id = None
         self._samples: list[dict] = []
         self._background = gevent.spawn(self._run)
         self._hostname = socket.gethostname()
@@ -75,7 +75,7 @@ class Timescale:
 
     def on_test_start(self, environment: locust.env.Environment):
         if not self.env.parsed_options or not self.env.parsed_options.worker:
-            environment._run_id = datetime.now(UTC)  # type: ignore
+            self._run_id = environment._run_id = datetime.now(UTC)  # type: ignore
             msg = environment._run_id.strftime("%Y-%m-%d, %H:%M:%S.%f")  # type: ignore
             if environment.runner is not None:
                 logging.debug(f"about to send run_id to workers: {msg}")
