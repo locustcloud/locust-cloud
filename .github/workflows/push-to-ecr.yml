@@ -16,7 +16,7 @@ permissions:
 env:
   AWS_ACCOUNT_ID: 637423602143
   AWS_REGION: eu-north-1
-  ECR_REPOSITORY: locust-test
+  ECR_REPOSITORY: locust
 
 jobs:
   build-and-push:
