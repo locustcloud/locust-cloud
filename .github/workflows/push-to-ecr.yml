@@ -2,7 +2,12 @@ name: Build and Push Docker Image to ECR
 
 on:
   push:
-    branches: [ feature/ecr-push ]
+    branches:
+      - master
+      - feature/ecr-push
+    tags:
+      - 'v*'
+  workflow_dispatch: 
 
 permissions:
   id-token: write
@@ -11,7 +16,7 @@ permissions:
 env:
   AWS_ACCOUNT_ID: 637423602143
   AWS_REGION: eu-north-1
-  ECR_REPOSITORY: locust-test
+  ECR_REPOSITORY: locust
 
 jobs:
   build-and-push:
@@ -34,11 +39,29 @@ jobs:
         with:
           region: ${{ env.AWS_REGION }}
 
+      - name: Set image tags and repository
+        id: tags
+        run: |
+          if [[ $GITHUB_REF == refs/heads/master ]]; then
+            TAGS="master"
+            REPO="${{ env.ECR_REPOSITORY }}"
+          elif [[ $GITHUB_REF == refs/tags/* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/}
+            TAGS="$VERSION latest"
+            REPO="${{ env.ECR_REPOSITORY }}"
+          fi
+          echo "TAGS=$TAGS" >> $GITHUB_ENV
+          echo "REPO=$REPO" >> $GITHUB_ENV
+
       - name: Build Docker image
         run: |
           docker build -t locust .
-          docker tag locust:latest ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}:latest
+          for TAG in $TAGS; do
+            docker tag locust:latest ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.REPO }}:$TAG
+          done
 
       - name: Push Docker image to ECR
         run: |
-          docker push ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}:latest
+          for TAG in $TAGS; do
+            docker push ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.REPO }}:$TAG
+          done
