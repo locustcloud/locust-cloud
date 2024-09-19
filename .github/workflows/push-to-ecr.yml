@@ -5,7 +5,7 @@ on:
     branches:
       - master
     tags:
-      - 'v*'
+      - '*'
   workflow_dispatch: 
 
 permissions:
@@ -48,6 +48,9 @@ jobs:
             VERSION=${GITHUB_REF#refs/tags/}
             TAGS="$VERSION latest"
             REPO="${{ env.ECR_REPOSITORY }}"
+          else
+            echo "No matching branch or tag found. Exiting."
+            exit 1
           fi
           echo "TAGS=$TAGS" >> $GITHUB_ENV
           echo "REPO=$REPO" >> $GITHUB_ENV
