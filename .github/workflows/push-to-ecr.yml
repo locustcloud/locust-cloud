@@ -1,0 +1,38 @@
+name: Build and Push Docker Image to ECR
+
+on:
+  push:
+    branches: [ feature/ecr-push ]
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials via OIDC
+        id: aws-creds
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: arn:aws:iam::637423602143:role/GitHubActionsECRPushRole
+          aws-region: us-west-2
+          role-session-name: GitHubActionsECRPushSession
+
+      - name: Login to Amazon ECR
+        run: |
+          aws ecr get-login-password --region us-west-2 | docker login --username AWS --password-stdin 637423602143.dkr.ecr.eu-north-1.amazonaws.com
+
+      - name: Build Docker image
+        run: |
+          docker build -t locust .
+          docker tag locust:latest 637423602143.dkr.ecr.eu-north-1.amazonaws.com/locust-test:latest
+
+      - name: Push Docker image to ECR
+        run: |
+          docker push 123456789012.dkr.ecr.us-west-2.amazonaws.com/locust-test:latest
