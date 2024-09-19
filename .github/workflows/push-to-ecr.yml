@@ -45,9 +45,6 @@ jobs:
           if [[ $GITHUB_REF == refs/heads/master ]]; then
             TAGS="master"
             REPO="${{ env.ECR_REPOSITORY }}"
-          elif [[ $GITHUB_REF == refs/heads/feature/ecr-push ]]; then
-            TAGS="feature-ecr-push"
-            REPO="${{ env.ECR_REPOSITORY }}"
           elif [[ $GITHUB_REF == refs/tags/* ]]; then
             VERSION=${GITHUB_REF#refs/tags/}
             TAGS="$VERSION latest"
