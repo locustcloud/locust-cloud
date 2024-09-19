@@ -17,6 +17,8 @@ DEFAULT_CLUSTER_NAME = "locust"
 DEFAULT_REGION_NAME = "eu-north-1"
 LOCUST_ENV_VARIABLE_IGNORE_LIST = ["LOCUST_BUILD_PATH", "LOCUST_SKIP_MONKEY_PATCH"]
 
+print(LOCUST_ENV_VARIABLE_IGNORE_LIST)
+
 
 class LocustTomlConfigParser(configargparse.TomlConfigParser):
     def parse(self, stream):
