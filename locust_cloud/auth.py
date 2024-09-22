@@ -1,5 +1,5 @@
-import datetime
 import os
+from datetime import UTC, datetime, timedelta
 
 import requests
 from flask import redirect, request, url_for
@@ -21,9 +21,9 @@ def set_credentials(credentials, response):
     user_sub_id = credentials["user_sub_id"]
     refresh_token = credentials["refresh_token"]
 
-    response.set_cookie("cognito_token", id_token, expires=datetime.datetime.utcnow() + datetime.timedelta(days=1))
-    response.set_cookie("user_token", refresh_token, expires=datetime.datetime.utcnow() + datetime.timedelta(days=365))
-    response.set_cookie("user_sub_id", user_sub_id, expires=datetime.datetime.utcnow() + datetime.timedelta(days=365))
+    response.set_cookie("cognito_token", id_token, expires=datetime.now(tz=UTC) + timedelta(days=1))
+    response.set_cookie("user_token", refresh_token, expires=datetime.now(tz=UTC) + timedelta(days=365))
+    response.set_cookie("user_sub_id", user_sub_id, expires=datetime.now(tz=UTC) + timedelta(days=365))
 
     return response
 
