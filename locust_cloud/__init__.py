@@ -1,10 +1,11 @@
-from locust_cloud.auth import register_auth
-from locust_cloud.timescale.exporter import Timescale
-
 import os
+
+os.environ["LOCUST_SKIP_MONKEY_PATCH"] = "1"
 
 from locust import events
 from locust.argument_parser import LocustArgumentParser
+from locust_cloud.auth import register_auth
+from locust_cloud.timescale.exporter import Timescale
 
 PG_USER = os.environ.get("PG_USER")
 PG_HOST = os.environ.get("PG_HOST")
