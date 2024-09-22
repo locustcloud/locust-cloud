@@ -12,16 +12,21 @@ PG_PASSWORD = os.environ.get("PG_PASSWORD")
 PG_DATABASE = os.environ.get("PG_DATABASE")
 PG_PORT = os.environ.get("PG_PORT", 5432)
 
-os.environ["LOCUST_BUILD_PATH"] = os.path.join(os.path.dirname(__file__), "webui/dist")
-
 
 @events.init_command_line_parser.add_listener
 def add_arguments(parser: LocustArgumentParser):
+    if not PG_HOST:
+        parser.add_argument_group(
+            "locust-cloud",
+            "locust-cloud disabled, because PG_HOST was not set - this is normal for local runs",
+        )
+        return
+
+    os.environ["LOCUST_BUILD_PATH"] = os.path.join(os.path.dirname(__file__), "webui/dist")
     locust_cloud = parser.add_argument_group(
         "locust-cloud",
-        "Arguments for use with Locust cloud!",
+        "Arguments for use with Locust cloud",
     )
-
     locust_cloud.add_argument(
         "--exporter",
         default=True,
@@ -40,6 +45,9 @@ def add_arguments(parser: LocustArgumentParser):
 
 @events.init.add_listener
 def on_locust_init(environment, **args):
+    if not PG_HOST:
+        return
+
     if environment.parsed_options.exporter:
         Timescale(
             environment,
