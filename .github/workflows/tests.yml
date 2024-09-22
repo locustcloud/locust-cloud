@@ -16,6 +16,7 @@ jobs:
           node-version: 20.x
       - run: uv venv --python 3.11
       - run: uv run ruff check
+      - run: uv run ruff format --check
       - run: uv run pyright
       - run: uv run locust-cloud --help
       - run: uvx --from build pyproject-build --wheel --installer uv
