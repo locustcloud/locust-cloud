@@ -543,7 +543,7 @@ wheels = [
 
 [[package]]
 name = "locust"
-version = "2.31.5"
+version = "2.31.6"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "configargparse", marker = "python_full_version >= '3.11'" },
@@ -559,14 +559,14 @@ dependencies = [
     { name = "requests" },
     { name = "werkzeug", marker = "python_full_version >= '3.11'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/09/b3/af891e53130cff33329d05bd9e3632c125052d26981075659b86b8620599/locust-2.31.5.tar.gz", hash = "sha256:14b2fa6f95bf248668e6dc92d100a44f06c5dcb1c26f88a5442bcaaee18faceb", size = 1187764 }
+sdist = { url = "https://files.pythonhosted.org/packages/3e/ca/d09b4ffa73b5fee13dd6531ea255242b725391650e3abed6656117bcd5f2/locust-2.31.6.tar.gz", hash = "sha256:03b6da0491d6a0b905692d9ac128d9deec403f40dc605c481a90dbab5126318c", size = 1187678 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/7a/6b/3aa29e826ce02a3ca00b2e14f4955de0ef9e749badca04cac12c9eb562d4/locust-2.31.5-py3-none-any.whl", hash = "sha256:2904ff6307d54d3202c9ebd776f9170214f6dfbe4059504dad9e3ffaca03f600", size = 1204517 },
+    { url = "https://files.pythonhosted.org/packages/c6/9f/82ab96cf748894e2405a167eaab6c5d7e6e19d1dbfb8235310ed9dc6b2ba/locust-2.31.6-py3-none-any.whl", hash = "sha256:004c963c7a588dc15d57d710cdc6a262d85b57936d7fad3c38ac0657aa98fc3b", size = 1204609 },
 ]
 
 [[package]]
 name = "locust-cloud"
-version = "1.0.4.dev0+g9afa425.d20240913"
+version = "1.0.9.dev1+gf31346b.d20240923"
 source = { editable = "." }
 dependencies = [
     { name = "blessed", marker = "python_full_version >= '3.11'" },
@@ -637,7 +637,7 @@ requires-dist = [
     { name = "inquirer", specifier = "==2.10.1" },
     { name = "jmespath", specifier = "==1.0.1" },
     { name = "kubernetes", specifier = "==29.0.0" },
-    { name = "locust", specifier = ">=2.31.5" },
+    { name = "locust", specifier = ">=2.31.6" },
     { name = "oauthlib", specifier = "==3.2.2" },
     { name = "packaging", specifier = "==24.1" },
     { name = "platformdirs", specifier = "==4.2.2" },
