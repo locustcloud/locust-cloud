@@ -1,3 +1,5 @@
+# cloud.py
+
 import json
 import logging
 import os
@@ -6,27 +8,36 @@ import time
 import tomllib
 from collections import OrderedDict
 from datetime import datetime, timedelta
+from typing import IO, Any
 
-import boto3
 import configargparse
 import requests
 from botocore.exceptions import ClientError
+from locust_cloud.constants import (
+    DEFAULT_CLUSTER_NAME,
+    DEFAULT_NAMESPACE,
+    DEFAULT_REGION_NAME,
+    LAMBDA_URL,
+)
+from locust_cloud.credential_manager import CredentialError, CredentialManager
 
-LAMBDA = "https://deployer.locust.cloud/1"
-DEFAULT_CLUSTER_NAME = "locust"
-DEFAULT_REGION_NAME = "eu-north-1"
+logging.basicConfig(
+    format="[LOCUST-CLOUD] %(levelname)s: %(message)s",
+    level=logging.INFO,
+)
+logger = logging.getLogger(__name__)
+
 LOCUST_ENV_VARIABLE_IGNORE_LIST = ["LOCUST_BUILD_PATH", "LOCUST_SKIP_MONKEY_PATCH"]
 
 
 class LocustTomlConfigParser(configargparse.TomlConfigParser):
-    def parse(self, stream):
+    def parse(self, stream: IO[str]) -> OrderedDict[str, Any]:
         try:
             config = tomllib.loads(stream.read())
         except Exception as e:
             raise configargparse.ConfigFileParserException(f"Couldn't parse TOML file: {e}")
 
-        # convert to dict and filter based on section names
-        result = OrderedDict()
+        result: OrderedDict[str, Any] = OrderedDict()
 
         for section in self.sections:
             data = configargparse.get_toml_section(config, section)
@@ -34,19 +45,12 @@ class LocustTomlConfigParser(configargparse.TomlConfigParser):
                 for key, value in data.items():
                     if isinstance(value, list):
                         result[key] = value
-                    elif value is None:
-                        pass
-                    else:
+                    elif value is not None:
                         result[key] = str(value)
                 break
 
         return result
 
-
-logging.basicConfig(
-    format="[LOCUST-CLOUD] %(levelname)s: %(message)s",
-    level=logging.INFO,
-)
 
 parser = configargparse.ArgumentParser(
     default_config_files=[
@@ -68,7 +72,6 @@ parser = configargparse.ArgumentParser(
 
 Example: locust-cloud -f locust.py --aws-access-key-id 123 --aws-secret-access-key 456""",
     epilog="""Any parameters not listed here are forwarded to locust master unmodified, so go ahead and use things like --users, --host, --run-time, ...
-
 Locust config can also be set using config file (~/.locust.conf, locust.conf, pyproject.toml, ~/.cloud.conf or cloud.conf).
 Parameters specified on command line override env vars, which in turn override config files.""",
     add_config_file_help=False,
@@ -80,7 +83,7 @@ parser.add_argument(
     "--locustfile",
     metavar="<filename>",
     default="locustfile.py",
-    help="The Python file or module that contains your test, e.g. 'my_test.py'. Defaults to 'locustfile'.",
+    help="The Python file or module that contains your test, e.g. 'my_test.py'. Defaults to 'locustfile.py'.",
     env_var="LOCUST_LOCUSTFILE",
 )
 parser.add_argument(
@@ -89,30 +92,6 @@ parser.add_argument(
     type=str,
     help="Optional requirements.txt file that contains your external libraries.",
     env_var="LOCUST_REQUIREMENTS",
-)
-parser.add_argument(
-    "--aws-access-key-id",
-    type=str,
-    help="Authentication for deploying with Locust Cloud",
-    env_var="AWS_ACCESS_KEY_ID",
-)
-parser.add_argument(
-    "--aws-secret-access-key",
-    type=str,
-    help="Authentication for deploying with Locust Cloud",
-    env_var="AWS_SECRET_ACCESS_KEY",
-)
-parser.add_argument(
-    "--username",
-    type=str,
-    help="Authentication for deploying with Locust Cloud",
-    env_var="LOCUST_CLOUD_USERNAME",
-)
-parser.add_argument(
-    "--password",
-    type=str,
-    help="Authentication for deploying with Locust Cloud",
-    env_var="LOCUST_CLOUD_PASSWORD",
 )
 parser.add_argument(
     "--aws-region-name",
@@ -131,270 +110,238 @@ parser.add_argument(
 parser.add_argument(
     "--kube-namespace",
     type=str,
-    default="default",
+    default=DEFAULT_NAMESPACE,
     help="Sets the namespace for scoping the deployed cluster",
     env_var="KUBE_NAMESPACE",
+)
+parser.add_argument(
+    "--aws-access-key-id",
+    type=str,
+    help="Authentication for deploying with Locust Cloud",
+    env_var="AWS_ACCESS_KEY_ID",
+)
+parser.add_argument(
+    "--aws-secret-access-key",
+    type=str,
+    help="Authentication for deploying with Locust Cloud",
+    env_var="AWS_SECRET_ACCESS_KEY",
 )
 
 options, locust_options = parser.parse_known_args()
 
+username = os.environ.get("LOCUST_CLOUD_USERNAME")
+password = os.environ.get("LOCUST_CLOUD_PASSWORD")
 
-def main():
-    aws_access_key_id = options.aws_access_key_id
-    aws_secret_access_key = options.aws_secret_access_key
-    aws_session_token = None
 
-    if not ((options.aws_access_key_id and options.aws_secret_access_key) or (options.username and options.password)):
-        logging.error(
-            "Authentication is required to use Locust Cloud. Ensure your username and password are provided, or provide an aws_access_key_id and aws_secret_access_key directly."
-        )
-        sys.exit(1)
+def main() -> None:
+    s3_bucket = f"{options.kube_cluster_name}-{options.kube_namespace}"
 
-    if options.username and options.password:
-        if options.aws_access_key_id or options.aws_secret_access_key:
-            logging.info("A username and password have been provided, the AWS keys will be ignored.")
-        logging.info("Authenticating...")
-        response = requests.post(
-            f"{LAMBDA}/auth/login", json={"username": options.username, "password": options.password}
-        )
+    deployed_pods: list[Any] = []
 
-        if response.status_code == 200:
-            credentials = response.json()
-            aws_access_key_id = credentials["aws_access_key_id"]
-            aws_secret_access_key = credentials["aws_secret_access_key"]
-            aws_session_token = credentials["aws_session_token"]
-            cognito_client_id_token = credentials["cognito_client_id_token"]
+    credential_manager = None
+    credentials = None
+
+    try:
+        if options.aws_access_key_id and options.aws_secret_access_key:
+            credential_manager = CredentialManager(
+                lambda_url=LAMBDA_URL,
+                region_name=options.aws_region_name,
+                access_key=options.aws_access_key_id,
+                secret_key=options.aws_secret_access_key,
+            )
+        elif username and password:
+            credential_manager = CredentialManager(
+                lambda_url=LAMBDA_URL,
+                username=username,
+                password=password,
+                region_name=options.aws_region_name,
+            )
         else:
-            logging.error(
+            raise ValueError(
+                "Authentication is required to use Locust Cloud. Provide either AWS credentials or set the LOCUST_CLOUD_USERNAME and LOCUST_CLOUD_PASSWORD environment variables."
+            )
+
+        credentials = credential_manager.get_current_credentials()
+        cognito_client_id_token: str = credentials["cognito_client_id_token"]
+        aws_access_key_id = credentials.get("access_key")
+        aws_secret_access_key = credentials.get("secret_key")
+        aws_session_token = credentials.get("token")
+
+        if not all([aws_access_key_id, aws_secret_access_key]):
+            logger.error("Authentication failed: Missing AWS credentials.")
+            sys.exit(1)
+
+        logger.info(f"Uploading {options.locustfile} to S3 bucket {s3_bucket}...")
+        s3 = credential_manager.session.client("s3")
+        try:
+            s3.upload_file(options.locustfile, s3_bucket, os.path.basename(options.locustfile))
+            locustfile_url = s3.generate_presigned_url(
+                ClientMethod="get_object",
+                Params={"Bucket": s3_bucket, "Key": os.path.basename(options.locustfile)},
+                ExpiresIn=3600,
+            )
+            logger.info(f"Uploaded {options.locustfile} successfully.")
+        except FileNotFoundError:
+            logger.error(f"File not found: {options.locustfile}")
+            sys.exit(1)
+        except ClientError as e:
+            logger.error(f"Failed to upload {options.locustfile} to S3: {e}")
+            sys.exit(1)
+
+        requirements_url = ""
+        if options.requirements:
+            logger.info(f"Uploading {options.requirements} to S3 bucket {s3_bucket} as requirements.txt...")
+            try:
+                s3.upload_file(options.requirements, s3_bucket, "requirements.txt")
+                requirements_url = s3.generate_presigned_url(
+                    ClientMethod="get_object",
+                    Params={"Bucket": s3_bucket, "Key": "requirements.txt"},
+                    ExpiresIn=3600,
+                )
+                logger.info(f"Uploaded {options.requirements} successfully.")
+            except FileNotFoundError:
+                logger.error(f"File not found: {options.requirements}")
+                sys.exit(1)
+            except ClientError as e:
+                logger.error(f"Failed to upload {options.requirements} to S3: {e}")
+                sys.exit(1)
+
+        logger.info("Deploying load generators via API Gateway...")
+
+        locust_env_variables = [
+            {"name": env_variable, "value": str(os.environ[env_variable])}
+            for env_variable in os.environ
+            if env_variable.startswith("LOCUST_") and os.environ[env_variable]
+        ]
+        deploy_endpoint = f"{LAMBDA_URL}/{options.kube_cluster_name}"
+        payload = {
+            "locust_args": [
+                {"name": "LOCUST_LOCUSTFILE", "value": locustfile_url},
+                {"name": "LOCUST_REQUIREMENTS_URL", "value": requirements_url},
+                {"name": "LOCUST_FLAGS", "value": " ".join(locust_options)},
+                *locust_env_variables,
+            ]
+        }
+        headers = {
+            "Authorization": f"Bearer {cognito_client_id_token}",
+            "Content-Type": "application/json",
+            "AWS_ACCESS_KEY_ID": aws_access_key_id,
+            "AWS_SECRET_ACCESS_KEY": aws_secret_access_key,
+            "AWS_SESSION_TOKEN": aws_session_token if aws_session_token else "",
+        }
+        try:
+            response = requests.post(deploy_endpoint, json=payload, headers=headers)
+        except requests.exceptions.RequestException as e:
+            logger.error(f"HTTP request failed: {e}")
+            sys.exit(1)
+        if response.status_code == 200:
+            deployed_pods = response.json().get("pods", [])
+            logger.info("Load generators deployed successfully.")
+        else:
+            logger.error(
                 f"HTTP {response.status_code}/{response.reason} - Response: {response.text} - URL: {response.request.url}"
             )
             sys.exit(1)
 
-    s3_bucket = f"{options.kube_cluster_name}-{options.kube_namespace}"
-
-    try:
-        session = boto3.session.Session(
-            region_name=options.aws_region_name,
-            aws_access_key_id=aws_access_key_id,
-            aws_secret_access_key=aws_secret_access_key,
-            aws_session_token=aws_session_token,
-        )
-        locustfile_url = upload_file(
-            session,
-            s3_bucket=s3_bucket,
-            region_name=options.aws_region_name,
-            filename=options.locustfile,
-        )
-        requirements_url = ""
-        if options.requirements:
-            requirements_url = upload_file(
-                session,
-                s3_bucket=s3_bucket,
-                region_name=options.aws_region_name,
-                filename=options.requirements,
-                remote_filename="requirements.txt",
-            )
-
-        deployed_pods = deploy(
-            aws_access_key_id,
-            aws_secret_access_key,
-            aws_session_token,
-            cognito_client_id_token,
-            locustfile_url,
-            region_name=options.aws_region_name,
-            cluster_name=options.kube_cluster_name,
-            namespace=options.kube_namespace,
-            requirements=requirements_url,
-        )
-        stream_pod_logs(
-            session,
-            deployed_pods=deployed_pods,
-            cluster_name=options.kube_cluster_name,
-            namespace=options.kube_namespace,
-        )
-    except KeyboardInterrupt:
-        pass
-    except Exception as e:
-        logging.exception(e)
-        sys.exit(1)
-
-    try:
-        logging.info("Tearing down Locust cloud...")
-        teardown_cluster(
-            aws_access_key_id,
-            aws_secret_access_key,
-            aws_session_token,
-            cognito_client_id_token,
-            region_name=options.aws_region_name,
-            cluster_name=options.kube_cluster_name,
-            namespace=options.kube_namespace,
-        )
-        teardown_s3(
-            session,
-            s3_bucket=s3_bucket,
-        )
-    except Exception as e:
-        logging.error(f"Could not automatically tear down Locust Cloud: {e}")
-        sys.exit(1)
-
-
-def upload_file(session, s3_bucket, region_name, filename, remote_filename=None):
-    if not remote_filename:
-        remote_filename = filename.split("/")[-1]
-
-    logging.debug(f"Uploading {remote_filename}...")
-
-    s3 = session.client("s3")
-
-    try:
-        s3.upload_file(filename, s3_bucket, remote_filename)
-
-        presigned_url = s3.generate_presigned_url(
-            ClientMethod="get_object",
-            Params={"Bucket": s3_bucket, "Key": remote_filename},
-            ExpiresIn=3600,  # 1 hour
-        )
-
-        return presigned_url
-    except FileNotFoundError:
-        logging.error(f"Could not find '{filename}'")
-        sys.exit(1)
-
-
-def deploy(
-    aws_access_key_id,
-    aws_secret_access_key,
-    aws_session_token,
-    cognito_client_id_token,
-    locustfile,
-    region_name=None,
-    cluster_name=DEFAULT_CLUSTER_NAME,
-    namespace=None,
-    requirements="",
-):
-    logging.info("Deploying load generators...")
-    locust_env_variables = [
-        {"name": env_variable, "value": str(os.environ[env_variable])}
-        for env_variable in os.environ
-        if env_variable.startswith("LOCUST_") and env_variable not in LOCUST_ENV_VARIABLE_IGNORE_LIST
-    ]
-
-    response = requests.post(
-        f"{LAMBDA}/{cluster_name}",
-        headers={
-            "AWS_ACCESS_KEY_ID": aws_access_key_id,
-            "AWS_SECRET_ACCESS_KEY": aws_secret_access_key,
-            "AWS_SESSION_TOKEN": aws_session_token,
-            "Authorization": f"Bearer {cognito_client_id_token}",
-        },
-        json={
-            "locust_args": [
-                {
-                    "name": "LOCUST_LOCUSTFILE",
-                    "value": locustfile,
-                },
-                {"name": "LOCUST_REQUIREMENTS_URL", "value": requirements},
-                {"name": "LOCUST_FLAGS", "value": " ".join(locust_options)},
-                *locust_env_variables,
-            ]
-        },
-        params={"region_name": region_name, "namespace": namespace},
-    )
-
-    if response.status_code != 200:
-        if response.json().get("message"):
-            sys.stderr.write(f"{response.json().get('message')}\n")
-        else:
-            sys.stderr.write("An unkown error occured during deployment. Please contact an administrator\n")
-
-        sys.exit(1)
-
-    logging.info("Load generators deployed.")
-    return response.json()["pods"]
-
-
-def stream_pod_logs(
-    session,
-    deployed_pods,
-    cluster_name=DEFAULT_CLUSTER_NAME,
-    namespace=None,
-):
-    logging.info("Waiting for pods to be ready...")
-    client = session.client("logs")
-
-    log_group_name = f"/eks/{cluster_name}-{namespace}"
-    master_pod_name = [pod_name for pod_name in deployed_pods if "master" in pod_name][0]
-
-    log_stream = None
-    while log_stream is None:
-        try:
-            response = client.describe_log_streams(
-                logGroupName=log_group_name,
-                logStreamNamePrefix=f"from-fluent-bit-kube.var.log.containers.{master_pod_name}",
-            )
-            all_streams = response.get("logStreams")
-            if all_streams:
-                log_stream = all_streams[0].get("logStreamName")
-            else:
-                time.sleep(1)
-        except ClientError:
-            # log group name does not exist yet
-            time.sleep(1)
-            continue
-
-    logging.info("Pods are ready, switching to Locust logs.")
-
-    timestamp = int((datetime.now() - timedelta(minutes=5)).timestamp())
-    while True:
-        response = client.get_log_events(
-            logGroupName=log_group_name,
-            logStreamName=log_stream,
-            startTime=timestamp,
-            startFromHead=True,
-        )
-
-        for event in response["events"]:
-            message = event["message"]
-            timestamp = event["timestamp"] + 1
-
+        logger.info("Waiting for pods to be ready...")
+        log_group_name = f"/eks/{options.kube_cluster_name}-{options.kube_namespace}"
+        master_pod_name = next((pod for pod in deployed_pods if "master" in pod), None)
+        if not master_pod_name:
+            logger.error("Master pod not found among deployed pods.")
+            sys.exit(1)
+        log_stream: str | None = None
+        while log_stream is None:
             try:
-                message = json.loads(message)
-                if "log" in message:
-                    print(message["log"])
-            except json.JSONDecodeError:
-                pass
-
-        time.sleep(5)
-
-
-def teardown_cluster(
-    aws_access_key_id,
-    aws_secret_access_key,
-    aws_session_token,
-    cognito_client_id_token,
-    region_name=None,
-    cluster_name=DEFAULT_CLUSTER_NAME,
-    namespace=None,
-):
-    response = requests.delete(
-        f"{LAMBDA}/{cluster_name}",
-        headers={
-            "AWS_ACCESS_KEY_ID": aws_access_key_id,
-            "AWS_SECRET_ACCESS_KEY": aws_secret_access_key,
-            "AWS_SESSION_TOKEN": aws_session_token,
-            "Authorization": f"Bearer {cognito_client_id_token}",
-        },
-        params={"region_name": region_name, "namespace": namespace},
-    )
-
-    if response.status_code != 200:
-        logging.error(
-            f"HTTP {response.status_code}/{response.reason} - Response: {response.text} - URL: {response.request.url}"
-        )
+                client = credential_manager.session.client("logs")
+                response = client.describe_log_streams(
+                    logGroupName=log_group_name,
+                    logStreamNamePrefix=f"from-fluent-bit-kube.var.log.containers.{master_pod_name}",
+                )
+                all_streams = response.get("logStreams", [])
+                if all_streams:
+                    log_stream = all_streams[0].get("logStreamName")
+                else:
+                    time.sleep(1)
+            except ClientError as e:
+                logger.error(f"Error describing log streams: {e}")
+                time.sleep(5)
+        logger.info("Pods are ready, switching to Locust logs.")
+        timestamp = int((datetime.now() - timedelta(minutes=5)).timestamp())
+        while True:
+            try:
+                client = credential_manager.session.client("logs")
+                response = client.get_log_events(
+                    logGroupName=log_group_name,
+                    logStreamName=log_stream,
+                    startTime=timestamp,
+                    startFromHead=True,
+                )
+                for event in response.get("events", []):
+                    message = event.get("message", "")
+                    event_timestamp = event.get("timestamp", timestamp) + 1
+                    try:
+                        message_json = json.loads(message)
+                        if "log" in message_json:
+                            print(message_json["log"])
+                    except json.JSONDecodeError:
+                        print(message)
+                    timestamp = event_timestamp
+                time.sleep(5)
+            except ClientError as e:
+                error_code = e.response.get("Error", {}).get("Code", "")
+                if error_code == "ExpiredTokenException":
+                    logger.warning("AWS session token expired during log streaming. Refreshing credentials...")
+                    time.sleep(5)
+                else:
+                    logger.error(f"Error streaming logs: {e}")
+                    time.sleep(5)
+    except KeyboardInterrupt:
+        logger.debug("Interrupted by user.")
+    except CredentialError as ce:
+        logger.error(f"Credential error: {ce}")
         sys.exit(1)
+    except ValueError as ve:
+        logger.error(f"Value error: {ve}")
+        sys.exit(1)
+    except Exception as e:
+        logger.exception(e)
+        sys.exit(1)
+    finally:
+        assert credential_manager
+        assert credentials
+        try:
+            logger.info("Tearing down Locust cloud...")
+            try:
+                response = requests.delete(
+                    f"{LAMBDA_URL}/{options.kube_cluster_name}",
+                    headers={
+                        "AWS_ACCESS_KEY_ID": credentials.get("access_key", ""),
+                        "AWS_SECRET_ACCESS_KEY": credentials.get("secret_key", ""),
+                        "Authorization": f"Bearer {credentials.get('cognito_client_id_token', '')}",
+                        **({"AWS_SESSION_TOKEN": credentials["token"]} if credentials.get("token") else {}),
+                    },
+                    params={"namespace": options.kube_namespace} if options.kube_namespace else {},
+                )
+                if response.status_code != 200:
+                    logger.error(
+                        f"HTTP {response.status_code}/{response.reason} - Response: {response.text} - URL: {response.request.url}"
+                    )
+                else:
+                    logger.info("Cluster teardown initiated successfully.")
+            except requests.exceptions.RequestException as e:
+                logger.error(f"Failed to send teardown request: {e}")
+            logger.info(f"Cleaning up S3 bucket: {s3_bucket}")
+            try:
+                s3 = credential_manager.session.resource("s3")
+                bucket = s3.Bucket(s3_bucket)
+                bucket.objects.all().delete()
+                logger.info(f"S3 bucket {s3_bucket} cleaned up successfully.")
+            except ClientError as e:
+                logger.error(f"Failed to clean up S3 bucket {s3_bucket}: {e}")
+                sys.exit(1)
+        except Exception as e:
+            logger.error(f"Could not automatically tear down Locust Cloud: {e}")
 
 
-def teardown_s3(session, s3_bucket):
-    s3 = session.resource("s3")
-    bucket = s3.Bucket(s3_bucket)
-    bucket.objects.delete()
+if __name__ == "__main__":
+    main()

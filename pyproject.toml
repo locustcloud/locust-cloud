@@ -45,6 +45,8 @@ dependencies = [
     "wcwidth==0.2.13",
     "websocket-client==1.8.0",
     "psycopg[binary,pool]>=3.2.1",
+    "PyJWT>=2.0"
+
 ]
 [project.scripts]
 locust-cloud="locust_cloud.cloud:main"
@@ -72,7 +74,7 @@ source = "vcs"
 target-version = "py311"
 line-length = 120
 lint.ignore = ["E402", "E501", "E713", "E731"]
-lint.select = ["E", "F", "W", "UP", "I001"]
+lint.select = ["E", "F", "W", "UP", "I001", "ARG001"]
 
 [tool.ruff.lint.isort.sections]
 locust_cloud = ["locust_cloud"]

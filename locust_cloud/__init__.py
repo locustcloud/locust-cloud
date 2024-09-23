@@ -45,7 +45,7 @@ def add_arguments(parser: LocustArgumentParser):
 
 
 @events.init.add_listener
-def on_locust_init(environment, **args):
+def on_locust_init(environment, **_args):
     if not PG_HOST:
         return
 
