@@ -45,19 +45,18 @@ class CredentialManager:
         self.cognito_client_id_token: str = ""
         self.expiry_time: float = 0
 
+        self.obtain_credentials()
+
         self.refreshable_credentials = RefreshableCredentials.create_from_metadata(
-            metadata=self.refresh_credentials(),
+            metadata=self.get_current_credentials(),
             refresh_using=self.refresh_credentials,
             method="custom-refresh",
         )
 
         botocore_session = BotocoreSession()
-        botocore_session.set_credentials(
-            self.refreshable_credentials.access_key,
-            self.refreshable_credentials.secret_key,
-            self.refreshable_credentials.token,
-        )
+        botocore_session._credentials = self.refreshable_credentials  # type: ignore
         botocore_session.set_config_variable("signature_version", "v4")
+        botocore_session.set_config_variable("region", self.region_name)
 
         self.session = boto3.Session(
             botocore_session=botocore_session,
@@ -126,7 +125,6 @@ class CredentialManager:
             "secret_key": self.credentials.get("secret_key"),
             "token": self.credentials.get("token"),
             "expiry_time": datetime.fromtimestamp(self.expiry_time, tz=UTC).isoformat(),
-            "cognito_client_id_token": self.cognito_client_id_token,
         }
 
     def get_current_credentials(self) -> dict[str, Any]:
