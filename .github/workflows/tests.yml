@@ -18,8 +18,9 @@ jobs:
       - run: uv run ruff check
       - run: uv run ruff format --check
       - run: uv run pyright
+      # any local changes would make hatch-vcs set a "local version" (+dev0...), so we ignore any uv.lock updates:
+      - run: git update-index --assume-unchanged uv.lock 
       - run: uv run locust-cloud --help
-      - run: git status # no files can be changed, otherwise hatch-vcs will set a +dev0 local version.
       - run: uvx --from build pyproject-build --wheel --installer uv
       - uses: actions/upload-artifact@v4
         with:
