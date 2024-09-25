@@ -1,5 +1,3 @@
-# cloud.py
-
 import json
 import logging
 import os
@@ -7,7 +5,7 @@ import sys
 import time
 import tomllib
 from collections import OrderedDict
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import IO, Any
 
 import configargparse
@@ -26,6 +24,7 @@ logging.basicConfig(
     level=logging.INFO,
 )
 logger = logging.getLogger(__name__)
+
 
 LOCUST_ENV_VARIABLE_IGNORE_LIST = ["LOCUST_BUILD_PATH", "LOCUST_SKIP_MONKEY_PATCH"]
 
@@ -104,7 +103,7 @@ parser.add_argument(
     "--kube-cluster-name",
     type=str,
     default=DEFAULT_CLUSTER_NAME,
-    help="Sets the name of the kubernetes cluster",
+    help="Sets the name of the Kubernetes cluster",
     env_var="KUBE_CLUSTER_NAME",
 )
 parser.add_argument(
@@ -266,7 +265,9 @@ def main() -> None:
                 logger.error(f"Error describing log streams: {e}")
                 time.sleep(5)
         logger.info("Pods are ready, switching to Locust logs.")
-        timestamp = int((datetime.now() - timedelta(minutes=5)).timestamp())
+
+        timestamp = int((datetime.now(UTC) - timedelta(minutes=5)).timestamp() * 1000)
+
         while True:
             try:
                 client = credential_manager.session.client("logs")
@@ -292,9 +293,7 @@ def main() -> None:
                 if error_code == "ExpiredTokenException":
                     logger.warning("AWS session token expired during log streaming. Refreshing credentials...")
                     time.sleep(5)
-                else:
-                    logger.error(f"Error streaming logs: {e}")
-                    time.sleep(5)
+
     except KeyboardInterrupt:
         logger.debug("Interrupted by user.")
     except CredentialError as ce:
@@ -311,17 +310,26 @@ def main() -> None:
         assert credentials
         try:
             logger.info("Tearing down Locust cloud...")
+            credential_manager.refresh_credentials()
+            refreshed_credentials = credential_manager.get_current_credentials()
+
             try:
+                headers = {
+                    "AWS_ACCESS_KEY_ID": refreshed_credentials.get("access_key", ""),
+                    "AWS_SECRET_ACCESS_KEY": refreshed_credentials.get("secret_key", ""),
+                    "Authorization": f"Bearer {refreshed_credentials.get('cognito_client_id_token', '')}",
+                }
+
+                token = refreshed_credentials.get("token")
+                if token:
+                    headers["AWS_SESSION_TOKEN"] = token
+
                 response = requests.delete(
                     f"{LAMBDA_URL}/{options.kube_cluster_name}",
-                    headers={
-                        "AWS_ACCESS_KEY_ID": credentials.get("access_key", ""),
-                        "AWS_SECRET_ACCESS_KEY": credentials.get("secret_key", ""),
-                        "Authorization": f"Bearer {credentials.get('cognito_client_id_token', '')}",
-                        **({"AWS_SESSION_TOKEN": credentials["token"]} if credentials.get("token") else {}),
-                    },
+                    headers=headers,
                     params={"namespace": options.kube_namespace} if options.kube_namespace else {},
                 )
+
                 if response.status_code != 200:
                     logger.error(
                         f"HTTP {response.status_code}/{response.reason} - Response: {response.text} - URL: {response.request.url}"
@@ -330,6 +338,7 @@ def main() -> None:
                     logger.info("Cluster teardown initiated successfully.")
             except requests.exceptions.RequestException as e:
                 logger.error(f"Failed to send teardown request: {e}")
+
             logger.info(f"Cleaning up S3 bucket: {s3_bucket}")
             try:
                 s3 = credential_manager.session.resource("s3")
