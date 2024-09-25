@@ -314,20 +314,22 @@ def main() -> None:
             refreshed_credentials = credential_manager.get_current_credentials()
 
             try:
+                headers = {
+                    "AWS_ACCESS_KEY_ID": refreshed_credentials.get("access_key", ""),
+                    "AWS_SECRET_ACCESS_KEY": refreshed_credentials.get("secret_key", ""),
+                    "Authorization": f"Bearer {refreshed_credentials.get('cognito_client_id_token', '')}",
+                }
+
+                token = refreshed_credentials.get("token")
+                if token:
+                    headers["AWS_SESSION_TOKEN"] = token
+
                 response = requests.delete(
                     f"{LAMBDA_URL}/{options.kube_cluster_name}",
-                    headers={
-                        "AWS_ACCESS_KEY_ID": refreshed_credentials.get("access_key", ""),
-                        "AWS_SECRET_ACCESS_KEY": refreshed_credentials.get("secret_key", ""),
-                        "Authorization": f"Bearer {refreshed_credentials.get('cognito_client_id_token', '')}",
-                        **(
-                            {"AWS_SESSION_TOKEN": refreshed_credentials["token"]}
-                            if refreshed_credentials.get("token")
-                            else {}
-                        ),
-                    },
+                    headers=headers,
                     params={"namespace": options.kube_namespace} if options.kube_namespace else {},
                 )
+
                 if response.status_code != 200:
                     logger.error(
                         f"HTTP {response.status_code}/{response.reason} - Response: {response.text} - URL: {response.request.url}"
