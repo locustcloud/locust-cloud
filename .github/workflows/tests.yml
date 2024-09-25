@@ -24,6 +24,7 @@ jobs:
         with:
           name: dist-artifact
           path: dist/*
+          include-hidden-files: true
           
   lint_typecheck_webui:
     runs-on: ubuntu-latest
