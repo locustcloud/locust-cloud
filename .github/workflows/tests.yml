@@ -61,4 +61,5 @@ jobs:
         with:
           name: dist-artifact
           path: dist
+      - run: git status # no files can be changed, otherwise hatch-vcs will set a +dev0 local version.
       - uses: pypa/gh-action-pypi-publish@release/v1
