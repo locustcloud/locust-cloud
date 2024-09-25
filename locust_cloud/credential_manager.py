@@ -10,6 +10,10 @@ from botocore.credentials import RefreshableCredentials
 from botocore.session import Session as BotocoreSession
 from locust_cloud.constants import DEFAULT_REGION_NAME
 
+logging.basicConfig(
+    format="[LOCUST-CLOUD] %(levelname)s: %(message)s",
+    level=logging.INFO,
+)
 logger = logging.getLogger(__name__)
 
 
