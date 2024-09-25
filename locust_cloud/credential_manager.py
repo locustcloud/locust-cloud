@@ -77,8 +77,6 @@ class CredentialManager:
         else:
             raise CredentialError("Insufficient credentials to obtain AWS session.")
 
-        response = None
-
         try:
             response = requests.post(f"{self.lambda_url}/auth/login", json=payload)
             response.raise_for_status()
@@ -107,13 +105,12 @@ class CredentialManager:
             self.cognito_client_id_token = token
 
         except requests.exceptions.HTTPError as http_err:
-            if response:
-                error_info = f"Response: {response.text} - URL: {response.url}"
+            response = http_err.response
+            if response is not None and response.status_code == 401:
+                raise CredentialError("Incorrect username or password.") from http_err
             else:
-                error_info = "No response received."
-            raise CredentialError(
-                f"HTTP error occurred while obtaining credentials: {http_err} - {error_info}"
-            ) from http_err
+                error_info = f"HTTP {response.status_code} {response.reason}" if response else "No response received."
+                raise CredentialError(f"HTTP error occurred while obtaining credentials: {error_info}") from http_err
         except requests.exceptions.RequestException as req_err:
             raise CredentialError(f"Request exception occurred while obtaining credentials: {req_err}") from req_err
         except jwt.DecodeError as decode_err:

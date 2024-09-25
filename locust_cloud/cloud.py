@@ -134,11 +134,7 @@ password = os.environ.get("LOCUST_CLOUD_PASSWORD")
 
 def main() -> None:
     s3_bucket = f"{options.kube_cluster_name}-{options.kube_namespace}"
-
     deployed_pods: list[Any] = []
-
-    credential_manager = None
-    credentials = None
 
     try:
         if options.aws_access_key_id and options.aws_secret_access_key:
@@ -156,9 +152,10 @@ def main() -> None:
                 region_name=options.aws_region_name,
             )
         else:
-            raise ValueError(
+            logger.error(
                 "Authentication is required to use Locust Cloud. Provide either AWS credentials or set the LOCUST_CLOUD_USERNAME and LOCUST_CLOUD_PASSWORD environment variables."
             )
+            sys.exit(1)
 
         credentials = credential_manager.get_current_credentials()
         cognito_client_id_token: str = credentials["cognito_client_id_token"]
@@ -206,7 +203,6 @@ def main() -> None:
                 sys.exit(1)
 
         logger.info("Deploying load generators via API Gateway...")
-
         locust_env_variables = [
             {"name": env_variable, "value": str(os.environ[env_variable])}
             for env_variable in os.environ
@@ -241,7 +237,11 @@ def main() -> None:
                 f"HTTP {response.status_code}/{response.reason} - Response: {response.text} - URL: {response.request.url}"
             )
             sys.exit(1)
+    except CredentialError as ce:
+        logger.error(f"Credential error: {ce}")
+        sys.exit(1)
 
+    try:
         logger.info("Waiting for pods to be ready...")
         log_group_name = f"/eks/{options.kube_cluster_name}-{options.kube_namespace}"
         master_pod_name = next((pod for pod in deployed_pods if "master" in pod), None)
@@ -293,63 +293,51 @@ def main() -> None:
                 if error_code == "ExpiredTokenException":
                     logger.warning("AWS session token expired during log streaming. Refreshing credentials...")
                     time.sleep(5)
-
     except KeyboardInterrupt:
         logger.debug("Interrupted by user.")
-    except CredentialError as ce:
-        logger.error(f"Credential error: {ce}")
-        sys.exit(1)
-    except ValueError as ve:
-        logger.error(f"Value error: {ve}")
-        sys.exit(1)
     except Exception as e:
         logger.exception(e)
         sys.exit(1)
     finally:
-        assert credential_manager
-        assert credentials
         try:
             logger.info("Tearing down Locust cloud...")
             credential_manager.refresh_credentials()
             refreshed_credentials = credential_manager.get_current_credentials()
 
-            try:
-                headers = {
-                    "AWS_ACCESS_KEY_ID": refreshed_credentials.get("access_key", ""),
-                    "AWS_SECRET_ACCESS_KEY": refreshed_credentials.get("secret_key", ""),
-                    "Authorization": f"Bearer {refreshed_credentials.get('cognito_client_id_token', '')}",
-                }
+            headers = {
+                "AWS_ACCESS_KEY_ID": refreshed_credentials.get("access_key", ""),
+                "AWS_SECRET_ACCESS_KEY": refreshed_credentials.get("secret_key", ""),
+                "Authorization": f"Bearer {refreshed_credentials.get('cognito_client_id_token', '')}",
+            }
 
-                token = refreshed_credentials.get("token")
-                if token:
-                    headers["AWS_SESSION_TOKEN"] = token
+            token = refreshed_credentials.get("token")
+            if token:
+                headers["AWS_SESSION_TOKEN"] = token
 
-                response = requests.delete(
-                    f"{LAMBDA_URL}/{options.kube_cluster_name}",
-                    headers=headers,
-                    params={"namespace": options.kube_namespace} if options.kube_namespace else {},
+            response = requests.delete(
+                f"{LAMBDA_URL}/{options.kube_cluster_name}",
+                headers=headers,
+                params={"namespace": options.kube_namespace} if options.kube_namespace else {},
+            )
+
+            if response.status_code != 200:
+                logger.error(
+                    f"HTTP {response.status_code}/{response.reason} - Response: {response.text} - URL: {response.request.url}"
                 )
-
-                if response.status_code != 200:
-                    logger.error(
-                        f"HTTP {response.status_code}/{response.reason} - Response: {response.text} - URL: {response.request.url}"
-                    )
-                else:
-                    logger.info("Cluster teardown initiated successfully.")
-            except requests.exceptions.RequestException as e:
-                logger.error(f"Failed to send teardown request: {e}")
-
-            logger.info(f"Cleaning up S3 bucket: {s3_bucket}")
-            try:
-                s3 = credential_manager.session.resource("s3")
-                bucket = s3.Bucket(s3_bucket)
-                bucket.objects.all().delete()
-                logger.info(f"S3 bucket {s3_bucket} cleaned up successfully.")
-            except ClientError as e:
-                logger.error(f"Failed to clean up S3 bucket {s3_bucket}: {e}")
-                sys.exit(1)
+            else:
+                logger.info("Cluster teardown initiated successfully.")
         except Exception as e:
             logger.error(f"Could not automatically tear down Locust Cloud: {e}")
+
+        try:
+            logger.info(f"Cleaning up S3 bucket: {s3_bucket}")
+            s3 = credential_manager.session.resource("s3")
+            bucket = s3.Bucket(s3_bucket)
+            bucket.objects.all().delete()
+            logger.info(f"S3 bucket {s3_bucket} cleaned up successfully.")
+        except ClientError as e:
+            logger.error(f"Failed to clean up S3 bucket {s3_bucket}: {e}")
+            sys.exit(1)
 
 
 if __name__ == "__main__":
