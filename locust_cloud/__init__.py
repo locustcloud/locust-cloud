@@ -42,13 +42,6 @@ def add_arguments(parser: LocustArgumentParser):
         default="",
         help="Description of the test being run",
     )
-    locust_cloud.add_argument(
-        "--api-base-url",
-        type=str,
-        env_var="LOCUST_API_BASE_URL",
-        default="https://deployer.locust.cloud",
-        help="Base URL for the API endpoints",
-    )
 
 
 @events.init.add_listener
@@ -68,4 +61,4 @@ def on_locust_init(environment, **_args):
 
     if environment.web_ui:
         register_auth(environment)
-        environment.web_ui.template_args["api_base_url"] = environment.parsed_options.api_base_url
+        environment.web_ui.template_args["api_base_url"] = os.environ.get("LOCUST_API_BASE_URL")
