@@ -11,13 +11,13 @@ import { setApiBaseUrl } from './config';
 declare global {
   interface Window {
     templateArgs: {
-      API_BASE_URL: string;
+      api_base_url: string;
     };
   }
 }
 
-if (window.templateArgs && window.templateArgs.API_BASE_URL) {
-  setApiBaseUrl(window.templateArgs.API_BASE_URL);
+if (window.templateArgs && window.templateArgs.api_base_url) {
+  setApiBaseUrl(window.templateArgs.api_base_url);
 }
 
 ReactDOM.createRoot(document.getElementById('root')!).render(

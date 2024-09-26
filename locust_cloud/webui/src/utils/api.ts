@@ -9,6 +9,13 @@ export interface IRequestBody {
   resolution?: number;
   testrun?: string;
 }
+declare global {
+  interface Window {
+    templateArgs: {
+      api_base_url: string;
+    };
+  }
+}
 
 
 export function fetchQuery<ResponseType>(
@@ -16,7 +23,8 @@ export function fetchQuery<ResponseType>(
   body: IRequestBody,
   onSuccess: (response: ResponseType) => void,
 ) {
-  const API_BASE_URL = window.templateArgs.API_BASE_URL || 'https://deployer.locust.cloud';
+  console.log(window.templateArgs.api_base_url)
+  const API_BASE_URL = window.templateArgs.api_base_url || 'https://deployer.locust.cloud';
 
   fetch(`${API_BASE_URL}${url}`, {
     method: 'POST',
