@@ -9,14 +9,12 @@ export interface IRequestBody {
   resolution?: number;
   testrun?: string;
 }
+
 declare global {
   interface Window {
-    templateArgs: {
-      api_base_url: string;
-    };
+    templateArgs: ISwarmState;
   }
 }
-
 
 export function fetchQuery<ResponseType>(
   url: string,
@@ -34,8 +32,8 @@ export function fetchQuery<ResponseType>(
     },
     body: JSON.stringify(body),
   })
-    .then((res) => res.json())
-    .then((data) => data && data.length && onSuccess(data))
+    .then(res => res.json())
+    .then(data => data && data.length && onSuccess(data))
     // eslint-disable-next-line no-console
     .catch(console.error);
 }
