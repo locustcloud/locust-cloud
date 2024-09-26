@@ -44,6 +44,13 @@ def add_arguments(parser: LocustArgumentParser):
         default="",
         help="Description of the test being run",
     )
+    locust_cloud.add_argument(
+        "--api-base-url",
+        type=str,
+        env_var="LOCUST_API_BASE_URL",
+        default="https://deployer.locust.cloud",
+        help="Base URL for the API endpoints",
+    )
 
 
 @events.init.add_listener
