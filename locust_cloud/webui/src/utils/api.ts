@@ -1,7 +1,6 @@
 
 import { roundToDecimalPlaces } from 'locust-ui';
-import { getCookie } from './cookie';
-import { getApiBaseUrl } from '../config'; // Import the getter
+import { getCookie } from 'utils/cookie';
 
 export interface IRequestBody {
   start?: string;
@@ -16,7 +15,7 @@ export function fetchQuery<ResponseType>(
   body: IRequestBody,
   onSuccess: (response: ResponseType) => void,
 ) {
-  const API_BASE_URL = getApiBaseUrl();
+  const API_BASE_URL = window.templateArgs.API_BASE_URL || 'https://deployer.locust.cloud';
 
   fetch(`${API_BASE_URL}${url}`, {
     method: 'POST',
@@ -28,6 +27,7 @@ export function fetchQuery<ResponseType>(
   })
     .then((res) => res.json())
     .then((data) => data && data.length && onSuccess(data))
+    // eslint-disable-next-line no-console
     .catch(console.error);
 }
 
