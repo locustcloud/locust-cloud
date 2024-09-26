@@ -1,5 +1,6 @@
 
 import { roundToDecimalPlaces } from 'locust-ui';
+
 import { getCookie } from 'utils/cookie';
 
 export interface IRequestBody {

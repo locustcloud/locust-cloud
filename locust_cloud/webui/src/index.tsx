@@ -18,8 +18,6 @@ declare global {
 
 if (window.templateArgs && window.templateArgs.API_BASE_URL) {
   setApiBaseUrl(window.templateArgs.API_BASE_URL);
-} else {
-  console.error('API_BASE_URL not found in window.templateArgs');
 }
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
