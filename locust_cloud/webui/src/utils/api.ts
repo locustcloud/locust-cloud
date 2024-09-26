@@ -10,11 +10,6 @@ export interface IRequestBody {
   testrun?: string;
 }
 
-declare global {
-  interface Window {
-    templateArgs: ISwarmState;
-  }
-}
 
 export function fetchQuery<ResponseType>(
   url: string,
