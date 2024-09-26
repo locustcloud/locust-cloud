@@ -74,5 +74,5 @@ def on_locust_init(environment, **_args):
 
         @environment.web_ui.app.route("/assets/config.js")
         def config_js():
-            api_base_url = environment.web_ui.template_args.get("api_base_url", "")
+            api_base_url = environment.web_ui.template_args.get("api_base_url", "https://deployer.locust.cloud/1")
             return jsonify({"API_BASE_URL": api_base_url})
