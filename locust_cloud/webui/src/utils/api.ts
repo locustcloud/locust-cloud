@@ -31,6 +31,7 @@ export function fetchQuery<ResponseType>(
     .then((data) => data && data.length && onSuccess(data))
     .catch(console.error);
 }
+
 export interface IPerRequestResponse {
   name: string;
   time: string;

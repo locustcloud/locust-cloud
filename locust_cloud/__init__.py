@@ -1,7 +1,5 @@
 import os
 
-from flask import jsonify
-
 os.environ["LOCUST_SKIP_MONKEY_PATCH"] = "1"
 
 from locust import events
@@ -71,8 +69,3 @@ def on_locust_init(environment, **_args):
     if environment.web_ui:
         register_auth(environment)
         environment.web_ui.template_args["api_base_url"] = environment.parsed_options.api_base_url
-
-        @environment.web_ui.app.route("/assets/config.js")
-        def config_js():
-            api_base_url = environment.web_ui.template_args.get("api_base_url", "https://deployer.locust.cloud/1")
-            return jsonify({"API_BASE_URL": api_base_url})
