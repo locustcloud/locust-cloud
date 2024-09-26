@@ -1,4 +1,4 @@
-FROM locustio/locust:latest
+FROM locustio/locust:2.31.8.dev12
 
 RUN pip install locust-cloud "psycopg[binary,pool]"
 
