@@ -222,6 +222,7 @@ def main() -> None:
                 {"name": "LOCUST_LOCUSTFILE", "value": locustfile_url},
                 {"name": "LOCUST_REQUIREMENTS_URL", "value": requirements_url},
                 {"name": "LOCUST_FLAGS", "value": " ".join(locust_options)},
+                {"name": "LOCUST_WEB_HOST_DISPLAY_NAME", "value": "_____"},
                 *locust_env_variables,
             ]
         }
