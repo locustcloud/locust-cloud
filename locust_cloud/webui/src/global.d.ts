@@ -1,11 +1,7 @@
 declare global {
-    interface ISwarmState {
-        api_base_url: string;
-    }
-
-    interface Window {
-        templateArgs: ISwarmState;
-    }
+  interface Window {
+    templateArgs: { [key: string]: any };
+  }
 }
 
-export { };
+export {};

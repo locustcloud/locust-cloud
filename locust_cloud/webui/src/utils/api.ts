@@ -1,4 +1,3 @@
-
 import { roundToDecimalPlaces } from 'locust-ui';
 
 import { getCookie } from 'utils/cookie';
@@ -10,14 +9,12 @@ export interface IRequestBody {
   testrun?: string;
 }
 
-
 export function fetchQuery<ResponseType>(
   url: string,
   body: IRequestBody,
   onSuccess: (response: ResponseType) => void,
 ) {
-
-  const API_BASE_URL = window.templateArgs.api_base_url
+  const API_BASE_URL = window.templateArgs.api_base_url;
 
   fetch(`${API_BASE_URL}${url}`, {
     method: 'POST',
