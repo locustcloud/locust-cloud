@@ -1,4 +1,3 @@
-// src/utils/api.ts
 
 import { roundToDecimalPlaces } from 'locust-ui';
 import { getCookie } from './cookie';
