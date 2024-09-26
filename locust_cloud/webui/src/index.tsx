@@ -8,19 +8,24 @@ import { Action, IRootState, store } from 'redux/store';
 
 import { setApiBaseUrl } from './config';
 
-fetch('/assets/config.js')
-  .then((response) => response.json())
-  .then((configData) => {
-    setApiBaseUrl(configData.API_BASE_URL);
+declare global {
+  interface Window {
+    templateArgs: {
+      API_BASE_URL: string;
+    };
+  }
+}
 
-    ReactDOM.createRoot(document.getElementById('root')!).render(
-      <Provider<Action, IRootState> context={ReduxContext} store={store}>
-        <Provider store={locustStore}>
-          <App />
-        </Provider>
-      </Provider>
-    );
-  })
-  .catch((error) => {
-    console.error('Error loading config:', error);
-  });
+if (window.templateArgs && window.templateArgs.API_BASE_URL) {
+  setApiBaseUrl(window.templateArgs.API_BASE_URL);
+} else {
+  console.error('API_BASE_URL not found in window.templateArgs');
+}
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <Provider<Action, IRootState> context={ReduxContext} store={store}>
+    <Provider store={locustStore}>
+      <App />
+    </Provider>
+  </Provider>
+);
