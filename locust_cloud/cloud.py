@@ -116,20 +116,33 @@ parser.add_argument(
 parser.add_argument(
     "--aws-access-key-id",
     type=str,
-    help="Authentication for deploying with Locust Cloud",
+    help=configargparse.SUPPRESS,
     env_var="AWS_ACCESS_KEY_ID",
+    default=None,
 )
 parser.add_argument(
     "--aws-secret-access-key",
     type=str,
-    help="Authentication for deploying with Locust Cloud",
+    help=configargparse.SUPPRESS,
     env_var="AWS_SECRET_ACCESS_KEY",
+    default=None,
+)
+parser.add_argument(
+    "--username",
+    type=str,
+    help="Authentication for deploying with Locust Cloud",
+    env_var="LOCUST_CLOUD_USERNAME",
+    default=None,
+)
+parser.add_argument(
+    "--password",
+    type=str,
+    help="Authentication for deploying with Locust Cloud",
+    env_var="LOCUST_CLOUD_PASSWORD",
+    default=None,
 )
 
 options, locust_options = parser.parse_known_args()
-
-username = os.environ.get("LOCUST_CLOUD_USERNAME")
-password = os.environ.get("LOCUST_CLOUD_PASSWORD")
 
 
 def main() -> None:
@@ -137,37 +150,32 @@ def main() -> None:
     deployed_pods: list[Any] = []
 
     try:
-        if options.aws_access_key_id and options.aws_secret_access_key:
-            credential_manager = CredentialManager(
-                lambda_url=LAMBDA_URL,
-                region_name=options.aws_region_name,
-                access_key=options.aws_access_key_id,
-                secret_key=options.aws_secret_access_key,
-            )
-        elif username and password:
-            credential_manager = CredentialManager(
-                lambda_url=LAMBDA_URL,
-                username=username,
-                password=password,
-                region_name=options.aws_region_name,
-            )
-        else:
+        if not (
+            (options.username and options.password) or (options.aws_access_key_id and options.aws_secret_access_key)
+        ):
             logger.error(
-                "Authentication is required to use Locust Cloud. Provide either AWS credentials or set the LOCUST_CLOUD_USERNAME and LOCUST_CLOUD_PASSWORD environment variables."
+                "Authentication is required to use Locust Cloud. Please ensure the LOCUST_CLOUD_USERNAME and LOCUST_CLOUD_PASSWORD environment variables are set."
             )
             sys.exit(1)
+
+        logger.info("Logging you into Locust Cloud...")
+
+        credential_manager = CredentialManager(
+            lambda_url=LAMBDA_URL,
+            access_key=options.aws_access_key_id,
+            secret_key=options.aws_secret_access_key,
+            username=options.username,
+            password=options.password,
+            region_name=options.aws_region_name,
+        )
 
         credentials = credential_manager.get_current_credentials()
-        cognito_client_id_token: str = credentials["cognito_client_id_token"]
+        cognito_client_id_token = credentials["cognito_client_id_token"]
         aws_access_key_id = credentials.get("access_key")
         aws_secret_access_key = credentials.get("secret_key")
-        aws_session_token = credentials.get("token")
+        aws_session_token = credentials.get("token", "")
 
-        if not all([aws_access_key_id, aws_secret_access_key]):
-            logger.error("Authentication failed: Missing AWS credentials.")
-            sys.exit(1)
-
-        logger.info(f"Uploading {options.locustfile} to S3 bucket {s3_bucket}...")
+        logger.info(f"Uploading your locustfile {options.locustfile}...")
         s3 = credential_manager.session.client("s3")
         try:
             s3.upload_file(options.locustfile, s3_bucket, os.path.basename(options.locustfile))
@@ -181,12 +189,12 @@ def main() -> None:
             logger.error(f"File not found: {options.locustfile}")
             sys.exit(1)
         except ClientError as e:
-            logger.error(f"Failed to upload {options.locustfile} to S3: {e}")
+            logger.error(f"Failed to upload {options.locustfile}: {e}")
             sys.exit(1)
 
         requirements_url = ""
         if options.requirements:
-            logger.info(f"Uploading {options.requirements} to S3 bucket {s3_bucket} as requirements.txt...")
+            logger.info(f"Uploading your requirements file {options.requirements}...")
             try:
                 s3.upload_file(options.requirements, s3_bucket, "requirements.txt")
                 requirements_url = s3.generate_presigned_url(
@@ -199,10 +207,10 @@ def main() -> None:
                 logger.error(f"File not found: {options.requirements}")
                 sys.exit(1)
             except ClientError as e:
-                logger.error(f"Failed to upload {options.requirements} to S3: {e}")
+                logger.error(f"Failed to upload {options.requirements}: {e}")
                 sys.exit(1)
 
-        logger.info("Deploying load generators via API Gateway...")
+        logger.info("Deploying load generators...")
         locust_env_variables = [
             {"name": env_variable, "value": str(os.environ[env_variable])}
             for env_variable in os.environ
@@ -222,16 +230,16 @@ def main() -> None:
             "Content-Type": "application/json",
             "AWS_ACCESS_KEY_ID": aws_access_key_id,
             "AWS_SECRET_ACCESS_KEY": aws_secret_access_key,
-            "AWS_SESSION_TOKEN": aws_session_token if aws_session_token else "",
+            "AWS_SESSION_TOKEN": aws_session_token,
         }
         try:
             response = requests.post(deploy_endpoint, json=payload, headers=headers)
         except requests.exceptions.RequestException as e:
-            logger.error(f"HTTP request failed: {e}")
+            logger.error(f"Failed to deploy the load generators: {e}")
             sys.exit(1)
+
         if response.status_code == 200:
             deployed_pods = response.json().get("pods", [])
-            logger.info("Load generators deployed successfully.")
         else:
             logger.error(
                 f"HTTP {response.status_code}/{response.reason} - Response: {response.text} - URL: {response.request.url}"
@@ -241,13 +249,20 @@ def main() -> None:
         logger.error(f"Credential error: {ce}")
         sys.exit(1)
 
+    log_group_name = f"/eks/{options.kube_cluster_name}-{options.kube_namespace}"
+    master_pod_name = next((pod for pod in deployed_pods if "master" in pod), None)
+
+    if not master_pod_name:
+        logger.error(
+            "Master pod not found among deployed pods. Something went wrong during the load generator deployment, please try again or contact an administrator for assistance"
+        )
+        sys.exit(1)
+
+    logger.info("Load generators deployed successfully!")
+
     try:
         logger.info("Waiting for pods to be ready...")
-        log_group_name = f"/eks/{options.kube_cluster_name}-{options.kube_namespace}"
-        master_pod_name = next((pod for pod in deployed_pods if "master" in pod), None)
-        if not master_pod_name:
-            logger.error("Master pod not found among deployed pods.")
-            sys.exit(1)
+
         log_stream: str | None = None
         while log_stream is None:
             try:
@@ -291,7 +306,7 @@ def main() -> None:
             except ClientError as e:
                 error_code = e.response.get("Error", {}).get("Code", "")
                 if error_code == "ExpiredTokenException":
-                    logger.warning("AWS session token expired during log streaming. Refreshing credentials...")
+                    logger.debug("AWS session token expired during log streaming. Refreshing credentials...")
                     time.sleep(5)
     except KeyboardInterrupt:
         logger.debug("Interrupted by user.")
@@ -322,21 +337,19 @@ def main() -> None:
 
             if response.status_code != 200:
                 logger.error(
-                    f"HTTP {response.status_code}/{response.reason} - Response: {response.text} - URL: {response.request.url}"
+                    f"Could not automatically tear down Locust Cloud: HTTP {response.status_code}/{response.reason} - Response: {response.text} - URL: {response.request.url}"
                 )
-            else:
-                logger.info("Cluster teardown initiated successfully.")
         except Exception as e:
             logger.error(f"Could not automatically tear down Locust Cloud: {e}")
 
         try:
-            logger.info(f"Cleaning up S3 bucket: {s3_bucket}")
+            logger.info("Cleaning up locust files...")
             s3 = credential_manager.session.resource("s3")
             bucket = s3.Bucket(s3_bucket)
             bucket.objects.all().delete()
-            logger.info(f"S3 bucket {s3_bucket} cleaned up successfully.")
+            logger.info("Done! ✨")
         except ClientError as e:
-            logger.error(f"Failed to clean up S3 bucket {s3_bucket}: {e}")
+            logger.error(f"Failed to clean up locust files: {e}")
             sys.exit(1)
 
 
