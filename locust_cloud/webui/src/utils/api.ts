@@ -14,7 +14,9 @@ export function fetchQuery<ResponseType>(
   body: IRequestBody,
   onSuccess: (response: ResponseType) => void,
 ) {
-  fetch(`https://deployer.locust.cloud/1${url}`, {
+  const API_BASE_URL = window.templateArgs.api_base_url;
+
+  fetch(`${API_BASE_URL}${url}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
