@@ -64,3 +64,51 @@ jobs:
           name: dist-artifact
           path: dist
       - uses: pypa/gh-action-pypi-publish@release/v1
+
+  publish_docker:
+    needs: publish
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ env.AWS_ACCOUNT_ID }}:role/GitHubActionsECRPushRole
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: GitHubActionsECRPushSession
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+ 
+      - name: Set image tags and repository
+        id: tags
+        run: |
+          if [[ $GITHUB_REF == refs/heads/master ]]; then
+            TAGS="master"
+            REPO="${{ env.ECR_REPOSITORY }}"
+          elif [[ $GITHUB_REF == refs/tags/* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/}
+            TAGS="$VERSION latest"
+            REPO="${{ env.ECR_REPOSITORY }}"
+          else
+            echo "No matching branch or tag found. Exiting."
+            exit 1
+          fi
+          echo "TAGS=$TAGS" >> $GITHUB_ENV
+          echo "REPO=$REPO" >> $GITHUB_ENV
+
+      - name: Build Docker image
+        run: |
+          docker build -t locust .
+          for TAG in $TAGS; do
+            docker tag locust:latest ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.REPO }}:$TAG
+          done
+
+      - name: Push Docker image to ECR
+        run: |
+          for TAG in $TAGS; do
+            docker push ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.REPO }}:$TAG
+          done
