@@ -73,7 +73,8 @@ jobs:
           name: dist-artifact
           path: dist
       - uses: pypa/gh-action-pypi-publish@release/v1
-        skip-existing: true
+        with:
+          skip-existing: true
 
   publish_docker:
     needs: publish
