@@ -1,6 +1,8 @@
 FROM locustio/locust:2.31.8.dev16
 
-RUN pip install locust-cloud "psycopg[binary,pool]"
+COPY dist /dist
+
+RUN pip install /dist/*
 
 ADD run.sh .
 

@@ -84,6 +84,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Download Python dist
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-artifact
+          path: dist
+
       - name: Configure AWS credentials via OIDC
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -113,7 +119,6 @@ jobs:
 
       - name: Build Docker image
         run: |
-          sleep 120
           docker build -t locust .
           for TAG in $TAGS; do
             docker tag locust:latest ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.REPO }}:$TAG
