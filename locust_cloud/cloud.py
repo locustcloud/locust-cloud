@@ -190,8 +190,7 @@ logging.getLogger("urllib3").setLevel(logging.INFO)
 def main() -> None:
     s3_bucket = f"{options.kube_cluster_name}-{options.kube_namespace}"
     deployed_pods: list[Any] = []
-    worker_count: int = options.workers or math.ceil(options.users / USERS_PER_WORKER)
-    worker_count = worker_count if worker_count > 2 else 2
+    worker_count: int = max(options.workers or math.ceil(options.users / USERS_PER_WORKER), 2)
 
     try:
         if not (
@@ -281,6 +280,7 @@ def main() -> None:
             "AWS_SESSION_TOKEN": aws_session_token,
         }
         try:
+            # logger.info(payload) # might be useful when debugging sometimes
             response = requests.post(deploy_endpoint, json=payload, headers=headers)
         except requests.exceptions.RequestException as e:
             logger.error(f"Failed to deploy the load generators: {e}")
