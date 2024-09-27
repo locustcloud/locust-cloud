@@ -113,7 +113,7 @@ parser.add_argument(
     type=str,
     default=DEFAULT_LAMBDA_URL,
     help="Sets the namespace for scoping the deployed cluster",
-    env_var="KUBE_NAMESPACE",
+    env_var="LOCUST_CLOUD_LAMBDA",
 )
 parser.add_argument(
     "--aws-access-key-id",
