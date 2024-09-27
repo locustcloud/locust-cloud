@@ -4,8 +4,9 @@ from datetime import UTC, datetime, timedelta
 import requests
 from flask import redirect, request, url_for
 from flask_login import UserMixin, current_user, login_user
+from locust_cloud.constants import DEFAULT_LAMBDA_URL
 
-LAMBDA = "https://deployer.locust.cloud/1"
+LAMBDA = DEFAULT_LAMBDA_URL
 
 
 class AuthUser(UserMixin):
@@ -17,6 +18,9 @@ class AuthUser(UserMixin):
 
 
 def set_credentials(credentials, response):
+    if not credentials.get("cognito_client_id_token"):
+        return response
+
     id_token = credentials["cognito_client_id_token"]
     user_sub_id = credentials["user_sub_id"]
     refresh_token = credentials["refresh_token"]
