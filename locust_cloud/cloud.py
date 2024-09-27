@@ -11,12 +11,7 @@ from typing import IO, Any
 import configargparse
 import requests
 from botocore.exceptions import ClientError
-from locust_cloud.constants import (
-    DEFAULT_CLUSTER_NAME,
-    DEFAULT_NAMESPACE,
-    DEFAULT_REGION_NAME,
-    LAMBDA_URL,
-)
+from locust_cloud.constants import DEFAULT_CLUSTER_NAME, DEFAULT_LAMBDA_URL, DEFAULT_NAMESPACE
 from locust_cloud.credential_manager import CredentialError, CredentialManager
 
 logging.basicConfig(
@@ -114,6 +109,13 @@ parser.add_argument(
     env_var="KUBE_NAMESPACE",
 )
 parser.add_argument(
+    "--lambda-url",
+    type=str,
+    default=DEFAULT_LAMBDA_URL,
+    help="Sets the namespace for scoping the deployed cluster",
+    env_var="KUBE_NAMESPACE",
+)
+parser.add_argument(
     "--aws-access-key-id",
     type=str,
     help=configargparse.SUPPRESS,
@@ -161,7 +163,7 @@ def main() -> None:
         logger.info("Logging you into Locust Cloud...")
 
         credential_manager = CredentialManager(
-            lambda_url=LAMBDA_URL,
+            lambda_url=options.lambda_url,
             access_key=options.aws_access_key_id,
             secret_key=options.aws_secret_access_key,
             username=options.username,
@@ -216,7 +218,7 @@ def main() -> None:
             for env_variable in os.environ
             if env_variable.startswith("LOCUST_") and os.environ[env_variable]
         ]
-        deploy_endpoint = f"{LAMBDA_URL}/{options.kube_cluster_name}"
+        deploy_endpoint = f"{options.lambda_url}/{options.kube_cluster_name}"
         payload = {
             "locust_args": [
                 {"name": "LOCUST_LOCUSTFILE", "value": locustfile_url},
@@ -331,7 +333,7 @@ def main() -> None:
                 headers["AWS_SESSION_TOKEN"] = token
 
             response = requests.delete(
-                f"{LAMBDA_URL}/{options.kube_cluster_name}",
+                f"{options.lambda_url}/{options.kube_cluster_name}",
                 headers=headers,
                 params={"namespace": options.kube_namespace} if options.kube_namespace else {},
             )
