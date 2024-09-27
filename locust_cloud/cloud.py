@@ -164,7 +164,7 @@ parser.add_argument(
 )
 parser.add_argument(
     "--workers",
-    type=str,
+    type=int,
     help="Number of workers to use for the deployment",
     env_var="LOCUST_CLOUD_WORKERS",
     default=None,
