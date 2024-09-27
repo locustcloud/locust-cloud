@@ -21,13 +21,6 @@ from locust_cloud.constants import (
 )
 from locust_cloud.credential_manager import CredentialError, CredentialManager
 
-logging.basicConfig(
-    format="[LOCUST-CLOUD] %(levelname)s: %(message)s",
-    level=logging.INFO,
-)
-logger = logging.getLogger(__name__)
-
-
 LOCUST_ENV_VARIABLE_IGNORE_LIST = ["LOCUST_BUILD_PATH", "LOCUST_SKIP_MONKEY_PATCH"]
 
 
@@ -69,9 +62,9 @@ parser = configargparse.ArgumentParser(
             configargparse.DefaultConfigFileParser,
         ]
     ),
-    description="""A tool for Locust Cloud users to deploy clusters.
+    description="""Launches distributed Locust runs on locust.cloud infrastructure.
 
-Example: locust-cloud -f locust.py --aws-access-key-id 123 --aws-secret-access-key 456""",
+Example: locust-cloud -f my_locustfile.py --aws-region-name us-east-1 --users 1000""",
     epilog="""Any parameters not listed here are forwarded to locust master unmodified, so go ahead and use things like --users, --host, --run-time, ...
 Locust config can also be set using config file (~/.locust.conf, locust.conf, pyproject.toml, ~/.cloud.conf or cloud.conf).
 Parameters specified on command line override env vars, which in turn override config files.""",
@@ -151,6 +144,14 @@ parser.add_argument(
     default=None,
 )
 parser.add_argument(
+    "--loglevel",
+    "-L",
+    type=str,
+    help="Log level",
+    env_var="LOCUST_CLOUD_LOGLEVEL",
+    default="INFO",
+)
+parser.add_argument(
     "--workers",
     type=str,
     help="Number of workers to use for the deployment",
@@ -159,6 +160,17 @@ parser.add_argument(
 )
 
 options, locust_options = parser.parse_known_args()
+logging.basicConfig(
+    format="[LOCUST-CLOUD] %(levelname)s: %(message)s",
+    level=options.loglevel.upper(),
+)
+logger = logging.getLogger(__name__)
+# Restore log level for other libs. Yes, this can be done more nicely
+logging.getLogger("botocore").setLevel(logging.INFO)
+logging.getLogger("boto3").setLevel(logging.INFO)
+logging.getLogger("s3transfer").setLevel(logging.INFO)
+logging.getLogger("requests").setLevel(logging.INFO)
+logging.getLogger("urllib3").setLevel(logging.INFO)
 
 
 def main() -> None:
@@ -176,7 +188,8 @@ def main() -> None:
             )
             sys.exit(1)
 
-        logger.info("Logging you into Locust Cloud...")
+        logger.info("Logging you into Locust Cloud")
+        logger.debug(f"Lambda url {options.lambda_url}, region {options.aws_region_name}.")
 
         credential_manager = CredentialManager(
             lambda_url=options.lambda_url,
@@ -202,7 +215,7 @@ def main() -> None:
                 Params={"Bucket": s3_bucket, "Key": os.path.basename(options.locustfile)},
                 ExpiresIn=3600,
             )
-            logger.info(f"Uploaded {options.locustfile} successfully.")
+            logger.debug(f"Uploaded {options.locustfile} successfully.")
         except FileNotFoundError:
             logger.error(f"File not found: {options.locustfile}")
             sys.exit(1)
@@ -278,7 +291,7 @@ def main() -> None:
         )
         sys.exit(1)
 
-    logger.info("Load generators deployed successfully!")
+    logger.debug("Load generators deployed successfully!")
 
     try:
         logger.info("Waiting for pods to be ready...")
@@ -299,7 +312,7 @@ def main() -> None:
             except ClientError as e:
                 logger.error(f"Error describing log streams: {e}")
                 time.sleep(5)
-        logger.info("Pods are ready, switching to Locust logs.")
+        logger.debug("Pods are ready, switching to Locust logs.")
 
         timestamp = int((datetime.now(UTC) - timedelta(minutes=5)).timestamp() * 1000)
 
