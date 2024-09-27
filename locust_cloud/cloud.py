@@ -188,8 +188,7 @@ def main() -> None:
             )
             sys.exit(1)
 
-        logger.info("Logging you into Locust Cloud")
-        logger.debug(f"Lambda url {options.lambda_url}, region {options.aws_region_name}.")
+        logger.info(f"Logging you into Locust Cloud ({options.lambda_url}, {options.aws_region_name})")
 
         credential_manager = CredentialManager(
             lambda_url=options.lambda_url,
@@ -206,7 +205,7 @@ def main() -> None:
         aws_secret_access_key = credentials.get("secret_key")
         aws_session_token = credentials.get("token", "")
 
-        logger.info(f"Uploading your locustfile {options.locustfile}...")
+        logger.info(f"Uploading {options.locustfile}...")
         s3 = credential_manager.session.client("s3")
         try:
             s3.upload_file(options.locustfile, s3_bucket, os.path.basename(options.locustfile))
@@ -225,7 +224,7 @@ def main() -> None:
 
         requirements_url = ""
         if options.requirements:
-            logger.info(f"Uploading your requirements file {options.requirements}...")
+            logger.info(f"Uploading {options.requirements}...")
             try:
                 s3.upload_file(options.requirements, s3_bucket, "requirements.txt")
                 requirements_url = s3.generate_presigned_url(
@@ -233,7 +232,7 @@ def main() -> None:
                     Params={"Bucket": s3_bucket, "Key": "requirements.txt"},
                     ExpiresIn=3600,
                 )
-                logger.info(f"Uploaded {options.requirements} successfully.")
+                logger.debug(f"Uploaded {options.requirements} successfully.")
             except FileNotFoundError:
                 logger.error(f"File not found: {options.requirements}")
                 sys.exit(1)
