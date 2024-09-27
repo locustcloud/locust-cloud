@@ -6,6 +6,7 @@ import os
 import sys
 import time
 import tomllib
+from argparse import Namespace
 from collections import OrderedDict
 from datetime import UTC, datetime, timedelta
 from typing import IO, Any
@@ -81,6 +82,14 @@ parser.add_argument(
     default="locustfile.py",
     help="The Python file or module that contains your test, e.g. 'my_test.py'. Defaults to 'locustfile.py'.",
     env_var="LOCUST_LOCUSTFILE",
+)
+parser.add_argument(
+    "-u",
+    "--users",
+    type=int,
+    default=1,
+    help="Number of users to launch. This is the same as the regular Locust argument, but also decides how many workers to launch by default.",
+    env_var="LOCUST_USERS",
 )
 parser.add_argument(
     "-r",
@@ -162,6 +171,9 @@ parser.add_argument(
 )
 
 options, locust_options = parser.parse_known_args()
+options: Namespace
+locust_options: list
+
 logging.basicConfig(
     format="[LOCUST-CLOUD] %(levelname)s: %(message)s",
     level=options.loglevel.upper(),
@@ -178,7 +190,7 @@ logging.getLogger("urllib3").setLevel(logging.INFO)
 def main() -> None:
     s3_bucket = f"{options.kube_cluster_name}-{options.kube_namespace}"
     deployed_pods: list[Any] = []
-    worker_count = options.workers or math.ceil(locust_options.users / USERS_PER_WORKER)
+    worker_count: int = options.workers or math.ceil(options.users / USERS_PER_WORKER)
     worker_count = worker_count if worker_count > 2 else 2
 
     try:
@@ -252,6 +264,7 @@ def main() -> None:
         payload = {
             "locust_args": [
                 {"name": "LOCUST_LOCUSTFILE", "value": locustfile_url},
+                {"name": "LOCUST_USERS", "value": str(options.users)},
                 {"name": "LOCUST_REQUIREMENTS_URL", "value": requirements_url},
                 {"name": "LOCUST_FLAGS", "value": " ".join(locust_options)},
                 {"name": "LOCUST_WEB_HOST_DISPLAY_NAME", "value": "_____"},
