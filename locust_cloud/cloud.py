@@ -205,7 +205,7 @@ def main() -> None:
         aws_secret_access_key = credentials.get("secret_key")
         aws_session_token = credentials.get("token", "")
 
-        logger.info(f"Uploading {options.locustfile}...")
+        logger.info(f"Uploading {options.locustfile}")
         s3 = credential_manager.session.client("s3")
         try:
             s3.upload_file(options.locustfile, s3_bucket, os.path.basename(options.locustfile))
@@ -214,7 +214,7 @@ def main() -> None:
                 Params={"Bucket": s3_bucket, "Key": os.path.basename(options.locustfile)},
                 ExpiresIn=3600,
             )
-            logger.debug(f"Uploaded {options.locustfile} successfully.")
+            logger.debug(f"Uploaded {options.locustfile} successfully")
         except FileNotFoundError:
             logger.error(f"File not found: {options.locustfile}")
             sys.exit(1)
@@ -224,7 +224,7 @@ def main() -> None:
 
         requirements_url = ""
         if options.requirements:
-            logger.info(f"Uploading {options.requirements}...")
+            logger.info(f"Uploading {options.requirements}")
             try:
                 s3.upload_file(options.requirements, s3_bucket, "requirements.txt")
                 requirements_url = s3.generate_presigned_url(
@@ -232,7 +232,7 @@ def main() -> None:
                     Params={"Bucket": s3_bucket, "Key": "requirements.txt"},
                     ExpiresIn=3600,
                 )
-                logger.debug(f"Uploaded {options.requirements} successfully.")
+                logger.debug(f"Uploaded {options.requirements} successfully")
             except FileNotFoundError:
                 logger.error(f"File not found: {options.requirements}")
                 sys.exit(1)
@@ -240,7 +240,7 @@ def main() -> None:
                 logger.error(f"Failed to upload {options.requirements}: {e}")
                 sys.exit(1)
 
-        logger.info("Deploying load generators...")
+        logger.info("Deploying load generators")
         locust_env_variables = [
             {"name": env_variable, "value": str(os.environ[env_variable])}
             for env_variable in os.environ
@@ -311,7 +311,7 @@ def main() -> None:
             except ClientError as e:
                 logger.error(f"Error describing log streams: {e}")
                 time.sleep(5)
-        logger.debug("Pods are ready, switching to Locust logs.")
+        logger.debug("Pods are ready, switching to Locust logs")
 
         timestamp = int((datetime.now(UTC) - timedelta(minutes=5)).timestamp() * 1000)
 
@@ -338,10 +338,10 @@ def main() -> None:
             except ClientError as e:
                 error_code = e.response.get("Error", {}).get("Code", "")
                 if error_code == "ExpiredTokenException":
-                    logger.debug("AWS session token expired during log streaming. Refreshing credentials...")
+                    logger.debug("AWS session token expired during log streaming. Refreshing credentials.")
                     time.sleep(5)
     except KeyboardInterrupt:
-        logger.debug("Interrupted by user.")
+        logger.debug("Interrupted by user")
     except Exception as e:
         logger.exception(e)
         sys.exit(1)
@@ -375,7 +375,7 @@ def main() -> None:
             logger.error(f"Could not automatically tear down Locust Cloud: {e}")
 
         try:
-            logger.info("Cleaning up locust files...")
+            logger.info("Cleaning up locust files")
             s3 = credential_manager.session.resource("s3")
             bucket = s3.Bucket(s3_bucket)
             bucket.objects.all().delete()
