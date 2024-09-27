@@ -1,6 +1,7 @@
 name: Tests
 
 on: [push, pull_request]
+  workflow_dispatch: 
 
 permissions:
   id-token: write
@@ -70,6 +71,7 @@ jobs:
           name: dist-artifact
           path: dist
       - uses: pypa/gh-action-pypi-publish@release/v1
+        skip-existing: true
 
   publish_docker:
     needs: publish
