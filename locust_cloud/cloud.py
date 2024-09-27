@@ -190,8 +190,8 @@ def main() -> None:
             )
             sys.exit(1)
 
-        logger.info(f"Logging you into Locust Cloud ({options.lambda_url}, {options.aws_region_name}, v{__version__})")
-
+        logger.info(f"Logging you into Locust Cloud ({options.aws_region_name}, v{__version__})")
+        logger.debug(f"Lambda url: {options.lambda_url}")
         credential_manager = CredentialManager(
             lambda_url=options.lambda_url,
             access_key=options.aws_access_key_id,
