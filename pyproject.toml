@@ -48,6 +48,9 @@ dependencies = [
     "PyJWT>=2.0"
 
 ]
+[project.urls]
+Homepage = "https://locust.cloud"
+
 [project.scripts]
 locust-cloud="locust_cloud.cloud:main"
 
@@ -79,10 +82,6 @@ lint.select = ["E", "F", "W", "UP", "I001", "ARG001"]
 [tool.ruff.lint.isort.sections]
 locust_cloud = ["locust_cloud"]
 
-[tool.mypy]
-# missing type stubs
-ignore_missing_imports = true
-python_version = "3.11"
 
 [tool.uv]
 dev-dependencies = [
