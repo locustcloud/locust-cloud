@@ -59,10 +59,10 @@ def register_auth(environment):
 
         return response
 
-    @environment.web_ui.app.route("/authenticate")
+    @environment.web_ui.app.route("/authenticate", methods=["POST"])
     def login_submit():
-        username = request.args.get("username")
-        password = request.args.get("password")
+        username = request.form.get("username")
+        password = request.form.get("password")
 
         try:
             auth_response = requests.post(f"{LAMBDA}/auth/login", json={"username": username, "password": password})
