@@ -1,3 +1,4 @@
+import importlib.metadata
 import json
 import logging
 import math
@@ -22,6 +23,7 @@ from locust_cloud.constants import (
 from locust_cloud.credential_manager import CredentialError, CredentialManager
 
 LOCUST_ENV_VARIABLE_IGNORE_LIST = ["LOCUST_BUILD_PATH", "LOCUST_SKIP_MONKEY_PATCH"]
+__version__ = importlib.metadata.version("locust-cloud")
 
 
 class LocustTomlConfigParser(configargparse.TomlConfigParser):
@@ -188,7 +190,7 @@ def main() -> None:
             )
             sys.exit(1)
 
-        logger.info(f"Logging you into Locust Cloud ({options.lambda_url}, {options.aws_region_name})")
+        logger.info(f"Logging you into Locust Cloud ({options.lambda_url}, {options.aws_region_name}, v{__version__})")
 
         credential_manager = CredentialManager(
             lambda_url=options.lambda_url,
