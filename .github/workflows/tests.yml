@@ -3,7 +3,13 @@ name: Tests
 on: [push, pull_request]
 
 permissions:
+  id-token: write
   contents: read
+
+env:
+  AWS_ACCOUNT_ID: 637423602143
+  AWS_REGION: eu-north-1
+  ECR_REPOSITORY: locust
 
 jobs:
   build:
