@@ -1,5 +1,6 @@
 import json
 import logging
+import math
 import os
 import sys
 import time
@@ -11,7 +12,13 @@ from typing import IO, Any
 import configargparse
 import requests
 from botocore.exceptions import ClientError
-from locust_cloud.constants import DEFAULT_CLUSTER_NAME, DEFAULT_LAMBDA_URL, DEFAULT_NAMESPACE
+from locust_cloud.constants import (
+    DEFAULT_CLUSTER_NAME,
+    DEFAULT_LAMBDA_URL,
+    DEFAULT_NAMESPACE,
+    DEFAULT_REGION_NAME,
+    USERS_PER_WORKER,
+)
 from locust_cloud.credential_manager import CredentialError, CredentialManager
 
 LOCUST_ENV_VARIABLE_IGNORE_LIST = ["LOCUST_BUILD_PATH", "LOCUST_SKIP_MONKEY_PATCH"]
@@ -144,6 +151,13 @@ parser.add_argument(
     env_var="LOCUST_CLOUD_LOGLEVEL",
     default="INFO",
 )
+parser.add_argument(
+    "--workers",
+    type=str,
+    help="Number of workers to use for the deployment",
+    env_var="LOCUST_CLOUD_WORKERS",
+    default=None,
+)
 
 options, locust_options = parser.parse_known_args()
 logging.basicConfig(
@@ -162,6 +176,8 @@ logging.getLogger("urllib3").setLevel(logging.INFO)
 def main() -> None:
     s3_bucket = f"{options.kube_cluster_name}-{options.kube_namespace}"
     deployed_pods: list[Any] = []
+    worker_count = options.workers or math.ceil(locust_options.users / USERS_PER_WORKER)
+    worker_count = worker_count if worker_count > 2 else 2
 
     try:
         if not (
@@ -239,7 +255,8 @@ def main() -> None:
                 {"name": "LOCUST_FLAGS", "value": " ".join(locust_options)},
                 {"name": "LOCUST_WEB_HOST_DISPLAY_NAME", "value": "_____"},
                 *locust_env_variables,
-            ]
+            ],
+            "worker_count": worker_count,
         }
         headers = {
             "Authorization": f"Bearer {cognito_client_id_token}",
