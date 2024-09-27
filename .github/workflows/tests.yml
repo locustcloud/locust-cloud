@@ -113,7 +113,7 @@ jobs:
 
       - name: Build Docker image
         run: |
-          sleep 60
+          sleep 120
           docker build -t locust .
           for TAG in $TAGS; do
             docker tag locust:latest ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.REPO }}:$TAG
