@@ -222,6 +222,10 @@ def main() -> None:
         aws_secret_access_key = credentials.get("secret_key")
         aws_session_token = credentials.get("token", "")
 
+        if options.delete:
+            delete(s3_bucket, credential_manager)
+            return
+
         logger.info(f"Uploading {options.locustfile}")
         s3 = credential_manager.session.client("s3")
         try:
@@ -256,10 +260,6 @@ def main() -> None:
             except ClientError as e:
                 logger.error(f"Failed to upload {options.requirements}: {e}")
                 sys.exit(1)
-
-        if options.delete:
-            delete(s3_bucket, credential_manager)
-            return
 
         logger.info("Deploying load generators")
         locust_env_variables = [
