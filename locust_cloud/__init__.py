@@ -2,6 +2,8 @@ import os
 
 os.environ["LOCUST_SKIP_MONKEY_PATCH"] = "1"
 
+import argparse
+
 from locust import events
 from locust.argument_parser import LocustArgumentParser
 from locust_cloud.auth import register_auth
