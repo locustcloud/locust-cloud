@@ -265,7 +265,18 @@ def main() -> None:
         locust_env_variables = [
             {"name": env_variable, "value": str(os.environ[env_variable])}
             for env_variable in os.environ
-            if env_variable.startswith("LOCUST_") and os.environ[env_variable]
+            if env_variable.startswith("LOCUST_")
+            and not env_variable.startswith("LOCUST_CLOUD")
+            and not env_variable
+            in [
+                "LOCUST_LOCUSTFILE",
+                "LOCUST_USERS",
+                "LOCUST_WEB_HOST_DISPLAY_NAME",
+                "LOCUST_API_BASE_URL",
+                "LOCUST_SKIP_MONKEY_PATCH",
+                "LOCUST_REQUIREMENTS_URL",
+            ]
+            and os.environ[env_variable]
         ]
         deploy_endpoint = f"{options.lambda_url}/{options.kube_cluster_name}"
         payload = {
