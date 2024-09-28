@@ -92,7 +92,6 @@ parser.add_argument(
     env_var="LOCUST_USERS",
 )
 parser.add_argument(
-    "-r",
     "--requirements",
     type=str,
     help="Optional requirements.txt file that contains your external libraries.",
