@@ -289,9 +289,12 @@ def main() -> None:
         if response.status_code == 200:
             deployed_pods = response.json().get("pods", [])
         else:
-            logger.error(
-                f"HTTP {response.status_code}/{response.reason} - Response: {response.text} - URL: {response.request.url}"
-            )
+            try:
+                logger.error(f"Error when deploying: {response.json()['Message']}")
+            except Exception:
+                logger.error(
+                    f"HTTP {response.status_code}/{response.reason} - Response: {response.text} - URL: {response.request.url}"
+                )
             sys.exit(1)
     except CredentialError as ce:
         logger.error(f"Credential error: {ce}")
@@ -391,7 +394,7 @@ def main() -> None:
             logger.error(f"Could not automatically tear down Locust Cloud: {e}")
 
         try:
-            logger.info("Cleaning up locust files")
+            logger.debug("Cleaning up locustfiles")
             s3 = credential_manager.session.resource("s3")
             bucket = s3.Bucket(s3_bucket)
             bucket.objects.all().delete()
