@@ -168,6 +168,11 @@ parser.add_argument(
     env_var="LOCUST_CLOUD_WORKERS",
     default=None,
 )
+parser.add_argument(
+    "--delete",
+    action="store_true",
+    help="Delete a running cluster. Useful if locust-cloud was killed/disconnected or if there was an error.",
+)
 
 options, locust_options = parser.parse_known_args()
 options: Namespace
@@ -251,6 +256,10 @@ def main() -> None:
             except ClientError as e:
                 logger.error(f"Failed to upload {options.requirements}: {e}")
                 sys.exit(1)
+
+        if options.delete:
+            delete(s3_bucket, credential_manager)
+            return
 
         logger.info("Deploying load generators")
         locust_env_variables = [
@@ -364,43 +373,47 @@ def main() -> None:
         logger.exception(e)
         sys.exit(1)
     finally:
-        try:
-            logger.info("Tearing down Locust cloud...")
-            credential_manager.refresh_credentials()
-            refreshed_credentials = credential_manager.get_current_credentials()
+        delete(s3_bucket, credential_manager)
 
-            headers = {
-                "AWS_ACCESS_KEY_ID": refreshed_credentials.get("access_key", ""),
-                "AWS_SECRET_ACCESS_KEY": refreshed_credentials.get("secret_key", ""),
-                "Authorization": f"Bearer {refreshed_credentials.get('cognito_client_id_token', '')}",
-            }
 
-            token = refreshed_credentials.get("token")
-            if token:
-                headers["AWS_SESSION_TOKEN"] = token
+def delete(s3_bucket, credential_manager):
+    try:
+        logger.info("Tearing down Locust cloud...")
+        credential_manager.refresh_credentials()
+        refreshed_credentials = credential_manager.get_current_credentials()
 
-            response = requests.delete(
-                f"{options.lambda_url}/{options.kube_cluster_name}",
-                headers=headers,
-                params={"namespace": options.kube_namespace} if options.kube_namespace else {},
+        headers = {
+            "AWS_ACCESS_KEY_ID": refreshed_credentials.get("access_key", ""),
+            "AWS_SECRET_ACCESS_KEY": refreshed_credentials.get("secret_key", ""),
+            "Authorization": f"Bearer {refreshed_credentials.get('cognito_client_id_token', '')}",
+        }
+
+        token = refreshed_credentials.get("token")
+        if token:
+            headers["AWS_SESSION_TOKEN"] = token
+
+        response = requests.delete(
+            f"{options.lambda_url}/{options.kube_cluster_name}",
+            headers=headers,
+            params={"namespace": options.kube_namespace} if options.kube_namespace else {},
+        )
+
+        if response.status_code != 200:
+            logger.error(
+                f"Could not automatically tear down Locust Cloud: HTTP {response.status_code}/{response.reason} - Response: {response.text} - URL: {response.request.url}"
             )
+    except Exception as e:
+        logger.error(f"Could not automatically tear down Locust Cloud: {e}")
 
-            if response.status_code != 200:
-                logger.error(
-                    f"Could not automatically tear down Locust Cloud: HTTP {response.status_code}/{response.reason} - Response: {response.text} - URL: {response.request.url}"
-                )
-        except Exception as e:
-            logger.error(f"Could not automatically tear down Locust Cloud: {e}")
-
-        try:
-            logger.debug("Cleaning up locustfiles")
-            s3 = credential_manager.session.resource("s3")
-            bucket = s3.Bucket(s3_bucket)
-            bucket.objects.all().delete()
-            logger.info("Done! ✨")
-        except ClientError as e:
-            logger.error(f"Failed to clean up locust files: {e}")
-            sys.exit(1)
+    try:
+        logger.debug("Cleaning up locustfiles")
+        s3 = credential_manager.session.resource("s3")
+        bucket = s3.Bucket(s3_bucket)
+        bucket.objects.all().delete()
+        logger.info("Done! ✨")
+    except ClientError as e:
+        logger.error(f"Failed to clean up locust files: {e}")
+        sys.exit(1)
 
 
 if __name__ == "__main__":
