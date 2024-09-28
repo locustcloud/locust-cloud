@@ -19,7 +19,7 @@ import Testruns from 'components/tabs/Testruns';
 import useFetchTestruns from 'hooks/useFetchTestruns';
 import { useLocustSelector } from 'redux/hooks';
 
-const tabs = [
+const baseTabs = [
   {
     title: 'Charts',
     key: 'charts',
@@ -47,6 +47,31 @@ const tabs = [
   tabConfig.reports,
 ];
 
+const graphViewerTabs = [
+  {
+    title: 'Charts',
+    key: 'charts',
+    component: Charts,
+  },
+  {
+    title: 'Stats',
+    key: 'stats',
+    component: Stats,
+  },
+  {
+    title: 'Scatterplot',
+    key: 'scatterplot',
+    component: Scatterplot,
+  },
+  {
+    title: 'Testruns',
+    key: 'testruns',
+    component: Testruns,
+  },
+];
+
+const tabs = window.templateArgs.isGraphViewer ? graphViewerTabs : baseTabs;
+
 export default function App() {
   useFetchStats();
   useFetchExceptions();
@@ -61,7 +86,13 @@ export default function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Layout>{swarmState === SWARM_STATE.READY ? <SwarmForm /> : <Tabs tabs={tabs} />}</Layout>
+      <Layout>
+        {!window.templateArgs.isGraphViewer && swarmState === SWARM_STATE.READY ? (
+          <SwarmForm />
+        ) : (
+          <Tabs tabs={tabs} />
+        )}
+      </Layout>
     </ThemeProvider>
   );
 }

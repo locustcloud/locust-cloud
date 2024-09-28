@@ -41,4 +41,10 @@ export default function useFetchTestruns() {
       setToolbar({ previousTestrun: testrunsForDisplay[0] });
     }
   }, [swarmState, testrunsForDisplay]);
+
+  useEffect(() => {
+    if (window.templateArgs.isGraphViewer) {
+      fetchTestruns();
+    }
+  }, []);
 }
