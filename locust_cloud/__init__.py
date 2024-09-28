@@ -12,6 +12,7 @@ PG_HOST = os.environ.get("PG_HOST")
 PG_PASSWORD = os.environ.get("PG_PASSWORD")
 PG_DATABASE = os.environ.get("PG_DATABASE")
 PG_PORT = os.environ.get("PG_PORT", 5432)
+GRAPH_VIEWER = os.environ.get("GRAPH_VIEWER")
 
 
 @events.init_command_line_parser.add_listener
@@ -46,10 +47,10 @@ def add_arguments(parser: LocustArgumentParser):
 
 @events.init.add_listener
 def on_locust_init(environment, **_args):
-    if not PG_HOST:
+    if not (PG_HOST or GRAPH_VIEWER):
         return
 
-    if environment.parsed_options.exporter:
+    if not GRAPH_VIEWER and environment.parsed_options.exporter:
         Timescale(
             environment,
             pg_user=PG_USER,
