@@ -17,7 +17,7 @@ GRAPH_VIEWER = os.environ.get("GRAPH_VIEWER")
 
 @events.init_command_line_parser.add_listener
 def add_arguments(parser: LocustArgumentParser):
-    if not PG_HOST:
+    if not (PG_HOST or GRAPH_VIEWER):
         parser.add_argument_group(
             "locust-cloud",
             "locust-cloud disabled, because PG_HOST was not set - this is normal for local runs",
