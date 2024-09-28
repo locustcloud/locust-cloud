@@ -32,7 +32,7 @@ def add_arguments(parser: LocustArgumentParser):
     locust_cloud.add_argument(
         "--exporter",
         default=True,
-        action="store_true",
+        action=argparse.BooleanOptionalAction,
         env_var="LOCUST_EXPORTER",
         help="Exports Locust stats to Timescale",
     )
