@@ -195,7 +195,7 @@ VALUES (%(time)s, %(run_id)s, %(greenlet_id)s, %(loadgen)s, %(name)s, %(request_
                 "INSERT INTO testruns (id, num_users, description, arguments) VALUES (%s,%s,%s,%s)",
                 (
                     self._run_id,
-                    self.env.parsed_options.num_users or self.env.runner.user_count or 0,
+                    self.env.runner.target_user_count if self.env.runner else 1,
                     "self.env.parsed_options.description",
                     " ".join(cmd),
                 ),
