@@ -4,7 +4,8 @@ import { Table, useInterval, roundToDecimalPlaces, SWARM_STATE } from 'locust-ui
 
 import Gauge from 'components/Gauge/Gauge';
 import Toolbar from 'components/Toolbar/Toolbar';
-import { useLocustSelector, useSelector } from 'redux/hooks';
+import { useAction, useLocustSelector, useSelector } from 'redux/hooks';
+import { snackbarActions } from 'redux/slice/snackbar.slice';
 import { IRequestBody, fetchQuery } from 'utils/api';
 
 interface IStatsData {
@@ -39,6 +40,7 @@ interface IErrorPercentageResponse {
 export default function Stats() {
   const swarmState = useLocustSelector(({ swarm }) => swarm.state);
   const { currentTestrun } = useSelector(({ toolbar }) => toolbar);
+  const setSnackbar = useAction(snackbarActions.setSnackbar);
 
   const [timestamp, setTimestamp] = useState(new Date().toISOString());
   const [totalRequests, setTotalRequests] = useState<number>(0);
@@ -47,21 +49,25 @@ export default function Stats() {
   const [statsData, setStatsData] = useState<IStatsData[]>([]);
   const [failuresData, setFailuresData] = useState<IFailuresData[]>([]);
 
+  const onError = (error: string) => setSnackbar({ message: error });
+
   const getRequests = (body: IRequestBody) =>
-    fetchQuery<IStatsData[]>('/cloud-stats/requests', body, setStatsData);
+    fetchQuery<IStatsData[]>('/cloud-stats/requests', body, setStatsData, onError);
   const getFailures = (body: IRequestBody) =>
-    fetchQuery<IFailuresData[]>('/cloud-stats/failures', body, setFailuresData);
+    fetchQuery<IFailuresData[]>('/cloud-stats/failures', body, setFailuresData, onError);
   const getTotalRequests = (body: IRequestBody) =>
     fetchQuery<ITotalRequestsResponse[]>(
       '/cloud-stats/total-requests',
       body,
       ([{ totalRequests }]) => setTotalRequests(totalRequests || 0),
+      onError,
     );
   const getTotalFailures = (body: IRequestBody) =>
     fetchQuery<ITotalFailuresResponse[]>(
       '/cloud-stats/total-failures',
       body,
       ([{ totalFailures }]) => setTotalFailures(totalFailures || 0),
+      onError,
     );
   const getErrorPercentage = (body: IRequestBody) =>
     fetchQuery<IErrorPercentageResponse[]>(
@@ -71,6 +77,7 @@ export default function Stats() {
         const roundedPercentage = roundToDecimalPlaces(errorPercentage, 2);
         setErrorPercentage(isNaN(roundedPercentage) ? 0 : roundedPercentage);
       },
+      onError,
     );
 
   const fetchStats = () => {

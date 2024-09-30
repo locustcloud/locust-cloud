@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { LineChart, useInterval, SWARM_STATE } from 'locust-ui';
 
 import Toolbar from 'components/Toolbar/Toolbar';
-import { useLocustSelector, useSelector } from 'redux/hooks';
+import { useAction, useLocustSelector, useSelector } from 'redux/hooks';
+import { snackbarActions } from 'redux/slice/snackbar.slice';
 import {
   IPerRequestData,
   IPerRequestResponse,
@@ -30,28 +31,40 @@ interface IRequestLines {
 export default function Scatterplot() {
   const swarmState = useLocustSelector(({ swarm }) => swarm.state);
   const { currentTestrun } = useSelector(({ toolbar }) => toolbar);
+  const setSnackbar = useAction(snackbarActions.setSnackbar);
+
+  const onError = (error: string) => setSnackbar({ message: error });
 
   const [timestamp, setTimestamp] = useState(new Date().toISOString());
   const [scatterplot, setScatterplot] = useState<IPerRequestData>();
   const [requestLines, setRequestLines] = useState<IRequestLines[]>();
 
   const getScatterplot = (body: IRequestBody) =>
-    fetchQuery<IScatterplotData[]>('/cloud-stats/scatterplot', body, scatterplot =>
-      setScatterplot(adaptPerNameChartData<IScatterplotResponse>(scatterplot, 'responseTime')),
+    fetchQuery<IScatterplotData[]>(
+      '/cloud-stats/scatterplot',
+      body,
+      scatterplot =>
+        setScatterplot(adaptPerNameChartData<IScatterplotResponse>(scatterplot, 'responseTime')),
+      onError,
     );
 
   const getRequestNames = (body: IRequestBody) =>
-    fetchQuery<{ name: string }[]>('/cloud-stats/request-names', body, requestNames => {
-      (!requestLines ||
-        (requestLines &&
-          !requestNames.every(({ name }, index) => requestLines[index].name === name))) &&
-        setRequestLines(
-          requestNames.map(({ name: requestName }) => ({
-            name: `${requestName}`,
-            key: requestName,
-          })),
-        );
-    });
+    fetchQuery<{ name: string }[]>(
+      '/cloud-stats/request-names',
+      body,
+      requestNames => {
+        (!requestLines ||
+          (requestLines &&
+            !requestNames.every(({ name }, index) => requestLines[index].name === name))) &&
+          setRequestLines(
+            requestNames.map(({ name: requestName }) => ({
+              name: `${requestName}`,
+              key: requestName,
+            })),
+          );
+      },
+      onError,
+    );
 
   const fetchScatterplot = () => {
     const currentTimestamp = new Date().toISOString();
