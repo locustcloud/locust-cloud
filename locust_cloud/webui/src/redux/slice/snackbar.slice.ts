@@ -8,7 +8,7 @@ export interface ISnackbarSlice {
 
 export type SnackbarAction = PayloadAction<Partial<ISnackbarSlice>>;
 
-const initialState = {
+const initialState: ISnackbarSlice = {
   message: null,
 };
 
