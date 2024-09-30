@@ -9,6 +9,7 @@ import {
   useFetchStats,
   useFetchTasks,
   useLogViewer,
+  baseTabs as locustBaseTabs,
 } from 'locust-ui';
 
 import Layout from 'components/Layout/Layout';
@@ -17,7 +18,8 @@ import Scatterplot from 'components/tabs/Scatterplot';
 import Stats from 'components/tabs/Stats';
 import Testruns from 'components/tabs/Testruns';
 import useFetchTestruns from 'hooks/useFetchTestruns';
-import { useLocustSelector } from 'redux/hooks';
+import { useLocustSelector, useSelector } from 'redux/hooks';
+import { UI_VIEW_TYPES } from 'redux/slice/ui.slice';
 
 const baseTabs = [
   {
@@ -80,6 +82,7 @@ export default function App() {
   useFetchTestruns();
 
   const swarmState = useLocustSelector(({ swarm }) => swarm.state);
+  const viewType = useSelector(({ ui }) => ui.viewType);
 
   const theme = useCreateTheme();
 
@@ -90,7 +93,7 @@ export default function App() {
         {!window.templateArgs.isGraphViewer && swarmState === SWARM_STATE.READY ? (
           <SwarmForm />
         ) : (
-          <Tabs tabs={tabs} />
+          <Tabs tabs={viewType == UI_VIEW_TYPES.CLOUD ? tabs : locustBaseTabs} />
         )}
       </Layout>
     </ThemeProvider>
