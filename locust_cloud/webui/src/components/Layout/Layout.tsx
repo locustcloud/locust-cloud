@@ -1,21 +1,23 @@
 import { ReactNode } from 'react';
-import { Box } from '@mui/material';
-import { Navbar } from 'locust-ui';
+import { Navbar, SWARM_STATE } from 'locust-ui';
 
-import Footer from 'components/Layout/Footer';
+import ViewTypeSelector from 'components/Layout/ViewTypeSelector';
+import { useLocustSelector } from 'redux/hooks';
 
 interface ILayout {
   children: ReactNode;
 }
 
 export default function Layout({ children }: ILayout) {
+  const swarmState = useLocustSelector(({ swarm }) => swarm.state);
+
   return (
     <>
-      <Box sx={{ minHeight: 'calc(100vh - var(--footer-height))' }}>
-        <Navbar />
-        <main>{children}</main>
-      </Box>
-      <Footer />
+      <Navbar />
+      {!window.templateArgs.isGraphViewer && swarmState !== SWARM_STATE.READY && (
+        <ViewTypeSelector />
+      )}
+      <main>{children}</main>
     </>
   );
 }
