@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { Box } from '@mui/material';
 import { LineChart, Table } from 'locust-ui';
 
-import { useSelector } from 'redux/hooks';
+import { useAction, useSelector } from 'redux/hooks';
+import { snackbarActions } from 'redux/slice/snackbar.slice';
 import { chartValueFormatter, fetchQuery } from 'utils/api';
 
 interface ITestrunsTable {
@@ -46,6 +47,9 @@ interface ITestrunsResponseTime {
 
 export default function Testruns() {
   const { testrunsForDisplay } = useSelector(({ toolbar }) => toolbar);
+  const setSnackbar = useAction(snackbarActions.setSnackbar);
+
+  const onError = (error: string) => setSnackbar({ message: error });
 
   const [testrunsTableData, setTestrunsTableData] = useState<ITestrunsTable[]>([]);
   const [testrunsRps, setTestrunsRps] = useState<ITestrunsRps>({
@@ -56,28 +60,36 @@ export default function Testruns() {
   } as ITestrunsResponseTime);
 
   const getTestrunsTable = () =>
-    fetchQuery<ITestrunsTable[]>('/cloud-stats/testruns-table', {}, testruns =>
-      setTestrunsTableData(
-        testruns.map(({ runId, ...testrunData }) => ({
-          ...testrunData,
-          runId: new Date(runId).toLocaleString(),
-        })),
-      ),
+    fetchQuery<ITestrunsTable[]>(
+      '/cloud-stats/testruns-table',
+      {},
+      testruns =>
+        setTestrunsTableData(
+          testruns.map(({ runId, ...testrunData }) => ({
+            ...testrunData,
+            runId: new Date(runId).toLocaleString(),
+          })),
+        ),
+      onError,
     );
 
   const getTestrunsRps = () =>
-    fetchQuery<ITestrunsRpsResponse[]>('/cloud-stats/testruns-rps', {}, response =>
-      setTestrunsRps(
-        response.reduce(
-          (rpsChart, { avgRps, avgRpsFailed, time }) => ({
-            ...rpsChart,
-            avgRps: [...(rpsChart.avgRps || []), [time, avgRps]],
-            avgRpsFailed: [...(rpsChart.avgRpsFailed || []), [time, avgRpsFailed]],
-            time: [...(rpsChart.time || []), time],
-          }),
-          {} as ITestrunsRps,
+    fetchQuery<ITestrunsRpsResponse[]>(
+      '/cloud-stats/testruns-rps',
+      {},
+      response =>
+        setTestrunsRps(
+          response.reduce(
+            (rpsChart, { avgRps, avgRpsFailed, time }) => ({
+              ...rpsChart,
+              avgRps: [...(rpsChart.avgRps || []), [time, avgRps]],
+              avgRpsFailed: [...(rpsChart.avgRpsFailed || []), [time, avgRpsFailed]],
+              time: [...(rpsChart.time || []), time],
+            }),
+            {} as ITestrunsRps,
+          ),
         ),
-      ),
+      onError,
     );
   const getTestrunsResponseTime = () =>
     fetchQuery<ITestrunsResponseTimeResponse[]>(
@@ -101,6 +113,7 @@ export default function Testruns() {
             {} as ITestrunsResponseTime,
           ),
         ),
+      onError,
     );
 
   useEffect(() => {

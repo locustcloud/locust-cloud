@@ -13,6 +13,7 @@ import {
 } from 'locust-ui';
 
 import Layout from 'components/Layout/Layout';
+import Snackbar from 'components/Snackbar/Snackbar';
 import Charts from 'components/tabs/Charts';
 import Scatterplot from 'components/tabs/Scatterplot';
 import Stats from 'components/tabs/Stats';
@@ -96,6 +97,7 @@ export default function App() {
           <Tabs tabs={viewType == UI_VIEW_TYPES.CLOUD ? tabs : locustBaseTabs} />
         )}
       </Layout>
+      <Snackbar />
     </ThemeProvider>
   );
 }

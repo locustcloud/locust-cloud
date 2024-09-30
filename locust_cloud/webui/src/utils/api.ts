@@ -13,6 +13,7 @@ export function fetchQuery<ResponseType>(
   url: string,
   body: IRequestBody,
   onSuccess: (response: ResponseType) => void,
+  onError?: (error: string) => void,
 ) {
   const API_BASE_URL = window.templateArgs.api_base_url;
 
@@ -25,9 +26,9 @@ export function fetchQuery<ResponseType>(
     body: JSON.stringify(body),
   })
     .then(res => res.json())
-    .then(data => data && data.length && onSuccess(data))
+    .then(data => onSuccess(data))
     // eslint-disable-next-line no-console
-    .catch(console.error);
+    .catch(error => (onError ? onError(error) : console.error(error)));
 }
 
 export interface IPerRequestResponse {
