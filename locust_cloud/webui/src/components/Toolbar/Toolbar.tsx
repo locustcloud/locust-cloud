@@ -8,7 +8,11 @@ import {
 import { useAction, useSelector } from 'redux/hooks';
 import { toolbarActions } from 'redux/slice/toolbar.slice';
 
-export default function Toolbar() {
+interface IToolbar {
+  onSelectTestRun?: (runId: string) => void;
+}
+
+export default function Toolbar({ onSelectTestRun }: IToolbar) {
   const setToolbar = useAction(toolbarActions.setToolbar);
   const { testruns, testrunsForDisplay } = useSelector(({ toolbar }) => toolbar);
 
@@ -37,6 +41,7 @@ export default function Toolbar() {
           name='testrun'
           onChange={(e: SelectChangeEvent<string>) => {
             // find in test runs to get correct date format
+            onSelectTestRun && onSelectTestRun(e.target.value);
             setToolbar({ currentTestrun: testruns[e.target.value].runId });
           }}
           options={testrunsForDisplay}
