@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { LinearProgress } from '@mui/material';
-import { LineChart, useInterval, roundToDecimalPlaces, SWARM_STATE } from 'locust-ui';
+import { Box, CircularProgress } from '@mui/material';
+import { useInterval, roundToDecimalPlaces, SWARM_STATE, LineChart } from 'locust-ui';
 
 import Toolbar from 'components/Toolbar/Toolbar';
 import { useLocustSelector, useSelector } from 'redux/hooks';
@@ -54,6 +54,33 @@ interface IResponseLengthResponse extends IPerRequestResponse {
 
 const defaultPerRequestState = { time: [] } as IPerRequestData;
 const defaultRpsDataState = { time: [] as string[] } as IRpsData;
+
+const CHART_COLORS = {
+  RPS: ['#00ca5a', '#0099ff', '#ff6d6d'],
+  PER_REQUEST: ['#9966CC', '#8A2BE2', '#8E4585', '#E0B0FF', '#C8A2C8', '#E6E6FA'],
+  ERROR: ['#ff8080', '#ff4d4d', '#ff1a1a', '#e60000', '#b30000', '#800000'],
+};
+
+const RPS_Y_AXIS_LABELS: [string, string] = ['Users', 'RPS'];
+const RPS_CHART_LINES = [
+  {
+    name: 'Users',
+    key: 'users' as keyof IRpsData,
+    yAxisIndex: 0,
+  },
+  {
+    name: 'Requests per Second',
+    key: 'rps' as keyof IRpsData,
+    yAxisIndex: 1,
+    areaStyle: {},
+  },
+  {
+    name: 'Errors per Second',
+    key: 'errorRate' as keyof IRpsData,
+    yAxisIndex: 1,
+    areaStyle: {},
+  },
+];
 
 const carryLastValue = (values?: [string, string][]) => {
   if (!values) {
@@ -188,75 +215,71 @@ export default function Charts() {
     }
   }, [swarmState]);
 
-  if (isLoading) {
-    return <LinearProgress />;
-  }
-
   return (
     <>
-      <Toolbar />
-      <LineChart<IRpsData>
-        chartValueFormatter={chartValueFormatter}
-        charts={rpsData}
-        colors={['#00ca5a', '#0099ff', '#ff6d6d']}
-        lines={[
-          {
-            name: 'Users',
-            key: 'users',
-            yAxisIndex: 0,
-          },
-          {
-            name: 'Requests per Second',
-            key: 'rps',
-            yAxisIndex: 1,
-            areaStyle: {},
-          },
-          {
-            name: 'Errors per Second',
-            key: 'errorRate',
-            yAxisIndex: 1,
-            areaStyle: {},
-          },
-        ]}
-        splitAxis
-        title='Throughput / active users'
-        yAxisLabels={['Users', 'RPS']}
-      />
-      <LineChart<IPerRequestData>
-        chartValueFormatter={v => `${roundToDecimalPlaces(Number((v as string[])[1]), 2)}ms`}
-        charts={avgResponseTimes}
-        colors={['#9966CC', '#8A2BE2', '#8E4585', '#E0B0FF', '#C8A2C8', '#E6E6FA']}
-        lines={requestLines}
-        title='Average Response Times'
-      />
-      <LineChart<IPerRequestData>
-        chartValueFormatter={chartValueFormatter}
-        charts={rpsPerRequest}
-        colors={['#9966CC', '#8A2BE2', '#8E4585', '#E0B0FF', '#C8A2C8', '#E6E6FA']}
-        lines={requestLines}
-        title='RPS per Request'
-      />
-      <LineChart<IPerRequestData>
-        chartValueFormatter={chartValueFormatter}
-        charts={errorsPerRequest}
-        colors={['#ff8080', '#ff4d4d', '#ff1a1a', '#e60000', '#b30000', '#800000']}
-        lines={requestLines}
-        title='Errors per Request'
-      />
-      <LineChart<IPerRequestData>
-        chartValueFormatter={chartValueFormatter}
-        charts={perc99ResponseTimes}
-        colors={['#9966CC', '#8A2BE2', '#8E4585', '#E0B0FF', '#C8A2C8', '#E6E6FA']}
-        lines={requestLines}
-        title='99th Percentile Response Times'
-      />
-      <LineChart<IPerRequestData>
-        chartValueFormatter={chartValueFormatter}
-        charts={responseLength}
-        colors={['#9966CC', '#8A2BE2', '#8E4585', '#E0B0FF', '#C8A2C8', '#E6E6FA']}
-        lines={requestLines}
-        title='Response Length'
-      />
+      <Toolbar onSelectTestRun={() => setIsLoading(true)} />
+      <Box sx={{ position: 'relative' }}>
+        {isLoading && (
+          <Box
+            sx={{
+              position: 'absolute',
+              height: '100%',
+              width: '100%',
+              backgroundColor: 'rgba(0,0,0,0.4)',
+              zIndex: 1,
+              display: 'flex',
+              justifyContent: 'center',
+              paddingTop: 4,
+            }}
+          >
+            <CircularProgress />
+          </Box>
+        )}
+        <LineChart<IRpsData>
+          chartValueFormatter={chartValueFormatter}
+          charts={rpsData}
+          colors={CHART_COLORS.RPS}
+          lines={RPS_CHART_LINES}
+          splitAxis
+          title='Throughput / active users'
+          yAxisLabels={RPS_Y_AXIS_LABELS}
+        />
+        <LineChart<IPerRequestData>
+          chartValueFormatter={v => `${roundToDecimalPlaces(Number((v as string[])[1]), 2)}ms`}
+          charts={avgResponseTimes}
+          colors={CHART_COLORS.PER_REQUEST}
+          lines={requestLines}
+          title='Average Response Times'
+        />
+        <LineChart<IPerRequestData>
+          chartValueFormatter={chartValueFormatter}
+          charts={rpsPerRequest}
+          colors={CHART_COLORS.PER_REQUEST}
+          lines={requestLines}
+          title='RPS per Request'
+        />
+        <LineChart<IPerRequestData>
+          chartValueFormatter={chartValueFormatter}
+          charts={errorsPerRequest}
+          colors={CHART_COLORS.ERROR}
+          lines={requestLines}
+          title='Errors per Request'
+        />
+        <LineChart<IPerRequestData>
+          chartValueFormatter={chartValueFormatter}
+          charts={perc99ResponseTimes}
+          colors={CHART_COLORS.PER_REQUEST}
+          lines={requestLines}
+          title='99th Percentile Response Times'
+        />
+        <LineChart<IPerRequestData>
+          chartValueFormatter={chartValueFormatter}
+          charts={responseLength}
+          colors={CHART_COLORS.PER_REQUEST}
+          lines={requestLines}
+          title='Response Length'
+        />
+      </Box>
     </>
   );
 }

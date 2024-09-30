@@ -1275,24 +1275,24 @@
     path-browserify "^1.0.1"
     vscode-uri "^3.0.8"
 
-"@vue/compiler-core@3.5.9":
-  version "3.5.9"
-  resolved "https://registry.yarnpkg.com/@vue/compiler-core/-/compiler-core-3.5.9.tgz#d51fbfe6c18479b27fe6b1723344ba0832e4aacb"
-  integrity sha512-KE1sCdwqSKq0CQ/ltg3XnlMTKeinjegIkuFsuq9DKvNPmqLGdmI51ChZdGBBRXIvEYTLm8X/JxOuBQ1HqF/+PA==
+"@vue/compiler-core@3.5.10":
+  version "3.5.10"
+  resolved "https://registry.yarnpkg.com/@vue/compiler-core/-/compiler-core-3.5.10.tgz#dc382e4173c5ad6d309887f5cb02983dfd88cfee"
+  integrity sha512-iXWlk+Cg/ag7gLvY0SfVucU8Kh2CjysYZjhhP70w9qI4MvSox4frrP+vDGvtQuzIcgD8+sxM6lZvCtdxGunTAA==
   dependencies:
     "@babel/parser" "^7.25.3"
-    "@vue/shared" "3.5.9"
+    "@vue/shared" "3.5.10"
     entities "^4.5.0"
     estree-walker "^2.0.2"
     source-map-js "^1.2.0"
 
 "@vue/compiler-dom@^3.4.0":
-  version "3.5.9"
-  resolved "https://registry.yarnpkg.com/@vue/compiler-dom/-/compiler-dom-3.5.9.tgz#6fa2b7e536ae4c416fc2d60b7e9e33b3410eac7a"
-  integrity sha512-gEAURwPo902AsJF50vl59VaWR+Cx6cX9SoqLYHu1jq9hDbmQlXvpZyYNIIbxa2JTJ+FD/oBQweVUwuTQv79KTg==
+  version "3.5.10"
+  resolved "https://registry.yarnpkg.com/@vue/compiler-dom/-/compiler-dom-3.5.10.tgz#233c660289ce289a48e8fe759b07b95f607cd98e"
+  integrity sha512-DyxHC6qPcktwYGKOIy3XqnHRrrXyWR2u91AjP+nLkADko380srsC2DC3s7Y1Rk6YfOlxOlvEQKa9XXmLI+W4ZA==
   dependencies:
-    "@vue/compiler-core" "3.5.9"
-    "@vue/shared" "3.5.9"
+    "@vue/compiler-core" "3.5.10"
+    "@vue/shared" "3.5.10"
 
 "@vue/compiler-vue2@^2.7.16":
   version "2.7.16"
@@ -1316,10 +1316,10 @@
     muggle-string "^0.4.1"
     path-browserify "^1.0.1"
 
-"@vue/shared@3.5.9", "@vue/shared@^3.4.0":
-  version "3.5.9"
-  resolved "https://registry.yarnpkg.com/@vue/shared/-/shared-3.5.9.tgz#713257216ea2cbf4e200cb9ae395c34ae2349385"
-  integrity sha512-8wiT/m0mnsLhTME0mPgc57jv+4TipRBSAAmheUdYgiOaO6AobZPNOmm87ub4np65VVDgLcWxc+Edc++5Wyz1uA==
+"@vue/shared@3.5.10", "@vue/shared@^3.4.0":
+  version "3.5.10"
+  resolved "https://registry.yarnpkg.com/@vue/shared/-/shared-3.5.10.tgz#066f7dde31e09d700123e92e63eaa126cda21a17"
+  integrity sha512-VkkBhU97Ki+XJ0xvl4C9YJsIZ2uIlQ7HqPpZOS3m9VCvmROPaChZU6DexdMJqvz9tbgG+4EtFVrSuailUq5KGQ==
 
 acorn-jsx@^5.3.2:
   version "5.3.2"
@@ -3070,10 +3070,10 @@ locate-path@^6.0.0:
   dependencies:
     p-locate "^5.0.0"
 
-locust-ui@2.31.8-next-11068636152:
-  version "2.31.8-next-11068636152"
-  resolved "https://registry.yarnpkg.com/locust-ui/-/locust-ui-2.31.8-next-11068636152.tgz#b0df6d583a09aac160c601a36c316d2168eba6b2"
-  integrity sha512-xm1XP3aghwoXf5g0l6Gdhvu/QGIweTeHZyWXsQZZXVb3fzudqyJvtVZZo/Jwr6lKPUPuRmbSrLbvalSnk4b1fg==
+locust-ui@2.31.8:
+  version "2.31.8"
+  resolved "https://registry.yarnpkg.com/locust-ui/-/locust-ui-2.31.8.tgz#6d2b2e3ae30a703a568f059529b27bf0f7680461"
+  integrity sha512-V+jQEgNX1AtktNa6O+W4WZ/ShkFOGEh2QiD+4zw5fmyeypmZa2IODfsxlXNTqvELoEaqPfo9gP7YpzxZ7gWbqg==
   dependencies:
     "@emotion/react" "^11.11.1"
     "@emotion/styled" "^11.11.0"
@@ -4759,9 +4759,9 @@ vite-plugin-checker@^0.8.0:
     vscode-uri "^3.0.2"
 
 vite-plugin-dts@^4.2.2:
-  version "4.2.2"
-  resolved "https://registry.yarnpkg.com/vite-plugin-dts/-/vite-plugin-dts-4.2.2.tgz#96fd412827e545564a6dfe2de678feec5ddbed5c"
-  integrity sha512-USwTMReZFf8yXV+cKkm4WOMqmFjbReAvkyxON5xzdnZzJEBnFgax6BBDZIGGr9WMJYvhHdpaIHLrOjXDcla4OA==
+  version "4.2.3"
+  resolved "https://registry.yarnpkg.com/vite-plugin-dts/-/vite-plugin-dts-4.2.3.tgz#e0d9616eb574700111dbd19ae98e166541433263"
+  integrity sha512-O5NalzHANQRwVw1xj8KQun3Bv8OSDAlNJXrnqoAz10BOuW8FVvY5g4ygj+DlJZL5mtSPuMu9vd3OfrdW5d4k6w==
   dependencies:
     "@microsoft/api-extractor" "7.47.7"
     "@rollup/pluginutils" "^5.1.0"
