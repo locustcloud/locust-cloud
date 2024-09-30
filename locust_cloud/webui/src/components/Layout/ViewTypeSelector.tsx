@@ -3,7 +3,7 @@ import { Button, Container } from '@mui/material';
 import { useAction, useSelector } from 'redux/hooks';
 import { UI_VIEW_TYPES, uiActions } from 'redux/slice/ui.slice';
 
-export default function Footer() {
+export default function ViewTypeSelector() {
   const setUi = useAction(uiActions.setUi);
   const { viewType } = useSelector(({ ui }) => ui);
 
@@ -15,9 +15,11 @@ export default function Footer() {
       maxWidth='xl'
       sx={{
         display: 'flex',
-        height: 'var(--footer-height)',
+        position: 'absolute',
         alignItems: 'center',
         justifyContent: 'flex-end',
+        pt: '4px',
+        zIndex: 1,
       }}
     >
       <Button
@@ -26,7 +28,6 @@ export default function Footer() {
             viewType: nextViewType,
           })
         }
-        variant='text'
       >
         {nextViewType}
       </Button>
