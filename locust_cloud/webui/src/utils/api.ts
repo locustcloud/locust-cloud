@@ -15,7 +15,7 @@ export function fetchQuery<ResponseType>(
   onSuccess: (response: ResponseType) => void,
   onError?: (error: string) => void,
 ) {
-  const API_BASE_URL = window.templateArgs.api_base_url;
+  const API_BASE_URL = 'https://api.locust.cloud/1';
 
   fetch(`${API_BASE_URL}${url}`, {
     method: 'POST',
@@ -28,7 +28,7 @@ export function fetchQuery<ResponseType>(
     .then(res => res.json())
     .then(data => onSuccess(data))
     // eslint-disable-next-line no-console
-    .catch(error => (onError ? onError(error) : console.error(error)));
+    .catch(error => (onError ? onError(String(error)) : console.error(error)));
 }
 
 export interface IPerRequestResponse {
