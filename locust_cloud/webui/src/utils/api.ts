@@ -13,6 +13,7 @@ export function fetchQuery<ResponseType>(
   url: string,
   body: IRequestBody,
   onSuccess: (response: ResponseType) => void,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   onError?: (error: string) => void,
 ) {
   const API_BASE_URL = window.templateArgs.apiBaseUrl;
@@ -28,7 +29,7 @@ export function fetchQuery<ResponseType>(
     .then(res => res.json())
     .then(data => onSuccess(data))
     // eslint-disable-next-line no-console
-    .catch(error => (onError ? onError(String(error)) : console.error(error)));
+    .catch(error => console.error(error));
 }
 
 export interface IPerRequestResponse {
