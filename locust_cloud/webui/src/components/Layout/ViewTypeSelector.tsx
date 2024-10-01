@@ -11,23 +11,19 @@ export default function ViewTypeSelector() {
     viewType === UI_VIEW_TYPES.CLOUD ? UI_VIEW_TYPES.CLASSIC : UI_VIEW_TYPES.CLOUD;
 
   return (
-    <Container
-      maxWidth='xl'
-      sx={{
-        display: 'flex',
-        position: 'absolute',
-        alignItems: 'center',
-        justifyContent: 'flex-end',
-        pt: '4px',
-        zIndex: 1,
-      }}
-    >
+    <Container maxWidth='xl' sx={{ position: 'relative' }}>
       <Button
         onClick={() =>
           setUi({
             viewType: nextViewType,
           })
         }
+        sx={{
+          position: 'absolute',
+          mt: '4px',
+          right: 16,
+          zIndex: 1,
+        }}
       >
         {nextViewType}
       </Button>

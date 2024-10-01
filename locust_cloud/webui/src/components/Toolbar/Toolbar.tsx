@@ -42,7 +42,11 @@ export default function Toolbar({ onSelectTestRun }: IToolbar) {
           onChange={(e: SelectChangeEvent<string>) => {
             // find in test runs to get correct date format
             onSelectTestRun && onSelectTestRun(e.target.value);
-            setToolbar({ currentTestrun: testruns[e.target.value].runId });
+            const currentTestrun = testruns[e.target.value];
+            setToolbar({
+              currentTestrun: currentTestrun.runId,
+              currentTestrunIndex: currentTestrun.index,
+            });
           }}
           options={testrunsForDisplay}
           size='small'
