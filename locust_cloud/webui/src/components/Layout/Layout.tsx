@@ -1,6 +1,7 @@
 import { ReactNode } from 'react';
-import { Navbar, SWARM_STATE } from 'locust-ui';
+import { SWARM_STATE } from 'locust-ui';
 
+import Navbar from 'components/Layout/Navbar';
 import ViewTypeSelector from 'components/Layout/ViewTypeSelector';
 import { useLocustSelector } from 'redux/hooks';
 
