@@ -14,9 +14,11 @@ export default function Layout({ children }: ILayout) {
   return (
     <>
       <Navbar />
+
       {!window.templateArgs.isGraphViewer && swarmState !== SWARM_STATE.READY && (
         <ViewTypeSelector />
       )}
+
       <main>{children}</main>
     </>
   );
