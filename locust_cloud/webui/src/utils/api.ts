@@ -15,7 +15,7 @@ export function fetchQuery<ResponseType>(
   onSuccess: (response: ResponseType) => void,
   onError?: (error: string) => void,
 ) {
-  const API_BASE_URL = window.templateArgs.api_base_url;
+  const API_BASE_URL = window.templateArgs.apiBaseUrl;
 
   fetch(`${API_BASE_URL}${url}`, {
     method: 'POST',

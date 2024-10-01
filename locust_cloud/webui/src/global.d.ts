@@ -1,6 +1,13 @@
+import { IWindow } from 'locust-ui';
+
+interface ITemplateArgs extends IWindow['templateArgs'] {
+  isGraphViewer: boolean;
+  apiBaseUrl: string;
+}
+
 declare global {
-  interface Window {
-    templateArgs: { [key: string]: any };
+  interface Window extends IWindow {
+    templateArgs: ITemplateArgs;
   }
 }
 
