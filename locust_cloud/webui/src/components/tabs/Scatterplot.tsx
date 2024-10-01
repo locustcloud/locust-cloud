@@ -52,32 +52,30 @@ export default function Scatterplot() {
     fetchQuery<{ name: string }[]>(
       '/cloud-stats/request-names',
       body,
-      requestNames => {
-        (!requestLines ||
-          (requestLines &&
-            !requestNames.every(({ name }, index) => requestLines[index].name === name))) &&
-          setRequestLines(
-            requestNames.map(({ name: requestName }) => ({
-              name: `${requestName}`,
-              key: requestName,
-            })),
-          );
-      },
+      requestNames =>
+        setRequestLines(
+          requestNames.map(({ name: requestName }) => ({
+            name: `${requestName}`,
+            key: requestName,
+          })),
+        ),
       onError,
     );
 
   const fetchScatterplot = () => {
-    const currentTimestamp = new Date().toISOString();
-    const payload = {
-      start: currentTestrun,
-      end: timestamp,
-      testrun: currentTestrun,
-    };
+    if (currentTestrun) {
+      const currentTimestamp = new Date().toISOString();
+      const payload = {
+        start: currentTestrun,
+        end: timestamp,
+        testrun: currentTestrun,
+      };
 
-    getRequestNames(payload);
-    getScatterplot(payload);
+      getRequestNames(payload);
+      getScatterplot(payload);
 
-    setTimestamp(currentTimestamp);
+      setTimestamp(currentTimestamp);
+    }
   };
 
   useInterval(

@@ -102,7 +102,9 @@ export default function Stats() {
   });
 
   useEffect(() => {
-    fetchStats();
+    if (currentTestrun) {
+      fetchStats();
+    }
   }, [currentTestrun]);
 
   return (
