@@ -64,4 +64,4 @@ def on_locust_init(environment, **_args):
 
     if environment.web_ui:
         register_auth(environment)
-        environment.web_ui.template_args["api_base_url"] = os.environ.get("LOCUST_API_BASE_URL")
+        environment.web_ui.template_args["apiBaseUrl"] = os.environ.get("LOCUST_API_BASE_URL")
