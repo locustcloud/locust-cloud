@@ -36,8 +36,8 @@ export default function Scatterplot() {
   const onError = (error: string) => setSnackbar({ message: error });
 
   const [timestamp, setTimestamp] = useState(new Date().toISOString());
-  const [scatterplot, setScatterplot] = useState<IPerRequestData>();
-  const [requestLines, setRequestLines] = useState<IRequestLines[]>();
+  const [scatterplot, setScatterplot] = useState<IPerRequestData>({ time: [] });
+  const [requestLines, setRequestLines] = useState<IRequestLines[]>([]);
 
   const getScatterplot = (body: IRequestBody) =>
     fetchQuery<IScatterplotData[]>(
@@ -95,16 +95,14 @@ export default function Scatterplot() {
   return (
     <>
       <Toolbar />
-      {scatterplot && requestLines && (
-        <LineChart<IPerRequestData>
-          chartValueFormatter={chartValueFormatter}
-          charts={scatterplot}
-          colors={['#8A2BE2', '#0000FF', '#00ca5a', '#FFA500', '#FFFF00', '#EE82EE']}
-          lines={requestLines}
-          scatterplot
-          title='Scatterplot'
-        />
-      )}
+      <LineChart<IPerRequestData>
+        chartValueFormatter={chartValueFormatter}
+        charts={scatterplot}
+        colors={['#8A2BE2', '#0000FF', '#00ca5a', '#FFA500', '#FFFF00', '#EE82EE']}
+        lines={requestLines}
+        scatterplot
+        title='Scatterplot'
+      />
     </>
   );
 }
