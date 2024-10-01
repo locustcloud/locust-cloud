@@ -126,6 +126,11 @@ VALUES (%(time)s, %(run_id)s, %(greenlet_id)s, %(loadgen)s, %(name)s, %(request_
     def on_test_stop(self, environment):
         if getattr(self, "_user_count_logger", False):
             self._user_count_logger.kill()
+            with self.pool.connection() as conn:
+                conn.execute(
+                    """INSERT INTO number_of_users(time, run_id, user_count) VALUES (%s, %s, %s)""",
+                    (datetime.now(UTC).isoformat(), self._run_id, 0),
+                )
         self.log_stop_test_run()
 
     def on_quit(self, exit_code, **kwargs):
