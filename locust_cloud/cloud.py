@@ -421,10 +421,11 @@ def delete(s3_bucket, credential_manager):
         s3 = credential_manager.session.resource("s3")
         bucket = s3.Bucket(s3_bucket)
         bucket.objects.all().delete()
-        logger.info("Done! ✨")
     except ClientError as e:
-        logger.error(f"Failed to clean up locust files: {e}")
-        sys.exit(1)
+        logger.debug(f"Failed to clean up locust files: {e}")
+        # sys.exit(1)
+
+    logger.info("Done! ✨")
 
 
 if __name__ == "__main__":
