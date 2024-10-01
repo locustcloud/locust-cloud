@@ -2,12 +2,14 @@ import { PayloadAction, createSlice } from '@reduxjs/toolkit';
 
 import { updateStateWithPayload } from 'redux/utils';
 
+export interface ITestrun {
+  runId: string;
+  endTime: string;
+  index: number;
+}
+
 export interface ITestrunsMap {
-  [key: string]: {
-    runId: string;
-    endTime: string;
-    index: number;
-  };
+  [key: string]: ITestrun;
 }
 
 export interface IToolbarState {

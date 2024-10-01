@@ -3,19 +3,20 @@ import { SWARM_STATE, useInterval } from 'locust-ui';
 
 import { useAction, useLocustSelector, useSelector } from 'redux/hooks';
 import { snackbarActions } from 'redux/slice/snackbar.slice';
-import { toolbarActions } from 'redux/slice/toolbar.slice';
+import { ITestrun, ITestrunsMap, toolbarActions } from 'redux/slice/toolbar.slice';
 import { fetchQuery } from 'utils/api';
 
 export default function useFetchTestruns() {
   const setToolbar = useAction(toolbarActions.setToolbar);
   const swarmState = useLocustSelector(({ swarm }) => swarm.state);
   const { testrunsForDisplay, previousTestrun } = useSelector(({ toolbar }) => toolbar);
+  const testrunFromUrl = useLocustSelector(({ url }) => url.query && url.query.testrun);
   const setSnackbar = useAction(snackbarActions.setSnackbar);
 
   const onError = (error: string) => setSnackbar({ message: error });
 
   const fetchTestruns = () => {
-    fetchQuery<{ runId: string; endTime: string }[]>(
+    fetchQuery<ITestrun[]>(
       '/cloud-stats/testruns',
       {},
       testrunIds => {
@@ -24,13 +25,18 @@ export default function useFetchTestruns() {
             ...testrunMap,
             [new Date(runId).toLocaleString()]: { runId, endTime, index },
           }),
-          {},
+          {} as ITestrunsMap,
         );
+
+        const currentTestrun =
+          swarmState === SWARM_STATE.RUNNING
+            ? testrunIds[0]
+            : (testrunFromUrl && testruns[testrunFromUrl]) || testrunIds[0];
 
         setToolbar({
           testruns,
-          currentTestrun: testrunIds[0].runId,
-          currentTestrunIndex: 0,
+          currentTestrun: currentTestrun.runId,
+          currentTestrunIndex: currentTestrun.index || 0,
           testrunsForDisplay: testrunIds.map(({ runId }) => new Date(runId).toLocaleString()),
         });
       },

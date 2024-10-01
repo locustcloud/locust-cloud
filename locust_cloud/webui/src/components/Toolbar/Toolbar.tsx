@@ -7,6 +7,7 @@ import {
 } from 'components/Toolbar/Toolbar.constants';
 import { useAction, useSelector } from 'redux/hooks';
 import { toolbarActions } from 'redux/slice/toolbar.slice';
+import { pushQuery } from 'utils/url';
 
 interface IToolbar {
   onSelectTestRun?: (runId: string) => void;
@@ -15,6 +16,17 @@ interface IToolbar {
 export default function Toolbar({ onSelectTestRun }: IToolbar) {
   const setToolbar = useAction(toolbarActions.setToolbar);
   const { testruns, testrunsForDisplay } = useSelector(({ toolbar }) => toolbar);
+
+  const handleTestrunChange = (e: SelectChangeEvent<string>) => {
+    // find in test runs to get correct date format
+    onSelectTestRun && onSelectTestRun(e.target.value);
+    const currentTestrun = testruns[e.target.value];
+    setToolbar({
+      currentTestrun: currentTestrun.runId,
+      currentTestrunIndex: currentTestrun.index,
+    });
+    pushQuery({ testrun: e.target.value });
+  };
 
   return (
     <Box
@@ -39,15 +51,7 @@ export default function Toolbar({ onSelectTestRun }: IToolbar) {
         <Select
           label='Test Run'
           name='testrun'
-          onChange={(e: SelectChangeEvent<string>) => {
-            // find in test runs to get correct date format
-            onSelectTestRun && onSelectTestRun(e.target.value);
-            const currentTestrun = testruns[e.target.value];
-            setToolbar({
-              currentTestrun: currentTestrun.runId,
-              currentTestrunIndex: currentTestrun.index,
-            });
-          }}
+          onChange={handleTestrunChange}
           options={testrunsForDisplay}
           size='small'
           sx={{ width: '250px' }}
