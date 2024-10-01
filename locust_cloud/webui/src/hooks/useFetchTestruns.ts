@@ -20,9 +20,9 @@ export default function useFetchTestruns() {
       {},
       testrunIds => {
         const testruns = testrunIds.reduce(
-          (testrunMap, { runId, endTime }) => ({
+          (testrunMap, { runId, endTime }, index) => ({
             ...testrunMap,
-            [new Date(runId).toLocaleString()]: { runId, endTime },
+            [new Date(runId).toLocaleString()]: { runId, endTime, index },
           }),
           {},
         );
@@ -30,6 +30,7 @@ export default function useFetchTestruns() {
         setToolbar({
           testruns,
           currentTestrun: testrunIds[0].runId,
+          currentTestrunIndex: 0,
           testrunsForDisplay: testrunIds.map(({ runId }) => new Date(runId).toLocaleString()),
         });
       },

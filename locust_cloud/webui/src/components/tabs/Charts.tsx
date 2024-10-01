@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Alert, Box, CircularProgress } from '@mui/material';
 import { useInterval, roundToDecimalPlaces, SWARM_STATE, LineChart } from 'locust-ui';
 
@@ -93,10 +93,13 @@ const carryLastValue = (values?: [string, string][]) => {
 
 export default function Charts() {
   const { state: swarmState } = useLocustSelector(({ swarm }) => swarm);
-  const { resolution, currentTestrun, testruns } = useSelector(({ toolbar }) => toolbar);
+  const { resolution, currentTestrunIndex, currentTestrun, testruns } = useSelector(
+    ({ toolbar }) => toolbar,
+  );
   const setSnackbar = useAction(snackbarActions.setSnackbar);
 
   const [isLoading, setIsLoading] = useState(true);
+  const [isError, setIsError] = useState(false);
   const [timestamp, setTimestamp] = useState(new Date().toISOString());
   const [requestLines, setRequestLines] = useState<IRequestLines[]>([]);
   const [rpsData, setRpsData] = useState<IRpsData>(defaultRpsDataState);
@@ -113,13 +116,21 @@ export default function Charts() {
     fetchQuery<{ name: string }[]>(
       '/cloud-stats/request-names',
       body,
-      requestNames =>
+      requestNames => {
+        // only show an error for the first testrun if no test is running
+        if (
+          (currentTestrunIndex !== 0 && !requestNames.length) ||
+          (currentTestrunIndex === 0 && swarmState !== SWARM_STATE.RUNNING && !requestNames.length)
+        ) {
+          setIsError(true);
+        }
         setRequestLines(
           requestNames.map(({ name: requestName }) => ({
             name: `${requestName}`,
             key: requestName,
           })),
-        ),
+        );
+      },
       onError,
     );
   const getRps = (body: IRequestBody) =>
@@ -240,10 +251,15 @@ export default function Charts() {
     }
   }, [swarmState]);
 
+  const onSelectTestRun = useCallback(() => {
+    setIsLoading(true);
+    setIsError(false);
+  }, []);
+
   return (
     <>
-      <Toolbar onSelectTestRun={() => setIsLoading(true)} />
-      {!isLoading && !requestLines.length && (
+      <Toolbar onSelectTestRun={onSelectTestRun} />
+      {isError && (
         <Alert severity='error'>There was a problem loading some graphs for this testrun.</Alert>
       )}
       <Box sx={{ position: 'relative' }}>
@@ -272,7 +288,7 @@ export default function Charts() {
           title='Throughput / active users'
           yAxisLabels={RPS_Y_AXIS_LABELS}
         />
-        {!!requestLines.length && (
+        {(!isError || (isError && !!requestLines.length)) && (
           <>
             <LineChart<IPerRequestData>
               chartValueFormatter={v => `${roundToDecimalPlaces(Number((v as string[])[1]), 2)}ms`}

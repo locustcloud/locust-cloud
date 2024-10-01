@@ -6,12 +6,14 @@ export interface ITestrunsMap {
   [key: string]: {
     runId: string;
     endTime: string;
+    index: number;
   };
 }
 
 export interface IToolbarState {
   resolution: number;
   currentTestrun?: string;
+  currentTestrunIndex?: number;
   previousTestrun?: string;
   testruns: ITestrunsMap;
   testrunsForDisplay: string[];
@@ -19,9 +21,10 @@ export interface IToolbarState {
 
 export type ToolbarAction = PayloadAction<Partial<IToolbarState>>;
 
-const initialState = {
+const initialState: IToolbarState = {
   resolution: 5,
   testruns: {},
+  currentTestrunIndex: 0,
   testrunsForDisplay: [] as string[],
 };
 
