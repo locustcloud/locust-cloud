@@ -36,8 +36,8 @@ export default function Scatterplot() {
   const onError = (error: string) => setSnackbar({ message: error });
 
   const [timestamp, setTimestamp] = useState(new Date().toISOString());
-  const [scatterplot, setScatterplot] = useState<IPerRequestData>();
-  const [requestLines, setRequestLines] = useState<IRequestLines[]>();
+  const [scatterplot, setScatterplot] = useState<IPerRequestData>({ time: [] });
+  const [requestLines, setRequestLines] = useState<IRequestLines[]>([]);
 
   const getScatterplot = (body: IRequestBody) =>
     fetchQuery<IScatterplotData[]>(
@@ -52,32 +52,30 @@ export default function Scatterplot() {
     fetchQuery<{ name: string }[]>(
       '/cloud-stats/request-names',
       body,
-      requestNames => {
-        (!requestLines ||
-          (requestLines &&
-            !requestNames.every(({ name }, index) => requestLines[index].name === name))) &&
-          setRequestLines(
-            requestNames.map(({ name: requestName }) => ({
-              name: `${requestName}`,
-              key: requestName,
-            })),
-          );
-      },
+      requestNames =>
+        setRequestLines(
+          requestNames.map(({ name: requestName }) => ({
+            name: `${requestName}`,
+            key: requestName,
+          })),
+        ),
       onError,
     );
 
   const fetchScatterplot = () => {
-    const currentTimestamp = new Date().toISOString();
-    const payload = {
-      start: currentTestrun,
-      end: timestamp,
-      testrun: currentTestrun,
-    };
+    if (currentTestrun) {
+      const currentTimestamp = new Date().toISOString();
+      const payload = {
+        start: currentTestrun,
+        end: timestamp,
+        testrun: currentTestrun,
+      };
 
-    getRequestNames(payload);
-    getScatterplot(payload);
+      getRequestNames(payload);
+      getScatterplot(payload);
 
-    setTimestamp(currentTimestamp);
+      setTimestamp(currentTimestamp);
+    }
   };
 
   useInterval(
@@ -97,16 +95,14 @@ export default function Scatterplot() {
   return (
     <>
       <Toolbar />
-      {scatterplot && requestLines && (
-        <LineChart<IPerRequestData>
-          chartValueFormatter={chartValueFormatter}
-          charts={scatterplot}
-          colors={['#8A2BE2', '#0000FF', '#00ca5a', '#FFA500', '#FFFF00', '#EE82EE']}
-          lines={requestLines}
-          scatterplot
-          title='Scatterplot'
-        />
-      )}
+      <LineChart<IPerRequestData>
+        chartValueFormatter={chartValueFormatter}
+        charts={scatterplot}
+        colors={['#8A2BE2', '#0000FF', '#00ca5a', '#FFA500', '#FFFF00', '#EE82EE']}
+        lines={requestLines}
+        scatterplot
+        title='Scatterplot'
+      />
     </>
   );
 }
