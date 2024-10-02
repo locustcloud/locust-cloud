@@ -12,7 +12,6 @@ import locust.env
 import psycopg
 import psycopg.types.json
 from locust.exception import CatchResponseError
-from psycopg_pool import ConnectionPool
 
 
 def safe_serialize(obj):
@@ -22,8 +21,8 @@ def safe_serialize(obj):
     return json.dumps(obj, default=default)
 
 
-class Timescale:
-    def __init__(self, environment: locust.env.Environment, pg_user, pg_host, pg_password, pg_database, pg_port):
+class Exporter:
+    def __init__(self, environment: locust.env.Environment, pool):
         self.env = environment
         self._run_id = None
         self._samples: list[dict] = []
@@ -31,20 +30,7 @@ class Timescale:
         self._hostname = socket.gethostname()
         self._finished = False
         self._pid = os.getpid()
-
-        def set_autocommit(conn: psycopg.Connection):
-            conn.autocommit = True
-
-        try:
-            self.pool = ConnectionPool(
-                conninfo=f"postgres://{pg_user}:{pg_password}@{pg_host}:{pg_port}/{pg_database}?sslmode=require",
-                min_size=1,
-                max_size=5,
-                configure=set_autocommit,
-            )
-        except Exception:
-            sys.stderr.write(f"Could not connect to postgres ({pg_user}@{pg_host}:{pg_port}).")
-            sys.exit(1)
+        self.pool = pool
 
         events = self.env.events
         events.test_start.add_listener(self.on_test_start)

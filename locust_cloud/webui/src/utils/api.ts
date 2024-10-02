@@ -16,9 +16,7 @@ export function fetchQuery<ResponseType>(
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   onError?: (error: string) => void,
 ) {
-  const API_BASE_URL = window.templateArgs.apiBaseUrl;
-
-  fetch(`${API_BASE_URL}${url}`, {
+  fetch(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
