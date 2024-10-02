@@ -6,7 +6,7 @@ from flask import redirect, request, url_for
 from flask_login import UserMixin, current_user, login_user
 from locust_cloud.constants import DEFAULT_LAMBDA_URL
 
-LAMBDA = DEFAULT_LAMBDA_URL
+LAMBDA = os.environ.get("LOCUST_API_BASE_URL", DEFAULT_LAMBDA_URL)
 
 
 class AuthUser(UserMixin):
