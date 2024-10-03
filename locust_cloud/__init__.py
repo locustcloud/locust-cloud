@@ -3,11 +3,15 @@ import os
 os.environ["LOCUST_SKIP_MONKEY_PATCH"] = "1"
 
 import argparse
+import sys
 
+import psycopg
 from locust import events
 from locust.argument_parser import LocustArgumentParser
 from locust_cloud.auth import register_auth
-from locust_cloud.timescale.exporter import Timescale
+from locust_cloud.timescale.exporter import Exporter
+from locust_cloud.timescale.query import register_query
+from psycopg_pool import ConnectionPool
 
 PG_USER = os.environ.get("PG_USER")
 PG_HOST = os.environ.get("PG_HOST")
@@ -47,21 +51,39 @@ def add_arguments(parser: LocustArgumentParser):
     )
 
 
+def set_autocommit(conn: psycopg.Connection):
+    conn.autocommit = True
+
+
+def create_connection_pool(pg_user, pg_host, pg_password, pg_database, pg_port):
+    try:
+        return ConnectionPool(
+            conninfo=f"postgres://{pg_user}:{pg_password}@{pg_host}:{pg_port}/{pg_database}?sslmode=require",
+            min_size=1,
+            max_size=5,
+            configure=set_autocommit,
+        )
+    except Exception:
+        sys.stderr.write(f"Could not connect to postgres ({pg_user}@{pg_host}:{pg_port}).")
+        sys.exit(1)
+
+
 @events.init.add_listener
 def on_locust_init(environment, **_args):
     if not (PG_HOST or GRAPH_VIEWER):
         return
 
+    pool = create_connection_pool(
+        pg_user=PG_USER,
+        pg_host=PG_HOST,
+        pg_password=PG_PASSWORD,
+        pg_database=PG_DATABASE,
+        pg_port=PG_PORT,
+    )
+
     if not GRAPH_VIEWER and environment.parsed_options.exporter:
-        Timescale(
-            environment,
-            pg_user=PG_USER,
-            pg_host=PG_HOST,
-            pg_password=PG_PASSWORD,
-            pg_database=PG_DATABASE,
-            pg_port=PG_PORT,
-        )
+        Exporter(environment, pool)
 
     if environment.web_ui:
         register_auth(environment)
-        environment.web_ui.template_args["apiBaseUrl"] = os.environ.get("LOCUST_API_BASE_URL")
+        register_query(environment, pool)
