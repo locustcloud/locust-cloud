@@ -12,7 +12,6 @@ permissions:
 env:
   AWS_ACCOUNT_ID: 637423602143
   AWS_REGION: eu-north-1
-  ECR_REPOSITORY: locust
 
 jobs:
   build:
@@ -106,27 +105,24 @@ jobs:
         run: |
           if [[ $GITHUB_REF == refs/heads/master ]]; then
             TAGS="master"
-            REPO="${{ env.ECR_REPOSITORY }}"
           elif [[ $GITHUB_REF == refs/tags/* ]]; then
             VERSION=${GITHUB_REF#refs/tags/}
             TAGS="$VERSION latest"
-            REPO="${{ env.ECR_REPOSITORY }}"
           else
             echo "No matching branch or tag found. Exiting."
             exit 1
           fi
           echo "TAGS=$TAGS" >> $GITHUB_ENV
-          echo "REPO=$REPO" >> $GITHUB_ENV
 
       - name: Build Docker image
         run: |
           docker build -t locust .
           for TAG in $TAGS; do
-            docker tag locust:latest ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.REPO }}:$TAG
+            docker tag locust:latest ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/locust-cloud:$TAG
           done
 
       - name: Push Docker image to ECR
         run: |
           for TAG in $TAGS; do
-            docker push ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.REPO }}:$TAG
+            docker push ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/locust-cloud:$TAG
           done
