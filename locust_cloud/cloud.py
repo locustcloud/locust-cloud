@@ -202,7 +202,12 @@ def main() -> None:
     s3_bucket = f"{options.kube_cluster_name}-{options.kube_namespace}"
     deployed_pods: list[Any] = []
     worker_count: int = max(options.workers or math.ceil(options.users / USERS_PER_WORKER), 2)
-
+    if options.users > 10000:
+        logger.error("You asked for more than 10000 Users, that isn't allowed.")
+        sys.exit(1)
+    if worker_count > 20:
+        logger.error("You asked for more than 20 workers, that isn't allowed.")
+        sys.exit(1)
     try:
         if not (
             (options.username and options.password) or (options.aws_access_key_id and options.aws_secret_access_key)
