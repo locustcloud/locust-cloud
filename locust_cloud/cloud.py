@@ -173,6 +173,13 @@ parser.add_argument(
     action="store_true",
     help="Delete a running cluster. Useful if locust-cloud was killed/disconnected or if there was an error.",
 )
+parser.add_argument(
+    "--image-tag",
+    type=str,
+    env_var="LOCUST_CLOUD_IMAGE_TAG",
+    default="latest",
+    help=configargparse.SUPPRESS,  # overrides the locust-cloud docker image tag. for internal use
+)
 
 options, locust_options = parser.parse_known_args()
 options: Namespace
@@ -289,6 +296,7 @@ def main() -> None:
                 *locust_env_variables,
             ],
             "worker_count": worker_count,
+            "image_tag": options.image_tag,
         }
         headers = {
             "Authorization": f"Bearer {cognito_client_id_token}",
