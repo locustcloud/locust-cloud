@@ -255,6 +255,12 @@ JOIN avg_response_time_failed f ON a.time = f.time
 ORDER BY a.time
 """
 
+total_runtime = """
+SELECT
+  SUM(end_time - id) AS "totalRuntime"
+FROM testruns;
+"""
+
 queries: dict["str", LiteralString] = {
     "request-names": request_names,
     "requests": requests_query,
@@ -273,4 +279,5 @@ queries: dict["str", LiteralString] = {
     "testruns-table": testruns_table,
     "testruns-rps": testruns_rps,
     "testruns-response-time": testruns_response_time,
+    "total-runtime": total_runtime,
 }

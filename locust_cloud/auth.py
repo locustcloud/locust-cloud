@@ -73,6 +73,7 @@ def register_auth(environment):
 
             if auth_response.status_code == 200:
                 credentials = auth_response.json()
+                environment.web_ui.template_args["username"] = username
                 response = redirect(url_for("index"))
                 response = set_credentials(credentials, response)
                 login_user(AuthUser(credentials["user_sub_id"]))
