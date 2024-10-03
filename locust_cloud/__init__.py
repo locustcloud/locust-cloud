@@ -73,16 +73,17 @@ def on_locust_init(environment, **_args):
     if not (PG_HOST or GRAPH_VIEWER):
         return
 
+    pool = create_connection_pool(
+        pg_user=PG_USER,
+        pg_host=PG_HOST,
+        pg_password=PG_PASSWORD,
+        pg_database=PG_DATABASE,
+        pg_port=PG_PORT,
+    )
+
     if not GRAPH_VIEWER and environment.parsed_options.exporter:
-        pool = create_connection_pool(
-            pg_user=PG_USER,
-            pg_host=PG_HOST,
-            pg_password=PG_PASSWORD,
-            pg_database=PG_DATABASE,
-            pg_port=PG_PORT,
-        )
         Exporter(environment, pool)
-        register_query(environment, pool)
 
     if environment.web_ui:
         register_auth(environment)
+        register_query(environment, pool)
