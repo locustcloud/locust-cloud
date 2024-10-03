@@ -99,13 +99,15 @@ class Exporter:
     def write_samples_to_db(self, samples):
         try:
             with self.pool.connection() as conn:
-                conn.cursor().executemany(
-                    """
-INSERT INTO requests (time,run_id,greenlet_id,loadgen,name,request_type,response_time,success,response_length,exception,pid,url,context)
-VALUES (%(time)s, %(run_id)s, %(greenlet_id)s, %(loadgen)s, %(name)s, %(request_type)s, %(response_time)s, %(success)s, %(response_length)s, %(exception)s, %(pid)s, %(url)s, %(context)s)
-""",
-                    samples,
-                )
+                conn: psycopg.connection.Connection
+                with conn.cursor() as cur:
+                    cur.executemany(
+                        """
+    INSERT INTO requests (time,run_id,greenlet_id,loadgen,name,request_type,response_time,success,response_length,exception,pid,url,context)
+    VALUES (%(time)s, %(run_id)s, %(greenlet_id)s, %(loadgen)s, %(name)s, %(request_type)s, %(response_time)s, %(success)s, %(response_length)s, %(exception)s, %(pid)s, %(url)s, %(context)s)
+    """,
+                        samples,
+                    )
         except psycopg.Error as error:
             logging.error("Failed to write samples to Postgresql timescale database: " + repr(error))
 
