@@ -1,8 +1,10 @@
 import os
 from datetime import UTC, datetime, timedelta
-from typing import Any, TypedDict
+from typing import TypedDict
 
+import locust.env
 import requests
+import werkzeug
 from flask import redirect, request, url_for
 from flask_login import UserMixin, login_user
 from locust_cloud.constants import DEFAULT_LAMBDA_URL
@@ -23,7 +25,7 @@ class AuthUser(UserMixin):
         return self.user_sub_id
 
 
-def set_credentials(username: str, credentials: Credentials, response: Any):
+def set_credentials(username: str, credentials: Credentials, response: werkzeug.wrappers.response.Response):
     if not credentials.get("user_sub_id"):
         return response
 
@@ -37,7 +39,7 @@ def set_credentials(username: str, credentials: Credentials, response: Any):
     return response
 
 
-def register_auth(environment):
+def register_auth(environment: locust.env.Environment):
     environment.web_ui.app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
     environment.web_ui.app.debug = False
 

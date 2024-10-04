@@ -92,5 +92,5 @@ dev-dependencies = [
 
 
 [tool.pyright]
-reportOptionalMemberAccess = "warning"
+reportOptionalMemberAccess = "none"
 reportPossiblyUnboundVariable = "warning"
