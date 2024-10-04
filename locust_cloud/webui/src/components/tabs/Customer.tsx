@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { Box, Paper, Typography } from '@mui/material';
-import { roundToDecimalPlaces } from 'locust-ui';
 
 import { useLocustSelector } from 'redux/hooks';
 import { fetchQuery } from 'utils/api';
