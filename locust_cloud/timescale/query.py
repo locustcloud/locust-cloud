@@ -1,6 +1,7 @@
 import logging
 
 from flask import make_response, request
+from flask_login import login_required
 from locust_cloud.timescale.queries import queries
 
 logger = logging.getLogger(__name__)
@@ -12,6 +13,7 @@ def adapt_timestamp(result):
 
 def register_query(environment, pool):
     @environment.web_ui.app.route("/cloud-stats/<query>", methods=["POST"])
+    @login_required
     def query(query):
         results = []
         try:
