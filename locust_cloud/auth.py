@@ -1,23 +1,29 @@
 import os
 from datetime import UTC, datetime, timedelta
+from typing import TypedDict
 
 import requests
-from flask import redirect, request, url_for
+from flask import Response, redirect, request, url_for
 from flask_login import UserMixin, login_user
 from locust_cloud.constants import DEFAULT_LAMBDA_URL
 
 LAMBDA = os.environ.get("LOCUST_API_BASE_URL", DEFAULT_LAMBDA_URL)
 
 
+class Credentials(TypedDict):
+    user_sub_id: str
+    refresh_token: str
+
+
 class AuthUser(UserMixin):
-    def __init__(self, user_sub_id):
+    def __init__(self, user_sub_id: str):
         self.user_sub_id = user_sub_id
 
     def get_id(self):
         return self.user_sub_id
 
 
-def set_credentials(username, credentials, response):
+def set_credentials(username: str, credentials: Credentials, response: Response):
     if not credentials.get("user_sub_id"):
         return response
 
@@ -35,7 +41,7 @@ def register_auth(environment):
     environment.web_ui.app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
     environment.web_ui.app.debug = False
 
-    def load_user(user_sub_id):
+    def load_user(user_sub_id: str):
         username = request.cookies.get("username")
         refresh_token = request.cookies.get("user_token")
 
