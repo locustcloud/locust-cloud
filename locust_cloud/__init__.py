@@ -5,6 +5,7 @@ os.environ["LOCUST_SKIP_MONKEY_PATCH"] = "1"
 import argparse
 import sys
 
+import locust.env
 import psycopg
 from locust import events
 from locust.argument_parser import LocustArgumentParser
@@ -55,7 +56,9 @@ def set_autocommit(conn: psycopg.Connection):
     conn.autocommit = True
 
 
-def create_connection_pool(pg_user, pg_host, pg_password, pg_database, pg_port):
+def create_connection_pool(
+    pg_user: str, pg_host: str, pg_password: str, pg_database: str, pg_port: str | int
+) -> ConnectionPool:
     try:
         return ConnectionPool(
             conninfo=f"postgres://{pg_user}:{pg_password}@{pg_host}:{pg_port}/{pg_database}?sslmode=require",
@@ -69,8 +72,8 @@ def create_connection_pool(pg_user, pg_host, pg_password, pg_database, pg_port):
 
 
 @events.init.add_listener
-def on_locust_init(environment, **_args):
-    if not (PG_HOST or GRAPH_VIEWER):
+def on_locust_init(environment: locust.env.Environment, **_args):
+    if not (PG_HOST and PG_USER and PG_PASSWORD and PG_DATABASE and PG_PORT):
         return
 
     pool = create_connection_pool(
@@ -81,7 +84,7 @@ def on_locust_init(environment, **_args):
         pg_port=PG_PORT,
     )
 
-    if not GRAPH_VIEWER and environment.parsed_options.exporter:
+    if not GRAPH_VIEWER and environment.parsed_options and environment.parsed_options.exporter:
         Exporter(environment, pool)
 
     if environment.web_ui:

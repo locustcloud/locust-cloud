@@ -15,6 +15,7 @@ import {
 import Layout from 'components/Layout/Layout';
 import Snackbar from 'components/Snackbar/Snackbar';
 import Charts from 'components/tabs/Charts';
+import Customer from 'components/tabs/Customer';
 import Scatterplot from 'components/tabs/Scatterplot';
 import Stats from 'components/tabs/Stats';
 import Testruns from 'components/tabs/Testruns';
@@ -46,6 +47,11 @@ const baseTabs = [
   tabConfig.logs,
   tabConfig.workers,
   tabConfig.reports,
+  {
+    title: 'Customer',
+    key: 'customer',
+    component: Customer,
+  },
 ];
 
 const graphViewerTabs = [
@@ -68,6 +74,11 @@ const graphViewerTabs = [
     title: 'Testruns',
     key: 'testruns',
     component: Testruns,
+  },
+  {
+    title: 'Customer',
+    key: 'customer',
+    component: Customer,
   },
 ];
 

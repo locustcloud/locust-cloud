@@ -2,7 +2,7 @@ import { IWindow } from 'locust-ui';
 
 interface ITemplateArgs extends IWindow['templateArgs'] {
   isGraphViewer: boolean;
-  apiBaseUrl: string;
+  username: string;
 }
 
 declare global {
