@@ -258,7 +258,8 @@ ORDER BY a.time
 total_runtime = """
 SELECT
   SUM((end_time - id) * num_users) AS "totalVuh"
-FROM testruns;
+FROM testruns
+WHERE id >= date_trunc('month', NOW())
 """
 
 queries: dict["str", LiteralString] = {

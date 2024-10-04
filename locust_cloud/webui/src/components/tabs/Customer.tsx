@@ -28,7 +28,12 @@ function formatTotalVuh(totalVuhResponse: IVuhResponse[]) {
 
   const totalHours = hours + daysInHours;
 
-  return `${totalHours} hour${pluralize(totalHours)}, ${minutes} minute${pluralize(minutes)}`;
+  return [
+    totalHours && `${totalHours} hour${pluralize(totalHours)}`,
+    minutes && `${minutes} minute${pluralize(minutes)}`,
+  ]
+    .filter(Boolean)
+    .join(', ');
 }
 
 export default function Customer() {
