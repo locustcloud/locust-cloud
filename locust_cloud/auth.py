@@ -1,9 +1,9 @@
 import os
 from datetime import UTC, datetime, timedelta
-from typing import TypedDict
+from typing import Any, TypedDict
 
 import requests
-from flask import Response, redirect, request, url_for
+from flask import redirect, request, url_for
 from flask_login import UserMixin, login_user
 from locust_cloud.constants import DEFAULT_LAMBDA_URL
 
@@ -23,7 +23,7 @@ class AuthUser(UserMixin):
         return self.user_sub_id
 
 
-def set_credentials(username: str, credentials: Credentials, response: Response):
+def set_credentials(username: str, credentials: Credentials, response: Any):
     if not credentials.get("user_sub_id"):
         return response
 
@@ -58,7 +58,7 @@ def register_auth(environment):
 
     @environment.web_ui.app.route("/authenticate", methods=["POST"])
     def login_submit():
-        username = request.form.get("username")
+        username = request.form.get("username", "")
         password = request.form.get("password")
 
         try:
