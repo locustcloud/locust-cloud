@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Box, Paper, Typography } from '@mui/material';
 import { roundToDecimalPlaces } from 'locust-ui';
 
+import { useLocustSelector } from 'redux/hooks';
 import { fetchQuery } from 'utils/api';
 
 interface IRuntimeResponse {
@@ -27,6 +28,8 @@ export default function Customer() {
   const [totalRuntime, setTotalruntime] = useState<string>();
   const [totalVuh, setTotalVuh] = useState<number>();
 
+  const swarmState = useLocustSelector(({ swarm }) => swarm.state);
+
   useEffect(() => {
     fetchQuery<IRuntimeResponse[]>('/cloud-stats/total-runtime', {}, runtimeResponse => {
       if (!runtimeResponse || !runtimeResponse.length) {
@@ -40,7 +43,7 @@ export default function Customer() {
       setTotalruntime(formatRuntime(runtime));
       setTotalVuh(calculateTotalVuh(runtime, totalUsers));
     });
-  }, []);
+  }, [swarmState]);
 
   return (
     <Paper
