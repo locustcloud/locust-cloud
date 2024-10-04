@@ -5,44 +5,41 @@ import { roundToDecimalPlaces } from 'locust-ui';
 import { useLocustSelector } from 'redux/hooks';
 import { fetchQuery } from 'utils/api';
 
-interface IRuntimeResponse {
-  totalRuntime: string;
-  totalUsers: string;
-}
-
-function calculateTotalVuh([hours, minutes, seconds]: number[], totalUsers: string) {
-  const roundedSeconds = roundToDecimalPlaces(seconds);
-  const roundedMinutes = roundToDecimalPlaces(Number(`${minutes}.${roundedSeconds}`));
-  const roundedHours = roundToDecimalPlaces(Number(`${hours}.${roundedMinutes}`));
-
-  return roundedHours * Number(totalUsers);
+interface IVuhResponse {
+  totalVuh: string;
 }
 
 const pluralize = (n: number) => (n === 1 ? '' : 's');
 
-function formatRuntime([hours, minutes, seconds]: number[]) {
-  return `${hours} hour${pluralize(hours)}, ${minutes} minute${pluralize(minutes)}, ${roundToDecimalPlaces(seconds)} second${pluralize(seconds)}`;
+function formatTotalVuh(totalVuhResponse: IVuhResponse[]) {
+  if (!totalVuhResponse || !totalVuhResponse.length || !totalVuhResponse[0].totalVuh) {
+    return 'Unknown';
+  }
+
+  const [{ totalVuh }] = totalVuhResponse;
+
+  const [days, hourMinuteSeconds] = totalVuh.includes('days')
+    ? totalVuh.split(', ')
+    : ['0 days', totalVuh];
+
+  const daysInHours = parseInt(days) * 24;
+
+  const [hours, minutes] = hourMinuteSeconds.split(':').map(Number);
+
+  const totalHours = hours + daysInHours;
+
+  return `${totalHours} hour${pluralize(totalHours)}, ${minutes} minute${pluralize(minutes)}`;
 }
 
 export default function Customer() {
-  const [totalRuntime, setTotalruntime] = useState<string>();
-  const [totalVuh, setTotalVuh] = useState<number>();
+  const [totalVuh, setTotalVuh] = useState<string>();
 
   const swarmState = useLocustSelector(({ swarm }) => swarm.state);
 
   useEffect(() => {
-    fetchQuery<IRuntimeResponse[]>('/cloud-stats/total-runtime', {}, runtimeResponse => {
-      if (!runtimeResponse || !runtimeResponse.length) {
-        setTotalruntime('Unknown');
-      }
-
-      const [{ totalRuntime, totalUsers }] = runtimeResponse;
-
-      const runtime = totalRuntime.split(':').map(Number);
-
-      setTotalruntime(formatRuntime(runtime));
-      setTotalVuh(calculateTotalVuh(runtime, totalUsers));
-    });
+    fetchQuery<IVuhResponse[]>('/cloud-stats/total-runtime', {}, totalVuhResponse =>
+      setTotalVuh(formatTotalVuh(totalVuhResponse)),
+    );
   }, [swarmState]);
 
   return (
@@ -79,19 +76,7 @@ export default function Customer() {
           rowGap: 1,
         }}
       >
-        <Typography sx={{ fontWeight: 'bold' }}>Total Runtime</Typography>
-        {totalRuntime && totalRuntime}
-      </Box>
-
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          flexDirection: 'column',
-          rowGap: 1,
-        }}
-      >
-        <Typography sx={{ fontWeight: 'bold' }}>Total Virtual User Hours</Typography>
+        <Typography sx={{ fontWeight: 'bold' }}>Customer Total Virtual User Time</Typography>
         {totalVuh && totalVuh}
       </Box>
     </Paper>
