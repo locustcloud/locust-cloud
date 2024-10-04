@@ -6,29 +6,40 @@ import { fetchQuery } from 'utils/api';
 
 interface IRuntimeResponse {
   totalRuntime: string;
+  totalUsers: string;
+}
+
+function calculateTotalVuh([hours, minutes, seconds]: number[], totalUsers: string) {
+  const roundedSeconds = roundToDecimalPlaces(seconds);
+  const roundedMinutes = roundToDecimalPlaces(Number(`${minutes}.${roundedSeconds}`));
+  const roundedHours = roundToDecimalPlaces(Number(`${hours}.${roundedMinutes}`));
+
+  return roundedHours * Number(totalUsers);
 }
 
 const pluralize = (n: number) => (n === 1 ? '' : 's');
 
-function formatRuntime(runtimeResponse: IRuntimeResponse[]) {
-  if (!runtimeResponse || !runtimeResponse.length) {
-    return 'Unknown';
-  }
-
-  const [{ totalRuntime }] = runtimeResponse;
-
-  const [hours, minutes, seconds] = totalRuntime.split(':').map(Number);
-
+function formatRuntime([hours, minutes, seconds]: number[]) {
   return `${hours} hour${pluralize(hours)}, ${minutes} minute${pluralize(minutes)}, ${roundToDecimalPlaces(seconds)} second${pluralize(seconds)}`;
 }
 
 export default function Customer() {
   const [totalRuntime, setTotalruntime] = useState<string>();
+  const [totalVuh, setTotalVuh] = useState<number>();
 
   useEffect(() => {
-    fetchQuery<IRuntimeResponse[]>('/cloud-stats/total-runtime', {}, runtimeResponse =>
-      setTotalruntime(formatRuntime(runtimeResponse)),
-    );
+    fetchQuery<IRuntimeResponse[]>('/cloud-stats/total-runtime', {}, runtimeResponse => {
+      if (!runtimeResponse || !runtimeResponse.length) {
+        setTotalruntime('Unknown');
+      }
+
+      const [{ totalRuntime, totalUsers }] = runtimeResponse;
+
+      const runtime = totalRuntime.split(':').map(Number);
+
+      setTotalruntime(formatRuntime(runtime));
+      setTotalVuh(calculateTotalVuh(runtime, totalUsers));
+    });
   }, []);
 
   return (
@@ -65,8 +76,20 @@ export default function Customer() {
           rowGap: 1,
         }}
       >
-        <Typography sx={{ fontWeight: 'bold' }}>Runtime</Typography>
+        <Typography sx={{ fontWeight: 'bold' }}>Total Runtime</Typography>
         {totalRuntime && totalRuntime}
+      </Box>
+
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          flexDirection: 'column',
+          rowGap: 1,
+        }}
+      >
+        <Typography sx={{ fontWeight: 'bold' }}>Total Virtual User Hours</Typography>
+        {totalVuh && totalVuh}
       </Box>
     </Paper>
   );

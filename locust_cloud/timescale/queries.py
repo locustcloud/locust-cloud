@@ -257,7 +257,8 @@ ORDER BY a.time
 
 total_runtime = """
 SELECT
-  SUM(end_time - id) AS "totalRuntime"
+  SUM(end_time - id) AS "totalRuntime",
+  SUM(num_users) as "totalUsers"
 FROM testruns;
 """
 
