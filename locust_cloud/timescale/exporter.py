@@ -235,7 +235,7 @@ class Exporter:
                         """
 UPDATE testruns
 SET (requests, resp_time_avg, rps_avg, fail_ratio) =
-(SELECT reqs, resp_time, reqs / GREATEST(duration, 1), fails / reqs) FROM
+(SELECT reqs, resp_time, reqs / GREATEST(duration, 1), fails / GREATEST(reqs, 1)) FROM
 (SELECT
  COUNT(*)::numeric AS reqs,
  AVG(response_time)::numeric as resp_time
@@ -248,7 +248,7 @@ SET (requests, resp_time_avg, rps_avg, fail_ratio) =
 WHERE id = %(run_id)s""",
                         {"run_id": self._run_id},
                     )
-                except psycopg.errors.DivisionByZero:
+                except psycopg.errors.DivisionByZero:  # remove this except later, because it shouldnt happen any more
                     logging.info(
                         "Got DivisionByZero error when trying to update testruns, most likely because there were no requests logged"
                     )
