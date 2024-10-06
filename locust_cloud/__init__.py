@@ -3,6 +3,7 @@ import os
 os.environ["LOCUST_SKIP_MONKEY_PATCH"] = "1"
 
 import argparse
+import logging
 import sys
 
 import locust.env
@@ -20,6 +21,7 @@ PG_PASSWORD = os.environ.get("PG_PASSWORD")
 PG_DATABASE = os.environ.get("PG_DATABASE")
 PG_PORT = os.environ.get("PG_PORT", 5432)
 GRAPH_VIEWER = os.environ.get("GRAPH_VIEWER")
+logger = logging.getLogger(__name__)
 
 
 @events.init_command_line_parser.add_listener
