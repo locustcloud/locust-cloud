@@ -75,7 +75,7 @@ def create_connection_pool(
 def on_locust_init(environment: locust.env.Environment, **_args):
     if not (PG_HOST and PG_USER and PG_PASSWORD and PG_DATABASE and PG_PORT):
         return
-
+    logger.debug("about to connect db")
     pool = create_connection_pool(
         pg_user=PG_USER,
         pg_host=PG_HOST,
@@ -83,6 +83,8 @@ def on_locust_init(environment: locust.env.Environment, **_args):
         pg_database=PG_DATABASE,
         pg_port=PG_PORT,
     )
+    pool.wait()
+    logger.debug("db connected")
 
     if not GRAPH_VIEWER and environment.parsed_options and environment.parsed_options.exporter:
         Exporter(environment, pool)
