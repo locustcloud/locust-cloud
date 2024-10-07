@@ -94,3 +94,6 @@ def on_locust_init(environment: locust.env.Environment, **_args):
     if environment.web_ui:
         register_auth(environment)
         register_query(environment, pool)
+
+    if GRAPH_VIEWER:
+        environment.runner.state = "STOPPED"
