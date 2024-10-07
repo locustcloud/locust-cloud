@@ -77,16 +77,23 @@ def create_connection_pool(
 def on_locust_init(environment: locust.env.Environment, **_args):
     if not (PG_HOST and PG_USER and PG_PASSWORD and PG_DATABASE and PG_PORT):
         return
-    logger.debug("about to connect db")
-    pool = create_connection_pool(
-        pg_user=PG_USER,
-        pg_host=PG_HOST,
-        pg_password=PG_PASSWORD,
-        pg_database=PG_DATABASE,
-        pg_port=PG_PORT,
-    )
-    pool.wait()
-    logger.debug("db connected")
+
+    if GRAPH_VIEWER:
+        environment.runner.state = "STOPPED"
+
+    try:
+        pool = create_connection_pool(
+            pg_user=PG_USER,
+            pg_host=PG_HOST,
+            pg_password=PG_PASSWORD,
+            pg_database=PG_DATABASE,
+            pg_port=PG_PORT,
+        )
+        pool.wait()
+    except Exception as e:
+        logger.exception(e)
+        logger.error(f"{PG_HOST=}")
+        raise
 
     if not GRAPH_VIEWER and environment.parsed_options and environment.parsed_options.exporter:
         Exporter(environment, pool)
@@ -94,6 +101,3 @@ def on_locust_init(environment: locust.env.Environment, **_args):
     if environment.web_ui:
         register_auth(environment)
         register_query(environment, pool)
-
-    if GRAPH_VIEWER:
-        environment.runner.state = "STOPPED"
