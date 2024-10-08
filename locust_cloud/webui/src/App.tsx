@@ -1,7 +1,6 @@
 import { CssBaseline, ThemeProvider } from '@mui/material';
 import {
   SWARM_STATE,
-  SwarmForm,
   tabConfig,
   Tabs,
   useCreateTheme,
@@ -14,6 +13,7 @@ import {
 
 import Layout from 'components/Layout/Layout';
 import Snackbar from 'components/Snackbar/Snackbar';
+import SwarmForm from 'components/SwarmForm/SwarmForm';
 import Charts from 'components/tabs/Charts';
 import Customer from 'components/tabs/Customer';
 import Scatterplot from 'components/tabs/Scatterplot';
