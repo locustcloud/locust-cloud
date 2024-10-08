@@ -10,7 +10,7 @@ interface IAlert {
 }
 
 export default function SwarmForm() {
-  const { numUsers } = useLocustSelector(({ swarm }) => swarm);
+  const { numUsers, workerCount } = useLocustSelector(({ swarm }) => swarm);
 
   const [alert, setAlert] = useState<IAlert>();
   const [shouldDisableForm, setShouldDisableForm] = useState(false);
@@ -26,7 +26,7 @@ export default function SwarmForm() {
             message: 'The number of users has exceeded the allowance for this account.',
           });
           setShouldDisableForm(true);
-        } else if (userCount > numUsers) {
+        } else if (userCount > workerCount * 500) {
           setAlert({
             level: 'warning',
             message: `Locust worker count is determined by the User count you specified at start up (${numUsers}), and launching more users risks overloading workers, impacting your results. Re-run locust-cloud with your desired user count to avoid this.`,
@@ -38,7 +38,7 @@ export default function SwarmForm() {
         }
       }
     },
-    [numUsers],
+    [numUsers, workerCount],
   );
 
   return (
