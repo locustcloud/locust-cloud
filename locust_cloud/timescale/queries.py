@@ -145,6 +145,7 @@ FROM requests_summary
 WHERE bucket BETWEEN %(start)s AND %(end)s
 AND run_id = %(testrun)s
 GROUP BY 1, name, perc99
+ORDER BY 1
 """
 
 
