@@ -79,7 +79,7 @@ def on_locust_init(environment: locust.env.Environment, **_args):
         return
 
     if GRAPH_VIEWER:
-        environment.runner.state = "STOPPED"
+        environment.web_ui.template_args["isGraphViewer"] = True
 
     try:
         pool = create_connection_pool(
