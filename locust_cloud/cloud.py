@@ -23,7 +23,6 @@ from locust_cloud.constants import (
 )
 from locust_cloud.credential_manager import CredentialError, CredentialManager
 
-LOCUST_ENV_VARIABLE_IGNORE_LIST = ["LOCUST_BUILD_PATH", "LOCUST_SKIP_MONKEY_PATCH"]
 __version__ = importlib.metadata.version("locust-cloud")
 
 
