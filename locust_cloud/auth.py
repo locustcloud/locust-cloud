@@ -7,6 +7,11 @@ import requests
 import werkzeug
 from flask import redirect, request, url_for
 from flask_login import UserMixin, login_user
+from locust_cloud.constants import (
+    DEFAULT_DEPLOYER_URL,
+)
+
+DEPLOYER_URL = os.environ.get("LOCUSTCLOUD_DEPLOYER_URL", DEFAULT_DEPLOYER_URL)
 
 
 class Credentials(TypedDict):
@@ -62,7 +67,7 @@ def register_auth(environment: locust.env.Environment):
 
         try:
             auth_response = requests.post(
-                f"{environment.parsed_options.deployer_url}/auth/login",
+                f"{DEPLOYER_URL}/auth/login",
                 json={"username": username, "password": password},
             )
 
