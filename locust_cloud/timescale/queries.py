@@ -33,7 +33,7 @@ GROUP BY "name",left(exception,300)
 requests_per_second = """
 WITH request_count_agg AS (
   SELECT
-    time_bucket_gapfill('%(resolution)ss', bucket) AS time,
+    time_bucket_gapfill(%(resolution)s * interval '1 second', bucket) AS time,
     COALESCE(SUM(count)/%(resolution)s, 0) as rps
   FROM requests_summary
   WHERE bucket BETWEEN %(start)s AND %(end)s
@@ -43,7 +43,7 @@ WITH request_count_agg AS (
 ),
 user_count_agg AS (
   SELECT
-    time_bucket_gapfill('%(resolution)ss', time) AS time,
+    time_bucket_gapfill(%(resolution)s * interval '1 second', time) AS time,
     COALESCE(avg(user_count), 0) as users
   FROM number_of_users
   WHERE time BETWEEN %(start)s AND %(end)s
@@ -53,7 +53,7 @@ user_count_agg AS (
 ),
 errors_per_s_agg AS (
   SELECT
-    time_bucket_gapfill('%(resolution)ss', bucket) AS time,
+    time_bucket_gapfill(%(resolution)s * interval '1 second', bucket) AS time,
     COALESCE(SUM(failed_count)/%(resolution)s, 0) as error_rate
   FROM requests_summary
   WHERE bucket BETWEEN %(start)s AND %(end)s
@@ -101,7 +101,7 @@ AND run_id = %(testrun)s
 
 rps_per_request = """
 SELECT
-    time_bucket_gapfill('%(resolution)ss', bucket) AS time,
+    time_bucket_gapfill(%(resolution)s * interval '1 second', bucket) AS time,
     name,
     COALESCE(SUM(count)/%(resolution)s, 0) as throughput
 FROM requests_summary
@@ -114,7 +114,7 @@ ORDER BY 1,2
 
 avg_response_times = """
 SELECT
-    time_bucket_gapfill('%(resolution)ss', bucket) as time,
+    time_bucket_gapfill(%(resolution)s * interval '1 second', bucket) as time,
     name,
     avg(average) as "responseTime"
 FROM requests_summary
@@ -126,7 +126,7 @@ ORDER BY 1, 2
 
 errors_per_request = """
 SELECT
-    time_bucket_gapfill('%(resolution)ss', bucket) AS time,
+    time_bucket_gapfill(%(resolution)s * interval '1 second', bucket) AS time,
     name,
     SUM(failed_count)/%(resolution)s as "errorRate"
 FROM requests_summary
@@ -138,7 +138,7 @@ ORDER BY 1
 
 
 perc99_response_times = """
-SELECT time_bucket('%(resolution)ss', bucket) AS time,
+SELECT time_bucket(%(resolution)s * interval '1 second', bucket) AS time,
   name,
   perc99
 FROM requests_summary
@@ -151,7 +151,7 @@ ORDER BY 1
 
 response_length = """
 SELECT
-    time_bucket('%(resolution)ss', bucket) as time,
+    time_bucket(%(resolution)s * interval '1 second', bucket) as time,
     response_length as "responseLength",
     name
 FROM requests_summary
