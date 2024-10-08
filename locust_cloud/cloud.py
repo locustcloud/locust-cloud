@@ -285,8 +285,9 @@ def main() -> None:
             "locust_args": [
                 {"name": "LOCUST_LOCUSTFILE", "value": locustfile_url},
                 {"name": "LOCUST_USERS", "value": str(options.users)},
-                {"name": "LOCUST_REQUIREMENTS_URL", "value": requirements_url},
                 {"name": "LOCUST_FLAGS", "value": " ".join(locust_options)},
+                {"name": "LOCUSTCLOUD_REQUIREMENTS_URL", "value": requirements_url},
+                {"name": "LOCUSTCLOUD_DEPLOYER_URL", "value": options.deployer_url},
                 *locust_env_variables,
             ],
             "worker_count": worker_count,
