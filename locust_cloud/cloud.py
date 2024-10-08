@@ -297,7 +297,7 @@ def main() -> None:
                 {"name": "LOCUST_USERS", "value": str(options.users)},
                 {"name": "LOCUST_REQUIREMENTS_URL", "value": requirements_url},
                 {"name": "LOCUST_FLAGS", "value": " ".join(locust_options)},
-                {"name": "LOCUST_API_BASE_URL", "value": DEFAULT_LAMBDA_URL},
+                {"name": "LOCUST_API_BASE_URL", "value": options.lambda_url},
                 *locust_env_variables,
             ],
             "worker_count": worker_count,
