@@ -1,6 +1,6 @@
-if [ ! -z "$LOCUST_REQUIREMENTS_URL" ]; then
+if [ ! -z "$LOCUSTCLOUD_REQUIREMENTS_URL" ]; then
     # Use Python since it will be available in the Docker environment
-    python -c "import urllib.request; urllib.request.urlretrieve('$LOCUST_REQUIREMENTS_URL', 'requirements.txt')"
+    python -c "import urllib.request; urllib.request.urlretrieve('$LOCUSTCLOUD_REQUIREMENTS_URL', 'requirements.txt')"
 
     if [ -f requirements.txt ]; then
         echo "Installing external requirements"

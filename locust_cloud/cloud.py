@@ -16,7 +16,7 @@ import requests
 from botocore.exceptions import ClientError
 from locust_cloud.constants import (
     DEFAULT_CLUSTER_NAME,
-    DEFAULT_LAMBDA_URL,
+    DEFAULT_DEPLOYER_URL,
     DEFAULT_NAMESPACE,
     DEFAULT_REGION_NAME,
     USERS_PER_WORKER,
@@ -57,7 +57,7 @@ parser = configargparse.ArgumentParser(
         "~/.cloud.conf",
         "cloud.conf",
     ],
-    auto_env_var_prefix="LOCUST_",
+    auto_env_var_prefix="LOCUSTCLOUD_",
     formatter_class=configargparse.RawDescriptionHelpFormatter,
     config_file_parser_class=configargparse.CompositeConfigParser(
         [
@@ -95,7 +95,6 @@ parser.add_argument(
     "--requirements",
     type=str,
     help="Optional requirements.txt file that contains your external libraries.",
-    env_var="LOCUST_REQUIREMENTS",
 )
 parser.add_argument(
     "--aws-region-name",
@@ -119,11 +118,10 @@ parser.add_argument(
     env_var="KUBE_NAMESPACE",
 )
 parser.add_argument(
-    "--lambda-url",
+    "--deployer-url",
     type=str,
-    default=DEFAULT_LAMBDA_URL,
-    help="Sets the namespace for scoping the deployed cluster",
-    env_var="LOCUST_API_BASE_URL",
+    default=DEFAULT_DEPLOYER_URL,
+    help=configargparse.SUPPRESS,
 )
 parser.add_argument(
     "--aws-access-key-id",
@@ -143,29 +141,25 @@ parser.add_argument(
     "--username",
     type=str,
     help="Authentication for deploying with Locust Cloud",
-    env_var="LOCUST_CLOUD_USERNAME",
-    default=None,
+    default=os.getenv("LOCUST_CLOUD_USERNAME", None),  # backwards compatitibility for dmdb
 )
 parser.add_argument(
     "--password",
     type=str,
     help="Authentication for deploying with Locust Cloud",
-    env_var="LOCUST_CLOUD_PASSWORD",
-    default=None,
+    default=os.getenv("LOCUST_CLOUD_PASSWORD", None),  # backwards compatitibility for dmdb
 )
 parser.add_argument(
     "--loglevel",
     "-L",
     type=str,
     help="Log level",
-    env_var="LOCUST_CLOUD_LOGLEVEL",
     default="INFO",
 )
 parser.add_argument(
     "--workers",
     type=int,
     help="Number of workers to use for the deployment",
-    env_var="LOCUST_CLOUD_WORKERS",
     default=None,
 )
 parser.add_argument(
@@ -176,7 +170,6 @@ parser.add_argument(
 parser.add_argument(
     "--image-tag",
     type=str,
-    env_var="LOCUST_CLOUD_IMAGE_TAG",
     default="latest",
     help=configargparse.SUPPRESS,  # overrides the locust-cloud docker image tag. for internal use
 )
@@ -218,9 +211,9 @@ def main() -> None:
             sys.exit(1)
 
         logger.info(f"Authenticating ({options.aws_region_name}, v{__version__})")
-        logger.debug(f"Lambda url: {options.lambda_url}")
+        logger.debug(f"Lambda url: {options.deployer_url}")
         credential_manager = CredentialManager(
-            lambda_url=options.lambda_url,
+            lambda_url=options.deployer_url,
             access_key=options.aws_access_key_id,
             secret_key=options.aws_secret_access_key,
             username=options.username,
@@ -278,26 +271,23 @@ def main() -> None:
             {"name": env_variable, "value": str(os.environ[env_variable])}
             for env_variable in os.environ
             if env_variable.startswith("LOCUST_")
-            and not env_variable.startswith("LOCUST_CLOUD")
             and not env_variable
             in [
                 "LOCUST_LOCUSTFILE",
                 "LOCUST_USERS",
                 "LOCUST_WEB_HOST_DISPLAY_NAME",
-                "LOCUST_API_BASE_URL",
                 "LOCUST_SKIP_MONKEY_PATCH",
-                "LOCUST_REQUIREMENTS_URL",
             ]
             and os.environ[env_variable]
         ]
-        deploy_endpoint = f"{options.lambda_url}/{options.kube_cluster_name}"
+        deploy_endpoint = f"{options.deployer_url}/{options.kube_cluster_name}"
         payload = {
             "locust_args": [
                 {"name": "LOCUST_LOCUSTFILE", "value": locustfile_url},
                 {"name": "LOCUST_USERS", "value": str(options.users)},
-                {"name": "LOCUST_REQUIREMENTS_URL", "value": requirements_url},
                 {"name": "LOCUST_FLAGS", "value": " ".join(locust_options)},
-                {"name": "LOCUST_API_BASE_URL", "value": options.lambda_url},
+                {"name": "LOCUSTCLOUD_REQUIREMENTS_URL", "value": requirements_url},
+                {"name": "LOCUSTCLOUD_DEPLOYER_URL", "value": options.deployer_url},
                 *locust_env_variables,
             ],
             "worker_count": worker_count,
@@ -416,7 +406,7 @@ def delete(s3_bucket, credential_manager):
             headers["AWS_SESSION_TOKEN"] = token
 
         response = requests.delete(
-            f"{options.lambda_url}/{options.kube_cluster_name}",
+            f"{options.deployer_url}/{options.kube_cluster_name}",
             headers=headers,
             params={"namespace": options.kube_namespace} if options.kube_namespace else {},
         )
@@ -426,7 +416,7 @@ def delete(s3_bucket, credential_manager):
                 f"Could not automatically tear down Locust Cloud: HTTP {response.status_code}/{response.reason} - Response: {response.text} - URL: {response.request.url}"
             )
     except Exception as e:
-        logger.error(f"Could not automatically tear down Locust Cloud: {e}")
+        logger.error(f"Could not automatically tear down Locust Cloud: {e.__class__.__name__}:{e}")
 
     try:
         logger.debug("Cleaning up locustfiles")

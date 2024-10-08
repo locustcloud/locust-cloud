@@ -7,9 +7,6 @@ import requests
 import werkzeug
 from flask import redirect, request, url_for
 from flask_login import UserMixin, login_user
-from locust_cloud.constants import DEFAULT_LAMBDA_URL
-
-LAMBDA = os.environ.get("LOCUST_API_BASE_URL", DEFAULT_LAMBDA_URL)
 
 
 class Credentials(TypedDict):
@@ -64,7 +61,10 @@ def register_auth(environment: locust.env.Environment):
         password = request.form.get("password")
 
         try:
-            auth_response = requests.post(f"{LAMBDA}/auth/login", json={"username": username, "password": password})
+            auth_response = requests.post(
+                f"{environment.parsed_options.deployer_url}/auth/login",
+                json={"username": username, "password": password},
+            )
 
             if auth_response.status_code == 200:
                 credentials = auth_response.json()
