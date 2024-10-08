@@ -8,7 +8,6 @@ import jwt
 import requests
 from botocore.credentials import RefreshableCredentials
 from botocore.session import Session as BotocoreSession
-from locust_cloud.constants import DEFAULT_REGION_NAME
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +26,6 @@ class CredentialManager:
         password: str | None = None,
         user_sub_id: str | None = None,
         refresh_token: str | None = None,
-        region_name: str = DEFAULT_REGION_NAME,
         access_key: str | None = None,
         secret_key: str | None = None,
     ) -> None:
@@ -36,7 +34,6 @@ class CredentialManager:
         self.password = password
         self.user_sub_id = user_sub_id
         self.refresh_token = refresh_token
-        self.region_name = region_name
 
         self.credentials = {
             "access_key": access_key,
@@ -56,12 +53,8 @@ class CredentialManager:
         botocore_session = BotocoreSession()
         botocore_session._credentials = self.refreshable_credentials  # type: ignore
         botocore_session.set_config_variable("signature_version", "v4")
-        botocore_session.set_config_variable("region", self.region_name)
 
-        self.session = boto3.Session(
-            botocore_session=botocore_session,
-            region_name=self.region_name,
-        )
+        self.session = boto3.Session(botocore_session=botocore_session)
         logger.debug("Boto3 session created with RefreshableCredentials.")
 
     def obtain_credentials(self) -> None:

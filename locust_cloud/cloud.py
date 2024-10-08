@@ -67,7 +67,7 @@ parser = configargparse.ArgumentParser(
     ),
     description="""Launches distributed Locust runs on locust.cloud infrastructure.
 
-Example: locust-cloud -f my_locustfile.py --aws-region-name us-east-1 --users 1000""",
+Example: locust-cloud -f my_locustfile.py --region us-east-1 --users 2000""",
     epilog="""Any parameters not listed here are forwarded to locust master unmodified, so go ahead and use things like --users, --host, --run-time, ...
 Locust config can also be set using config file (~/.locust.conf, locust.conf, pyproject.toml, ~/.cloud.conf or cloud.conf).
 Parameters specified on command line override env vars, which in turn override config files.""",
@@ -88,7 +88,7 @@ parser.add_argument(
     "--users",
     type=int,
     default=1,
-    help="Number of users to launch. This is the same as the regular Locust argument, but also decides how many workers to launch by default.",
+    help="Number of users to launch. This is the same as the regular Locust argument, but also affects how many workers to launch.",
     env_var="LOCUST_USERS",
 )
 parser.add_argument(
@@ -97,11 +97,10 @@ parser.add_argument(
     help="Optional requirements.txt file that contains your external libraries.",
 )
 parser.add_argument(
-    "--aws-region-name",
+    "--region",
     type=str,
-    default=DEFAULT_REGION_NAME,
-    help="Sets the region to use for the deployed cluster",
-    env_var="AWS_REGION_NAME",
+    default=os.environ.get("AWS_DEFAULT_REGION", DEFAULT_REGION_NAME),
+    help="Sets the AWS region to use for the deployed cluster, e.g. us-east-1. It defaults to use AWS_DEFAULT_REGION env var, like AWS tools.",
 )
 parser.add_argument(
     "--kube-cluster-name",
@@ -159,7 +158,7 @@ parser.add_argument(
 parser.add_argument(
     "--workers",
     type=int,
-    help="Number of workers to use for the deployment",
+    help=f"Number of workers to use for the deployment. Defaults to number of users divided by {USERS_PER_WORKER}",
     default=None,
 )
 parser.add_argument(
@@ -195,6 +194,7 @@ def main() -> None:
     s3_bucket = f"{options.kube_cluster_name}-{options.kube_namespace}"
     deployed_pods: list[Any] = []
     worker_count: int = max(options.workers or math.ceil(options.users / USERS_PER_WORKER), 2)
+    os.environ["AWS_DEFAULT_REGION"] = options.region
     if options.users > 10000:
         logger.error("You asked for more than 10000 Users, that isn't allowed.")
         sys.exit(1)
@@ -210,7 +210,7 @@ def main() -> None:
             )
             sys.exit(1)
 
-        logger.info(f"Authenticating ({options.aws_region_name}, v{__version__})")
+        logger.info(f"Authenticating ({os.environ['AWS_DEFAULT_REGION']}, v{__version__})")
         logger.debug(f"Lambda url: {options.deployer_url}")
         credential_manager = CredentialManager(
             lambda_url=options.deployer_url,
@@ -218,7 +218,6 @@ def main() -> None:
             secret_key=options.aws_secret_access_key,
             username=options.username,
             password=options.password,
-            region_name=options.aws_region_name,
         )
 
         credentials = credential_manager.get_current_credentials()
