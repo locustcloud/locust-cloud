@@ -64,22 +64,28 @@ parser = configargparse.ArgumentParser(
             configargparse.DefaultConfigFileParser,
         ]
     ),
-    description="""Launches distributed Locust runs on locust.cloud infrastructure.
+    description="""Launches a distributed Locust runs on locust.cloud infrastructure.
 
-Example: locust-cloud -f my_locustfile.py --region us-east-1 --users 2000""",
+Example: locust-cloud -f my_locustfile.py --users 1000 ...""",
     epilog="""Any parameters not listed here are forwarded to locust master unmodified, so go ahead and use things like --users, --host, --run-time, ...
 Locust config can also be set using config file (~/.locust.conf, locust.conf, pyproject.toml, ~/.cloud.conf or cloud.conf).
 Parameters specified on command line override env vars, which in turn override config files.""",
     add_config_file_help=False,
     add_env_var_help=False,
+    add_help=False,
 )
-
+parser.add_argument(
+    "-h",
+    "--help",
+    action="help",
+    help=configargparse.SUPPRESS,
+)
 parser.add_argument(
     "-f",
     "--locustfile",
     metavar="<filename>",
     default="locustfile.py",
-    help="The Python file or module that contains your test, e.g. 'my_test.py'. Defaults to 'locustfile.py'.",
+    help="The Python file that contains your test. Defaults to 'locustfile.py'.",
     env_var="LOCUST_LOCUSTFILE",
 )
 parser.add_argument(
@@ -90,29 +96,37 @@ parser.add_argument(
     help="Number of users to launch. This is the same as the regular Locust argument, but also affects how many workers to launch.",
     env_var="LOCUST_USERS",
 )
-parser.add_argument(
+advanced = parser.add_argument_group("advanced")
+advanced.add_argument(
+    "--loglevel",
+    "-L",
+    type=str,
+    help="Set --loglevel DEBUG for extra info.",
+    default="INFO",
+)
+advanced.add_argument(
     "--requirements",
     type=str,
     help="Optional requirements.txt file that contains your external libraries.",
 )
-parser.add_argument(
+advanced.add_argument(
     "--region",
     type=str,
     default=os.environ.get("AWS_DEFAULT_REGION", DEFAULT_REGION_NAME),
     help="Sets the AWS region to use for the deployed cluster, e.g. us-east-1. It defaults to use AWS_DEFAULT_REGION env var, like AWS tools.",
 )
-parser.add_argument(
+advanced.add_argument(
     "--kube-cluster-name",
     type=str,
     default=DEFAULT_CLUSTER_NAME,
-    help="Sets the name of the Kubernetes cluster",
+    help=configargparse.SUPPRESS,
     env_var="KUBE_CLUSTER_NAME",
 )
-parser.add_argument(
+advanced.add_argument(
     "--kube-namespace",
     type=str,
     default=DEFAULT_NAMESPACE,
-    help="Sets the namespace for scoping the deployed cluster",
+    help=configargparse.SUPPRESS,
     env_var="KUBE_NAMESPACE",
 )
 parser.add_argument(
@@ -138,26 +152,19 @@ parser.add_argument(
 parser.add_argument(
     "--username",
     type=str,
-    help="Authentication for deploying with Locust Cloud",
+    help=configargparse.SUPPRESS,
     default=os.getenv("LOCUST_CLOUD_USERNAME", None),  # backwards compatitibility for dmdb
 )
 parser.add_argument(
     "--password",
     type=str,
-    help="Authentication for deploying with Locust Cloud",
+    help=configargparse.SUPPRESS,
     default=os.getenv("LOCUST_CLOUD_PASSWORD", None),  # backwards compatitibility for dmdb
-)
-parser.add_argument(
-    "--loglevel",
-    "-L",
-    type=str,
-    help="Log level",
-    default="INFO",
 )
 parser.add_argument(
     "--workers",
     type=int,
-    help=f"Number of workers to use for the deployment. Defaults to number of users divided by {USERS_PER_WORKER}",
+    help=f"Number of workers to use for the deployment. Defaults to number of users divided by {USERS_PER_WORKER}.",
     default=None,
 )
 parser.add_argument(
@@ -230,6 +237,7 @@ def main() -> None:
             return
 
         logger.info(f"Uploading {options.locustfile}")
+        logger.debug(f"... to {s3_bucket}")
         s3 = credential_manager.session.client("s3")
         try:
             s3.upload_file(options.locustfile, s3_bucket, os.path.basename(options.locustfile))
@@ -318,6 +326,9 @@ def main() -> None:
     except CredentialError as ce:
         logger.error(f"Credential error: {ce}")
         sys.exit(1)
+    except KeyboardInterrupt:
+        logger.debug("Interrupted by user")
+        sys.exit(0)
 
     log_group_name = f"/eks/{options.kube_cluster_name}-{options.kube_namespace}"
     master_pod_name = next((pod for pod in deployed_pods if "master" in pod), None)
@@ -410,9 +421,10 @@ def delete(s3_bucket, credential_manager):
         )
 
         if response.status_code != 200:
-            logger.error(
+            logger.info(
                 f"Could not automatically tear down Locust Cloud: HTTP {response.status_code}/{response.reason} - Response: {response.text} - URL: {response.request.url}"
             )
+        logger.debug(response.json()["message"])
     except Exception as e:
         logger.error(f"Could not automatically tear down Locust Cloud: {e.__class__.__name__}:{e}")
 
