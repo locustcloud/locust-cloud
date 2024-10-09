@@ -80,7 +80,7 @@ export default function Customer() {
           rowGap: 1,
         }}
       >
-        <Typography sx={{ fontWeight: 'bold' }}>Customer Total Virtual User Time</Typography>
+        <Typography sx={{ fontWeight: 'bold' }}>Current Month Virtual User Time</Typography>
         {totalVuh && totalVuh}
       </Box>
     </Paper>
