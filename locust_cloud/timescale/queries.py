@@ -140,11 +140,11 @@ ORDER BY 1
 perc99_response_times = """
 SELECT time_bucket(%(resolution)s * interval '1 second', bucket) AS time,
   name,
-  perc99
+  MAX(perc99) as perc99
 FROM requests_summary
 WHERE bucket BETWEEN %(start)s AND %(end)s
 AND run_id = %(testrun)s
-GROUP BY 1, name, perc99
+GROUP BY 1, name
 ORDER BY 1
 """
 
@@ -152,11 +152,12 @@ ORDER BY 1
 response_length = """
 SELECT
     time_bucket(%(resolution)s * interval '1 second', bucket) as time,
-    response_length as "responseLength",
+    AVG(response_length) as "responseLength",
     name
 FROM requests_summary
 WHERE bucket BETWEEN %(start)s AND %(end)s
 AND run_id = %(testrun)s
+GROUP BY 1, name
 ORDER BY 1
 """
 
