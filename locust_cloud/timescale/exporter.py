@@ -197,7 +197,7 @@ class Exporter:
                     )
                     else 0,
                     self.env.web_ui.template_args.get("username", "") if self.env.web_ui else "",
-                    self.env.parsed_options.locustfile,
+                    self.env.parsed_locustfiles[0].split("/")[-1] if self.env.parsed_locustfiles else "",
                     self.env.parsed_options.description,
                     " ".join(cmd),
                 ),
