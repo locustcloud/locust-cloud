@@ -54,7 +54,7 @@ const testrunsTableStructure = [
   { key: 'requests', title: '# Requests' },
   { key: 'respTime', title: 'Response Time' },
   { key: 'rpsAvg', title: 'Average RPS' },
-  { key: 'failRatio', title: 'Fail Ratio' },
+  { key: 'failRatio', title: 'Fail Ratio (%)', round: 2 },
   { key: 'exitCode', title: 'Exit Code' },
   { key: 'runTime', title: 'Run Time' },
 ];
