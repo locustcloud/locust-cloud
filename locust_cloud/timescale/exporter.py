@@ -12,6 +12,7 @@ import locust.env
 import psycopg
 import psycopg.types.json
 from locust.exception import CatchResponseError
+from locust.runners import MasterRunner
 
 
 def safe_serialize(obj):
@@ -190,10 +191,9 @@ class Exporter:
                     self._run_id,
                     self.env.runner.target_user_count if self.env.runner else 1,
                     len(self.env.runner.clients)
-                    if self.env.runner
-                    and hasattr(
+                    if isinstance(
                         self.env.runner,
-                        "clients",
+                        MasterRunner,
                     )
                     else 0,
                     self.env.web_ui.template_args.get("username", "") if self.env.web_ui else "",
