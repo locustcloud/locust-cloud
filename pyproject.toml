@@ -94,3 +94,4 @@ dev-dependencies = [
 [tool.pyright]
 reportOptionalMemberAccess = "none"
 reportPossiblyUnboundVariable = "warning"
+reportOptionalSubscript = "none"
