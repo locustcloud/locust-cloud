@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Box } from '@mui/material';
 import { LineChart, Table } from 'locust-ui';
 
-import { useAction, useSelector } from 'redux/hooks';
+import { useAction, useLocustSelector, useSelector } from 'redux/hooks';
 import { snackbarActions } from 'redux/slice/snackbar.slice';
 import { chartValueFormatter, fetchQuery } from 'utils/api';
 
@@ -45,7 +45,38 @@ interface ITestrunsResponseTime {
   time: string[];
 }
 
+const testrunsTableStructure = [
+  { key: 'runId', title: 'Run Id' },
+  { key: 'locustfile', title: 'Locustfile' },
+  { key: 'username', title: 'Username' },
+  { key: 'numUsers', title: '# Users' },
+  { key: 'workerCount', title: '# Worker' },
+  { key: 'requests', title: '# Requests' },
+  { key: 'respTime', title: 'Response Time' },
+  { key: 'rpsAvg', title: 'Average RPS' },
+  { key: 'failRatio', title: 'Fail Ratio' },
+  { key: 'exitCode', title: 'Exit Code' },
+  { key: 'runTime', title: 'Run Time' },
+];
+
+const testrunsRpsChartLines = [
+  {
+    name: 'Average RPS',
+    key: 'avgRps' as keyof ITestrunsRps,
+  },
+];
+
+const testrunsResponseTimeChartLines = [
+  {
+    name: 'Average Response Time',
+    key: 'avgResponseTime' as keyof ITestrunsResponseTime,
+  },
+];
+
+const testrunsChartColors = ['#00ca5a', '#ff6d6d'];
+
 export default function Testruns() {
+  const swarmState = useLocustSelector(({ swarm }) => swarm.state);
   const { testrunsForDisplay } = useSelector(({ toolbar }) => toolbar);
   const setSnackbar = useAction(snackbarActions.setSnackbar);
 
@@ -120,48 +151,26 @@ export default function Testruns() {
     getTestrunsTable();
     getTestrunsRps();
     getTestrunsResponseTime();
-  }, [testrunsForDisplay]);
+  }, [testrunsForDisplay, swarmState]);
 
   return (
     <Box>
       <Box sx={{ height: '500px', overflowY: 'auto', mb: 8 }}>
-        <Table
-          rows={testrunsTableData}
-          structure={[
-            { key: 'runId', title: 'Run Id' },
-            { key: 'numUsers', title: '# Users' },
-            { key: 'requests', title: '# Requests' },
-            { key: 'respTime', title: 'Response Time' },
-            { key: 'rpsAvg', title: 'Average RPS' },
-            { key: 'failRatio', title: 'Fail Ratio' },
-            { key: 'exitCode', title: 'Exit Code' },
-            { key: 'runTime', title: 'Run Time' },
-          ]}
-        />
+        <Table rows={testrunsTableData} structure={testrunsTableStructure} />
       </Box>
       <Box sx={{ display: 'flex' }}>
         <LineChart<ITestrunsRps>
           chartValueFormatter={chartValueFormatter}
           charts={testrunsRps}
-          colors={['#00ca5a', '#ff6d6d']}
-          lines={[
-            {
-              name: 'Average RPS',
-              key: 'avgRps',
-            },
-          ]}
+          colors={testrunsChartColors}
+          lines={testrunsRpsChartLines}
           title='Throughput'
         />
         <LineChart<ITestrunsResponseTime>
           chartValueFormatter={chartValueFormatter}
           charts={testrunsResponseTime}
-          colors={['#00ca5a', '#ff6d6d']}
-          lines={[
-            {
-              name: 'Average Response Time',
-              key: 'avgResponseTime',
-            },
-          ]}
+          colors={testrunsChartColors}
+          lines={testrunsResponseTimeChartLines}
           title='Response Time'
         />
       </Box>

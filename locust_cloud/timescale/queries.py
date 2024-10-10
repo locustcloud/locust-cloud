@@ -198,7 +198,10 @@ SELECT
  requests,
  date_trunc('second', end_time - id) AS "runTime",
  description,
- exit_code as "exitCode"
+ exit_code as "exitCode",
+ username,
+ worker_count as "workerCount",
+ locustfile
 FROM testruns
 ORDER BY id DESC
 """

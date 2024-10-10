@@ -12,6 +12,7 @@ import locust.env
 import psycopg
 import psycopg.types.json
 from locust.exception import CatchResponseError
+from locust.runners import MasterRunner
 
 
 def safe_serialize(obj):
@@ -185,11 +186,19 @@ class Exporter:
         cmd = sys.argv[1:]
         with self.pool.connection() as conn:
             conn.execute(
-                "INSERT INTO testruns (id, num_users, description, arguments) VALUES (%s,%s,%s,%s)",
+                "INSERT INTO testruns (id, num_users, worker_count, username, locustfile, description, arguments) VALUES (%s,%s,%s,%s,%s,%s,%s)",
                 (
                     self._run_id,
                     self.env.runner.target_user_count if self.env.runner else 1,
-                    "self.env.parsed_options.description",
+                    len(self.env.runner.clients)
+                    if isinstance(
+                        self.env.runner,
+                        MasterRunner,
+                    )
+                    else 0,
+                    self.env.web_ui.template_args.get("username", "") if self.env.web_ui else "",
+                    self.env.parsed_options.locustfile,
+                    self.env.parsed_options.description,
                     " ".join(cmd),
                 ),
             )
