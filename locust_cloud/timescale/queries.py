@@ -261,7 +261,7 @@ total_runtime = """
 SELECT
   SUM((end_time - id) * num_users) AS "totalVuh"
 FROM testruns
-WHERE id >= date_trunc('month', NOW())
+WHERE id >= date_trunc('month', NOW()) AND NOT refund
 """
 
 queries: dict["str", LiteralString] = {
