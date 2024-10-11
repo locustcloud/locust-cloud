@@ -28,6 +28,7 @@ class Exporter:
         self._run_id = None
         self._samples: list[dict] = []
         self._background = gevent.spawn(self._run)
+        self._update_end_time_task = gevent.spawn(self._update_end_time)
         self._hostname = socket.gethostname()
         self._finished = False
         self._pid = os.getpid()
@@ -97,6 +98,21 @@ class Exporter:
                     break
             gevent.sleep(0.5)
 
+    def _update_end_time(self):
+        # Regularly update endtime to prevent missing endtimes when a test crashes
+        while True:
+            current_end_time = datetime.now(UTC)
+            try:
+                with self.pool.connection() as conn:
+                    conn.execute(
+                        "UPDATE testruns SET end_time = %s WHERE id = %s",
+                        (current_end_time, self._run_id),
+                    )
+                gevent.sleep(60)
+            except psycopg.Error as error:
+                logging.error("Failed to update testruns table with end time: " + repr(error))
+                gevent.sleep(1)
+
     def write_samples_to_db(self, samples):
         try:
             with self.pool.connection() as conn:
@@ -126,6 +142,7 @@ class Exporter:
         self._finished = True
         atexit._clear()  # make sure we dont capture additional ctrl-c:s
         self._background.join(timeout=10)
+        self._update_end_time_task.kill()
         if getattr(self, "_user_count_logger", False):
             self._user_count_logger.kill()
         self.log_stop_test_run(exit_code)
