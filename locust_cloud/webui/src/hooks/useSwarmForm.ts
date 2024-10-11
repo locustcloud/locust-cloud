@@ -1,6 +1,5 @@
 import { useCallback, useState } from 'react';
 import { AlertColor } from '@mui/material';
-import { SwarmForm as LocustSwarmForm } from 'locust-ui';
 
 import { useLocustSelector } from 'redux/hooks';
 
@@ -9,7 +8,7 @@ interface IAlert {
   message: string;
 }
 
-export default function SwarmForm() {
+export default function useSwarmForm() {
   const { numUsers, workerCount } = useLocustSelector(({ swarm }) => swarm);
 
   const [alert, setAlert] = useState<IAlert>();
@@ -41,7 +40,9 @@ export default function SwarmForm() {
     [numUsers, workerCount],
   );
 
-  return (
-    <LocustSwarmForm alert={alert} isDisabled={shouldDisableForm} onFormChange={handleFormChange} />
-  );
+  return {
+    alert,
+    shouldDisableForm,
+    handleFormChange,
+  };
 }
