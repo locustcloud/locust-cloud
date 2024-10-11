@@ -201,10 +201,10 @@ def main() -> None:
     deployed_pods: list[Any] = []
     worker_count: int = max(options.workers or math.ceil(options.users / USERS_PER_WORKER), 2)
     os.environ["AWS_DEFAULT_REGION"] = options.region
-    if options.users > 10000:
-        logger.error("You asked for more than 10000 Users, that isn't allowed.")
+    if options.users > 5000000:
+        logger.error("You asked for more than 5000000 Users, that isn't allowed.")
         sys.exit(1)
-    if worker_count > 20:
+    if worker_count > 1000:
         logger.error("You asked for more than 20 workers, that isn't allowed.")
         sys.exit(1)
     try:
