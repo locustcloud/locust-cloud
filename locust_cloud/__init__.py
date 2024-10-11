@@ -66,7 +66,7 @@ def create_connection_pool(
         return ConnectionPool(
             conninfo=f"postgres://{pg_user}:{pg_password}@{pg_host}:{pg_port}/{pg_database}?sslmode=require",
             min_size=1,
-            max_size=5,
+            max_size=10,
             configure=set_autocommit,
         )
     except Exception:
