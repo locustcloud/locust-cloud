@@ -9,17 +9,18 @@ import {
   useFetchTasks,
   useLogViewer,
   baseTabs as locustBaseTabs,
+  SwarmForm,
 } from 'locust-ui';
 
 import Layout from 'components/Layout/Layout';
 import Snackbar from 'components/Snackbar/Snackbar';
-import SwarmForm from 'components/SwarmForm/SwarmForm';
 import Charts from 'components/tabs/Charts';
 import Customer from 'components/tabs/Customer';
 import Scatterplot from 'components/tabs/Scatterplot';
 import Stats from 'components/tabs/Stats';
 import Testruns from 'components/tabs/Testruns';
 import useFetchTestruns from 'hooks/useFetchTestruns';
+import useSwarmForm from 'hooks/useSwarmForm';
 import { useLocustSelector, useSelector } from 'redux/hooks';
 import { UI_VIEW_TYPES } from 'redux/slice/ui.slice';
 
@@ -95,13 +96,14 @@ export default function App() {
   const viewType = useSelector(({ ui }) => ui.viewType);
 
   const theme = useCreateTheme();
+  const { alert, shouldDisableForm, handleFormChange } = useSwarmForm();
 
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <Layout>
         {!window.templateArgs.isGraphViewer && swarmState === SWARM_STATE.READY ? (
-          <SwarmForm />
+          <SwarmForm alert={alert} isDisabled={shouldDisableForm} onFormChange={handleFormChange} />
         ) : (
           <Tabs tabs={viewType == UI_VIEW_TYPES.CLOUD ? tabs : locustBaseTabs} />
         )}
