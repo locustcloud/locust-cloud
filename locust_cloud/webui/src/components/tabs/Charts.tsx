@@ -207,9 +207,10 @@ export default function Charts() {
       onError,
     );
 
-  const fetchCharts = (endTime?: string) => {
+  const fetchCharts = () => {
     if (currentTestrun) {
       const currentTimestamp = new Date().toISOString();
+      const { endTime } = testruns[new Date(currentTestrun).toLocaleString()];
       const payload = {
         start: currentTestrun,
         end: endTime || timestamp,
@@ -225,7 +226,9 @@ export default function Charts() {
       getResponseLength(payload);
       getRps(payload);
 
-      setTimestamp(currentTimestamp);
+      if (swarmState !== SWARM_STATE.STOPPED) {
+        setTimestamp(currentTimestamp);
+      }
     }
   };
 
@@ -235,14 +238,8 @@ export default function Charts() {
   });
 
   useEffect(() => {
-    if (currentTestrun) {
-      const { endTime } = testruns[new Date(currentTestrun).toLocaleString()];
-      // handle re-fetch on testrun or resolution change
-      fetchCharts(endTime);
-    } else {
-      // handle initial load or resolution change
-      fetchCharts();
-    }
+    // handle initial load, testrun change, or resolution change
+    fetchCharts();
   }, [currentTestrun, resolution]);
 
   useEffect(() => {
@@ -288,45 +285,43 @@ export default function Charts() {
           title='Throughput / active users'
           yAxisLabels={RPS_Y_AXIS_LABELS}
         />
-        {(!isError || (isError && !!requestLines.length)) && (
-          <>
-            <LineChart<IPerRequestData>
-              chartValueFormatter={v => `${roundToDecimalPlaces(Number((v as string[])[1]), 2)}ms`}
-              charts={avgResponseTimes}
-              colors={CHART_COLORS.PER_REQUEST}
-              lines={requestLines}
-              title='Average Response Times'
-            />
-            <LineChart<IPerRequestData>
-              chartValueFormatter={chartValueFormatter}
-              charts={rpsPerRequest}
-              colors={CHART_COLORS.PER_REQUEST}
-              lines={requestLines}
-              title='RPS per Request'
-            />
-            <LineChart<IPerRequestData>
-              chartValueFormatter={chartValueFormatter}
-              charts={errorsPerRequest}
-              colors={CHART_COLORS.ERROR}
-              lines={requestLines}
-              title='Errors per Request'
-            />
-            <LineChart<IPerRequestData>
-              chartValueFormatter={chartValueFormatter}
-              charts={perc99ResponseTimes}
-              colors={CHART_COLORS.PER_REQUEST}
-              lines={requestLines}
-              title='99th Percentile Response Times'
-            />
-            <LineChart<IPerRequestData>
-              chartValueFormatter={chartValueFormatter}
-              charts={responseLength}
-              colors={CHART_COLORS.PER_REQUEST}
-              lines={requestLines}
-              title='Response Length'
-            />
-          </>
-        )}
+        <Box sx={{ display: !isError || (isError && !!requestLines.length) ? 'block' : 'none' }}>
+          <LineChart<IPerRequestData>
+            chartValueFormatter={v => `${roundToDecimalPlaces(Number((v as string[])[1]), 2)}ms`}
+            charts={avgResponseTimes}
+            colors={CHART_COLORS.PER_REQUEST}
+            lines={requestLines}
+            title='Average Response Times'
+          />
+          <LineChart<IPerRequestData>
+            chartValueFormatter={chartValueFormatter}
+            charts={rpsPerRequest}
+            colors={CHART_COLORS.PER_REQUEST}
+            lines={requestLines}
+            title='RPS per Request'
+          />
+          <LineChart<IPerRequestData>
+            chartValueFormatter={chartValueFormatter}
+            charts={errorsPerRequest}
+            colors={CHART_COLORS.ERROR}
+            lines={requestLines}
+            title='Errors per Request'
+          />
+          <LineChart<IPerRequestData>
+            chartValueFormatter={chartValueFormatter}
+            charts={perc99ResponseTimes}
+            colors={CHART_COLORS.PER_REQUEST}
+            lines={requestLines}
+            title='99th Percentile Response Times'
+          />
+          <LineChart<IPerRequestData>
+            chartValueFormatter={chartValueFormatter}
+            charts={responseLength}
+            colors={CHART_COLORS.PER_REQUEST}
+            lines={requestLines}
+            title='Response Length'
+          />
+        </Box>
       </Box>
     </>
   );
