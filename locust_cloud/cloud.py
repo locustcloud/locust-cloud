@@ -1,4 +1,3 @@
-import importlib.metadata
 import json
 import logging
 import math
@@ -14,6 +13,7 @@ from typing import IO, Any
 import configargparse
 import requests
 from botocore.exceptions import ClientError
+from locust_cloud import __version__
 from locust_cloud.constants import (
     DEFAULT_CLUSTER_NAME,
     DEFAULT_DEPLOYER_URL,
@@ -22,8 +22,6 @@ from locust_cloud.constants import (
     USERS_PER_WORKER,
 )
 from locust_cloud.credential_manager import CredentialError, CredentialManager
-
-__version__ = importlib.metadata.version("locust-cloud")
 
 
 class LocustTomlConfigParser(configargparse.TomlConfigParser):
@@ -305,6 +303,7 @@ def main() -> None:
             "AWS_ACCESS_KEY_ID": aws_access_key_id,
             "AWS_SECRET_ACCESS_KEY": aws_secret_access_key,
             "AWS_SESSION_TOKEN": aws_session_token,
+            "X-Client-Version": __version__,
         }
         try:
             # logger.info(payload) # might be useful when debugging sometimes
@@ -408,6 +407,7 @@ def delete(s3_bucket, credential_manager):
             "AWS_ACCESS_KEY_ID": refreshed_credentials.get("access_key", ""),
             "AWS_SECRET_ACCESS_KEY": refreshed_credentials.get("secret_key", ""),
             "Authorization": f"Bearer {refreshed_credentials.get('cognito_client_id_token', '')}",
+            "X-Client-Version": __version__,
         }
 
         token = refreshed_credentials.get("token")

@@ -8,6 +8,7 @@ import jwt
 import requests
 from botocore.credentials import RefreshableCredentials
 from botocore.session import Session as BotocoreSession
+from locust_cloud import __version__
 
 logger = logging.getLogger(__name__)
 
@@ -67,7 +68,11 @@ class CredentialManager:
             raise CredentialError("Insufficient credentials to obtain AWS session.")
 
         try:
-            response = requests.post(f"{self.lambda_url}/auth/login", json=payload)
+            response = requests.post(
+                f"{self.lambda_url}/auth/login",
+                json=payload,
+                headers={"X-Client-Version": __version__},
+            )
             response.raise_for_status()
             data = response.json()
 
