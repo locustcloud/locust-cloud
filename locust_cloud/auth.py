@@ -7,9 +7,8 @@ import requests
 import werkzeug
 from flask import redirect, request, url_for
 from flask_login import UserMixin, login_user
-from locust_cloud.constants import (
-    DEFAULT_DEPLOYER_URL,
-)
+from locust_cloud import __version__
+from locust_cloud.constants import DEFAULT_DEPLOYER_URL
 
 DEPLOYER_URL = os.environ.get("LOCUSTCLOUD_DEPLOYER_URL", DEFAULT_DEPLOYER_URL)
 
@@ -69,6 +68,7 @@ def register_auth(environment: locust.env.Environment):
             auth_response = requests.post(
                 f"{DEPLOYER_URL}/auth/login",
                 json={"username": username, "password": password},
+                headers={"X-Client-Version": __version__},
             )
 
             if auth_response.status_code == 200:

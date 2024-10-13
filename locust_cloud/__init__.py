@@ -1,6 +1,8 @@
+import importlib.metadata
 import os
 
 os.environ["LOCUST_SKIP_MONKEY_PATCH"] = "1"
+__version__ = importlib.metadata.version("locust-cloud")
 
 import argparse
 import logging
