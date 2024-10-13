@@ -198,7 +198,7 @@ logging.getLogger("urllib3").setLevel(logging.INFO)
 
 def main() -> None:
     s3_bucket = f"{options.kube_cluster_name}-{options.kube_namespace}"
-    deployed_pods: list[Any] = []
+    deployments: list[Any] = []
     worker_count: int = max(options.workers or math.ceil(options.users / USERS_PER_WORKER), 2)
     os.environ["AWS_DEFAULT_REGION"] = options.region
     if options.users > 5000000:
@@ -314,7 +314,7 @@ def main() -> None:
             sys.exit(1)
 
         if response.status_code == 200:
-            deployed_pods = response.json().get("pods", [])
+            deployments = response.json().get("deployments", [])
         else:
             try:
                 logger.error(f"Error when deploying: {response.json()['Message']}")
@@ -331,7 +331,7 @@ def main() -> None:
         sys.exit(0)
 
     log_group_name = f"/eks/{options.kube_cluster_name}-{options.kube_namespace}"
-    master_pod_name = next((pod for pod in deployed_pods if "master" in pod), None)
+    master_pod_name = next((deployment for deployment in deployments if "master" in deployment), None)
 
     if not master_pod_name:
         logger.error(
