@@ -103,6 +103,9 @@ class CredentialManager:
             if response is not None and response.status_code == 401:
                 raise CredentialError("Incorrect username or password.") from http_err
             else:
+                if js := response.json():
+                    if message := js.get("Message"):
+                        raise CredentialError(message)
                 error_info = f"HTTP {response.status_code} {response.reason}" if response else "No response received."
                 raise CredentialError(f"HTTP error occurred while obtaining credentials: {error_info}") from http_err
         except requests.exceptions.RequestException as req_err:
