@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, Box, CircularProgress } from '@mui/material';
-import { useInterval, roundToDecimalPlaces, SWARM_STATE, LineChart } from 'locust-ui';
+import { roundToDecimalPlaces, SWARM_STATE, LineChart } from 'locust-ui';
 
 import Toolbar from 'components/Toolbar/Toolbar';
+import useFakeInterval from 'hooks/useFakeInterval';
 import {
   IRequestLines,
   IRpsData,
@@ -79,7 +80,6 @@ export default function Charts() {
   const [isLoading, setIsLoading] = useState(true);
   const [isError, setIsError] = useState(false);
   const [timestamp, setTimestamp] = useState(new Date().toISOString());
-
   const [charts, setCharts] = useState<ICharts>(defaultChartData);
 
   const [getRequestNames] = useGetRequestNamesMutation();
@@ -119,7 +119,7 @@ export default function Charts() {
         getRps(payload),
       ]);
 
-      const errorMessage =
+      const fetchError =
         requestLinesError ||
         rpsPerRequestError ||
         avgResponseTimesError ||
@@ -128,8 +128,8 @@ export default function Charts() {
         responseLengthError ||
         rpsError;
 
-      if (errorMessage) {
-        setSnackbar({ message: String(errorMessage) });
+      if (fetchError && 'error' in fetchError) {
+        setSnackbar({ message: fetchError.error });
       }
 
       // only show an error for the first testrun if no test is running
@@ -156,20 +156,16 @@ export default function Charts() {
         setTimestamp(currentTimestamp);
       }
     }
-
-    // if (swarmState === SWARM_STATE.SPAWNING || swarmState === SWARM_STATE.RUNNING) {
-    //   setTimeout(fetchCharts, 1000);
-    // }
   };
 
-  useInterval(fetchCharts, 1000, {
+  useFakeInterval(fetchCharts, 1000, {
     shouldRunInterval: swarmState === SWARM_STATE.SPAWNING || swarmState == SWARM_STATE.RUNNING,
     immediate: true,
   });
 
   useEffect(() => {
-    // handle initial load, testrun change, or resolution change
-    fetchCharts();
+    // handle initial load and fetching on testrun or resolution change
+    fetchCharts;
   }, [currentTestrun, resolution]);
 
   useEffect(() => {
