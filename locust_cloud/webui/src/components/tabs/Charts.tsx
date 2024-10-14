@@ -3,27 +3,22 @@ import { Alert, Box, CircularProgress } from '@mui/material';
 import { useInterval, roundToDecimalPlaces, SWARM_STATE, LineChart } from 'locust-ui';
 
 import Toolbar from 'components/Toolbar/Toolbar';
+import {
+  useGetAvgResponseTimesMutation,
+  useGetErrorsPerRequestMutation,
+  useGetPerc99ResponseTimesMutation,
+  useGetRequestNamesMutation,
+  useGetResponseLengthMutation,
+  useGetRpsMutation,
+  useGetRpsPerRequestMutation,
+} from 'redux/api/cloud-stats';
 import { useAction, useLocustSelector, useSelector } from 'redux/hooks';
 import { snackbarActions } from 'redux/slice/snackbar.slice';
-import {
-  IRequestBody,
-  adaptPerNameChartData,
-  fetchQuery,
-  IPerRequestResponse,
-  IPerRequestData,
-  chartValueFormatter,
-} from 'utils/api';
+import { IPerRequestData, chartValueFormatter } from 'utils/api';
 
 interface IRequestLines {
   name: string;
   key: string;
-}
-
-interface IRpsResponse {
-  users: string | null;
-  rps: string | null;
-  errorRate: string | null;
-  time: string;
 }
 
 interface IRpsData {
@@ -31,26 +26,6 @@ interface IRpsData {
   rps: [string, string][];
   errorRate: [string, string][];
   time: string[];
-}
-
-interface IRpsPerRequestResponse extends IPerRequestResponse {
-  throughput: number;
-}
-
-interface IAvgResponseTimesResponse extends IPerRequestResponse {
-  responseTime: number;
-}
-
-interface IErrorsPerRequestResponse extends IPerRequestResponse {
-  errorRate: number;
-}
-
-interface IPerc99ResponseTimesResponse extends IPerRequestResponse {
-  perc99: number;
-}
-
-interface IResponseLengthResponse extends IPerRequestResponse {
-  responseLength: number;
 }
 
 const defaultPerRequestState = { time: [] } as IPerRequestData;
@@ -83,12 +58,24 @@ const RPS_CHART_LINES = [
   },
 ];
 
-const carryLastValue = (values?: [string, string][]) => {
-  if (!values) {
-    return '0';
-  }
+interface ICharts {
+  requestLines: IRequestLines[];
+  rpsPerRequest: IPerRequestData;
+  avgResponseTimes: IPerRequestData;
+  errorsPerRequest: IPerRequestData;
+  perc99ResponseTimes: IPerRequestData;
+  responseLength: IPerRequestData;
+  rpsData: IRpsData;
+}
 
-  return values[values.length - 1][1];
+const defaultChartData = {
+  requestLines: [],
+  rpsPerRequest: defaultPerRequestState,
+  avgResponseTimes: defaultPerRequestState,
+  errorsPerRequest: defaultPerRequestState,
+  perc99ResponseTimes: defaultPerRequestState,
+  responseLength: defaultPerRequestState,
+  rpsData: defaultRpsDataState,
 };
 
 export default function Charts() {
@@ -101,113 +88,18 @@ export default function Charts() {
   const [isLoading, setIsLoading] = useState(true);
   const [isError, setIsError] = useState(false);
   const [timestamp, setTimestamp] = useState(new Date().toISOString());
-  const [requestLines, setRequestLines] = useState<IRequestLines[]>([]);
-  const [rpsData, setRpsData] = useState<IRpsData>(defaultRpsDataState);
-  const [rpsPerRequest, setRpsPerRequest] = useState<IPerRequestData>(defaultPerRequestState);
-  const [avgResponseTimes, setAvgResponseTimes] = useState<IPerRequestData>(defaultPerRequestState);
-  const [errorsPerRequest, setErrorsPerRequest] = useState<IPerRequestData>(defaultPerRequestState);
-  const [perc99ResponseTimes, setPerc99ResponseTimes] =
-    useState<IPerRequestData>(defaultPerRequestState);
-  const [responseLength, setResponseLength] = useState<IPerRequestData>(defaultPerRequestState);
 
-  const onError = (error: string) => setSnackbar({ message: error });
+  const [charts, setCharts] = useState<ICharts>(defaultChartData);
 
-  const getRequestNames = (body: IRequestBody) =>
-    fetchQuery<{ name: string }[]>(
-      '/cloud-stats/request-names',
-      body,
-      requestNames => {
-        // only show an error for the first testrun if no test is running
-        if (
-          (currentTestrunIndex !== 0 && !requestNames.length) ||
-          (currentTestrunIndex === 0 && swarmState !== SWARM_STATE.RUNNING && !requestNames.length)
-        ) {
-          setIsError(true);
-        }
-        setRequestLines(
-          requestNames.map(({ name: requestName }) => ({
-            name: `${requestName}`,
-            key: requestName,
-          })),
-        );
-      },
-      onError,
-    );
-  const getRps = (body: IRequestBody) =>
-    fetchQuery<IRpsResponse[]>(
-      '/cloud-stats/rps',
-      body,
-      rps =>
-        setRpsData(
-          rps.reduce(
-            (rpsChart, { users, rps, errorRate, time }) => ({
-              users: [...(rpsChart.users || []), [time, users || carryLastValue(rpsChart.users)]],
-              rps: [...(rpsChart.rps || []), [time, rps || '0']],
-              errorRate: [...(rpsChart.errorRate || []), [time, errorRate || '0']],
-              time: [...(rpsChart.time || []), time],
-            }),
-            {} as IRpsData,
-          ),
-        ),
-      onError,
-    );
+  const [getRequestNames] = useGetRequestNamesMutation();
+  const [getRpsPerRequest] = useGetRpsPerRequestMutation();
+  const [getAvgResponseTimes] = useGetAvgResponseTimesMutation();
+  const [getErrorsPerRequest] = useGetErrorsPerRequestMutation();
+  const [getPerc99ResponseTimes] = useGetPerc99ResponseTimesMutation();
+  const [getResponseLength] = useGetResponseLengthMutation();
+  const [getRps] = useGetRpsMutation();
 
-  const getRpsPerRequest = (body: IRequestBody) =>
-    fetchQuery<IRpsPerRequestResponse[]>(
-      '/cloud-stats/rps-per-request',
-      body,
-      rpsPerRequest =>
-        setRpsPerRequest(
-          adaptPerNameChartData<IRpsPerRequestResponse>(rpsPerRequest, 'throughput'),
-        ),
-      onError,
-    );
-  const getAvgResponseTimes = (body: IRequestBody) =>
-    fetchQuery<IAvgResponseTimesResponse[]>(
-      '/cloud-stats/avg-response-times',
-      body,
-      avgResponseTimes => {
-        setAvgResponseTimes(
-          adaptPerNameChartData<IAvgResponseTimesResponse>(avgResponseTimes, 'responseTime'),
-        );
-        if (isLoading) {
-          setIsLoading(false);
-        }
-      },
-      onError,
-    );
-  const getErrorsPerRequest = (body: IRequestBody) =>
-    fetchQuery<IErrorsPerRequestResponse[]>(
-      '/cloud-stats/errors-per-request',
-      body,
-      errorsPerRequest =>
-        setErrorsPerRequest(
-          adaptPerNameChartData<IErrorsPerRequestResponse>(errorsPerRequest, 'errorRate'),
-        ),
-      onError,
-    );
-  const getPerc99ResponseTimes = (body: IRequestBody) =>
-    fetchQuery<IPerc99ResponseTimesResponse[]>(
-      '/cloud-stats/perc99-response-times',
-      body,
-      perc99ResponseTimes =>
-        setPerc99ResponseTimes(
-          adaptPerNameChartData<IPerc99ResponseTimesResponse>(perc99ResponseTimes, 'perc99'),
-        ),
-      onError,
-    );
-  const getResponseLength = (body: IRequestBody) =>
-    fetchQuery<IResponseLengthResponse[]>(
-      '/cloud-stats/response-length',
-      body,
-      responseLength =>
-        setResponseLength(
-          adaptPerNameChartData<IResponseLengthResponse>(responseLength, 'responseLength'),
-        ),
-      onError,
-    );
-
-  const fetchCharts = () => {
+  const fetchCharts = async () => {
     if (currentTestrun) {
       const currentTimestamp = new Date().toISOString();
       const { endTime } = testruns[new Date(currentTestrun).toLocaleString()];
@@ -218,18 +110,65 @@ export default function Charts() {
         testrun: currentTestrun,
       };
 
-      getRequestNames(payload);
-      getRpsPerRequest(payload);
-      getAvgResponseTimes(payload);
-      getErrorsPerRequest(payload);
-      getPerc99ResponseTimes(payload);
-      getResponseLength(payload);
-      getRps(payload);
+      const [
+        { data: requestLines, error: requestLinesError },
+        { data: rpsPerRequest = defaultPerRequestState, error: rpsPerRequestError },
+        { data: avgResponseTimes = defaultPerRequestState, error: avgResponseTimesError },
+        { data: errorsPerRequest = defaultPerRequestState, error: errorsPerRequestError },
+        { data: perc99ResponseTimes = defaultPerRequestState, error: perc99ResponseTimesError },
+        { data: responseLength = defaultPerRequestState, error: responseLengthError },
+        { data: rpsData, error: rpsError },
+      ] = await Promise.all([
+        getRequestNames(payload),
+        getRpsPerRequest(payload),
+        getAvgResponseTimes(payload),
+        getErrorsPerRequest(payload),
+        getPerc99ResponseTimes(payload),
+        getResponseLength(payload),
+        getRps(payload),
+      ]);
+
+      const errorMessage =
+        requestLinesError ||
+        rpsPerRequestError ||
+        avgResponseTimesError ||
+        errorsPerRequestError ||
+        perc99ResponseTimesError ||
+        responseLengthError ||
+        rpsError;
+
+      if (errorMessage) {
+        setSnackbar({ message: String(errorMessage) });
+      }
+
+      // only show an error for the first testrun if no test is running
+      if (
+        (currentTestrunIndex !== 0 && !requestLines.length) ||
+        (currentTestrunIndex === 0 && swarmState !== SWARM_STATE.RUNNING && !requestLines.length)
+      ) {
+        setIsError(true);
+      }
+
+      setCharts({
+        requestLines,
+        rpsPerRequest,
+        avgResponseTimes,
+        errorsPerRequest,
+        perc99ResponseTimes,
+        responseLength,
+        rpsData,
+      });
+
+      setIsLoading(false);
 
       if (swarmState !== SWARM_STATE.STOPPED) {
         setTimestamp(currentTimestamp);
       }
     }
+
+    // if (swarmState === SWARM_STATE.SPAWNING || swarmState === SWARM_STATE.RUNNING) {
+    //   setTimeout(fetchCharts, 1000);
+    // }
   };
 
   useInterval(fetchCharts, 1000, {
@@ -278,47 +217,54 @@ export default function Charts() {
         )}
         <LineChart<IRpsData>
           chartValueFormatter={chartValueFormatter}
-          charts={rpsData}
+          charts={charts.rpsData}
           colors={CHART_COLORS.RPS}
           lines={RPS_CHART_LINES}
           splitAxis
           title='Throughput / active users'
           yAxisLabels={RPS_Y_AXIS_LABELS}
         />
-        <Box sx={{ display: !isError || (isError && !!requestLines.length) ? 'block' : 'none' }}>
+        <Box
+          sx={{
+            display:
+              !isError || (isError && !!charts.requestLines && charts.requestLines.length)
+                ? 'block'
+                : 'none',
+          }}
+        >
           <LineChart<IPerRequestData>
             chartValueFormatter={v => `${roundToDecimalPlaces(Number((v as string[])[1]), 2)}ms`}
-            charts={avgResponseTimes}
+            charts={charts.avgResponseTimes}
             colors={CHART_COLORS.PER_REQUEST}
-            lines={requestLines}
+            lines={charts.requestLines}
             title='Average Response Times'
           />
           <LineChart<IPerRequestData>
             chartValueFormatter={chartValueFormatter}
-            charts={rpsPerRequest}
+            charts={charts.rpsPerRequest}
             colors={CHART_COLORS.PER_REQUEST}
-            lines={requestLines}
+            lines={charts.requestLines}
             title='RPS per Request'
           />
           <LineChart<IPerRequestData>
             chartValueFormatter={chartValueFormatter}
-            charts={errorsPerRequest}
+            charts={charts.errorsPerRequest}
             colors={CHART_COLORS.ERROR}
-            lines={requestLines}
+            lines={charts.requestLines}
             title='Errors per Request'
           />
           <LineChart<IPerRequestData>
             chartValueFormatter={chartValueFormatter}
-            charts={perc99ResponseTimes}
+            charts={charts.perc99ResponseTimes}
             colors={CHART_COLORS.PER_REQUEST}
-            lines={requestLines}
+            lines={charts.requestLines}
             title='99th Percentile Response Times'
           />
           <LineChart<IPerRequestData>
             chartValueFormatter={chartValueFormatter}
-            charts={responseLength}
+            charts={charts.responseLength}
             colors={CHART_COLORS.PER_REQUEST}
-            lines={requestLines}
+            lines={charts.requestLines}
             title='Response Length'
           />
         </Box>

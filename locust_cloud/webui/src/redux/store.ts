@@ -1,10 +1,11 @@
 import { configureStore } from '@reduxjs/toolkit';
 
-import rootReducer, { IRootState, Action } from 'redux/slice/root.slice';
+import { cloudStats } from 'redux/api/cloud-stats';
+import rootReducer from 'redux/slice/root.slice';
 
-export const store = configureStore<IRootState, Action>({
+export const store = configureStore({
   reducer: rootReducer,
-  middleware: getDefaultMiddleware => getDefaultMiddleware(),
+  middleware: getDefaultMiddleware => getDefaultMiddleware().concat(cloudStats.middleware),
 });
 
 export type { IRootState, Action } from 'redux/slice/root.slice';
