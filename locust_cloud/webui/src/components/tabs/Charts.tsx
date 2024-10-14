@@ -4,6 +4,8 @@ import { useInterval, roundToDecimalPlaces, SWARM_STATE, LineChart } from 'locus
 
 import Toolbar from 'components/Toolbar/Toolbar';
 import {
+  IRequestLines,
+  IRpsData,
   useGetAvgResponseTimesMutation,
   useGetErrorsPerRequestMutation,
   useGetPerc99ResponseTimesMutation,
@@ -16,20 +18,9 @@ import { useAction, useLocustSelector, useSelector } from 'redux/hooks';
 import { snackbarActions } from 'redux/slice/snackbar.slice';
 import { IPerRequestData, chartValueFormatter } from 'utils/api';
 
-interface IRequestLines {
-  name: string;
-  key: string;
-}
-
-interface IRpsData {
-  users: [string, string][];
-  rps: [string, string][];
-  errorRate: [string, string][];
-  time: string[];
-}
-
-const defaultPerRequestState = { time: [] } as IPerRequestData;
-const defaultRpsDataState = { time: [] as string[] } as IRpsData;
+const defaultPerRequestState = {} as IPerRequestData;
+const defaultRpsDataState = {} as IRpsData;
+const defaultRequestLines = [] as IRequestLines[];
 
 const CHART_COLORS = {
   RPS: ['#00ca5a', '#0099ff', '#ff6d6d'],
@@ -111,13 +102,13 @@ export default function Charts() {
       };
 
       const [
-        { data: requestLines, error: requestLinesError },
+        { data: requestLines = defaultRequestLines, error: requestLinesError },
         { data: rpsPerRequest = defaultPerRequestState, error: rpsPerRequestError },
         { data: avgResponseTimes = defaultPerRequestState, error: avgResponseTimesError },
         { data: errorsPerRequest = defaultPerRequestState, error: errorsPerRequestError },
         { data: perc99ResponseTimes = defaultPerRequestState, error: perc99ResponseTimesError },
         { data: responseLength = defaultPerRequestState, error: responseLengthError },
-        { data: rpsData, error: rpsError },
+        { data: rpsData = defaultRpsDataState, error: rpsError },
       ] = await Promise.all([
         getRequestNames(payload),
         getRpsPerRequest(payload),
