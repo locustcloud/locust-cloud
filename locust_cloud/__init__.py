@@ -13,6 +13,7 @@ from locust.argument_parser import LocustArgumentParser
 from locust_cloud.auth import register_auth
 from locust_cloud.timescale.exporter import Exporter
 from locust_cloud.timescale.query import register_query
+from psycopg.conninfo import make_conninfo
 from psycopg_pool import ConnectionPool
 
 PG_USER = os.environ.get("PG_USER")
@@ -63,8 +64,17 @@ def create_connection_pool(
     pg_user: str, pg_host: str, pg_password: str, pg_database: str, pg_port: str | int
 ) -> ConnectionPool:
     try:
+        conninfo = make_conninfo(
+            dbname=pg_database,
+            user=pg_user,
+            port=pg_port,
+            password=pg_password,
+            host=pg_host,
+            sslmode="require",
+            options="-c statement_timeout=55000",
+        )
         return ConnectionPool(
-            conninfo=f"postgres://{pg_user}:{pg_password}@{pg_host}:{pg_port}/{pg_database}?sslmode=require",
+            conninfo,
             min_size=1,
             max_size=10,
             configure=set_autocommit,
