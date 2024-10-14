@@ -29,7 +29,7 @@ def register_query(environment, pool):
                         # protect the database against huge queries
                         start_time = datetime.fromisoformat(sql_params["start"])
                         end_time = datetime.fromisoformat(sql_params["end"])
-                        if end_time >= start_time + timedelta(hours=6):
+                        if end_time >= start_time + timedelta(hours=48):
                             logger.warning(
                                 f"UI asked for too long time interval. Start was {sql_params['start']}, end was {sql_params['end']}"
                             )
