@@ -1,4 +1,4 @@
-FROM locustio/locust:2.31.9.dev42
+FROM locustio/locust:2.32.0
 
 COPY dist /dist
 
