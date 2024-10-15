@@ -16,8 +16,11 @@ class IdleExit:
         events.test_stop.add_listener(self.on_test_stop)
         events.quit.add_listener(self.on_locust_state_change)
 
+        if not self.environment.parsed_options.autostart:
+            self._destroy_task = gevent.spawn(self._destroy)
+
     def _destroy(self):
-        gevent.sleep(10)
+        gevent.sleep(3600)
         logger.info("Locust was detected as idle, shutting down...")
         self.environment.runner.quit()
         sys.exit(0)
