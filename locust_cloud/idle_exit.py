@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 class IdleExit:
     def __init__(self, environment: locust.env.Environment):
         self.environment = environment
-        self._destroy_task = None
+        self._destroy_task: gevent.Greenlet | None = None
         events.test_start.add_listener(self.on_locust_state_change)
         events.test_stop.add_listener(self.on_test_stop)
         events.quit.add_listener(self.on_locust_state_change)
@@ -20,8 +20,8 @@ class IdleExit:
             self._destroy_task = gevent.spawn(self._destroy)
 
     def _destroy(self):
-        gevent.sleep(3600)
-        logger.info("Locust was detected as idle, shutting down...")
+        gevent.sleep(1800)
+        logger.info("Locust was detected as idle (no test running) for more than 30 minutes, shutting down")
         self.environment.runner.quit()
         sys.exit(0)
 
