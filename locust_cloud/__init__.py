@@ -13,6 +13,7 @@ import psycopg
 from locust import events
 from locust.argument_parser import LocustArgumentParser
 from locust_cloud.auth import register_auth
+from locust_cloud.idle_exit import IdleExit
 from locust_cloud.timescale.exporter import Exporter
 from locust_cloud.timescale.query import register_query
 from psycopg.conninfo import make_conninfo
@@ -104,6 +105,9 @@ def on_locust_init(environment: locust.env.Environment, **_args):
         logger.exception(e)
         logger.error(f"{PG_HOST=}")
         raise
+
+    if not GRAPH_VIEWER:
+        IdleExit(environment)
 
     if not GRAPH_VIEWER and environment.parsed_options and environment.parsed_options.exporter:
         Exporter(environment, pool)
