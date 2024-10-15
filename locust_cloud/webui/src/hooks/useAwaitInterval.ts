@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 
-export default function useFakeInterval(
+export default function useAwaitInterval(
   callback: () => void,
   delay: number,
   { shouldRunInterval, immediate }: { shouldRunInterval?: boolean; immediate?: boolean } = {

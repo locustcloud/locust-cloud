@@ -3,7 +3,7 @@ import { Alert, Box, CircularProgress } from '@mui/material';
 import { roundToDecimalPlaces, SWARM_STATE, LineChart } from 'locust-ui';
 
 import Toolbar from 'components/Toolbar/Toolbar';
-import useFakeInterval from 'hooks/useFakeInterval';
+import useAwaitInterval from 'hooks/useAwaitInterval';
 import {
   IRequestLines,
   IRpsData,
@@ -158,7 +158,7 @@ export default function Charts() {
     }
   };
 
-  useFakeInterval(fetchCharts, 1000, {
+  useAwaitInterval(fetchCharts, 1000, {
     shouldRunInterval: swarmState === SWARM_STATE.SPAWNING || swarmState == SWARM_STATE.RUNNING,
     immediate: true,
   });
