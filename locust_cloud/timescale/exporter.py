@@ -159,6 +159,7 @@ class Exporter:
         url=None,
         **kwargs,
     ):
+        assert self._run_id  # this should never happen
         success = 0 if exception else 1
         if start_time:
             time = datetime.fromtimestamp(start_time, tz=UTC)
