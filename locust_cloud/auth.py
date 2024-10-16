@@ -1,3 +1,4 @@
+import logging
 import os
 from datetime import UTC, datetime, timedelta
 from typing import TypedDict
@@ -11,6 +12,8 @@ from locust_cloud import __version__
 from locust_cloud.constants import DEFAULT_DEPLOYER_URL
 
 DEPLOYER_URL = os.environ.get("LOCUSTCLOUD_DEPLOYER_URL", DEFAULT_DEPLOYER_URL)
+
+logger = logging.getLogger(__name__)
 
 
 class Credentials(TypedDict):
@@ -84,11 +87,12 @@ def register_auth(environment: locust.env.Environment):
 
                 return redirect(url_for("login"))
 
-            raise Exception("Unknown error")
+            logger.error(f"Unknown response from auth: {auth_response.status_code} {auth_response.text}")
+            raise Exception("Unknown response")
         except Exception:
             environment.web_ui.auth_args = {
                 **environment.web_ui.auth_args,
-                "error": "An unknown error occured, please try again",
+                "error": "Unknown error during authentication, check logs and/or contact support",
             }
 
             return redirect(url_for("login"))
