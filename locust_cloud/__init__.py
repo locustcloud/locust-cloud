@@ -78,7 +78,7 @@ def create_connection_pool(
         )
         return ConnectionPool(
             conninfo,
-            min_size=1,
+            min_size=10,
             max_size=10,
             configure=set_autocommit,
         )
