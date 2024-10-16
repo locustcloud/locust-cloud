@@ -19,8 +19,8 @@ import { useAction, useLocustSelector, useSelector } from 'redux/hooks';
 import { snackbarActions } from 'redux/slice/snackbar.slice';
 import { IPerRequestData, chartValueFormatter } from 'utils/api';
 
-const defaultPerRequestState = {} as IPerRequestData;
-const defaultRpsDataState = {} as IRpsData;
+const defaultPerRequestState = { time: [] } as IPerRequestData;
+const defaultRpsDataState = { time: [] as string[] } as IRpsData;
 const defaultRequestLines = [] as IRequestLines[];
 
 const CHART_COLORS = {
@@ -91,6 +91,7 @@ export default function Charts() {
   const [getRps] = useGetRpsMutation();
 
   const fetchCharts = async () => {
+    console.log({ currentTestrun });
     if (currentTestrun) {
       const currentTimestamp = new Date().toISOString();
       const { endTime } = testruns[new Date(currentTestrun).toLocaleString()];
@@ -149,6 +150,8 @@ export default function Charts() {
         responseLength,
         rpsData,
       });
+      console.log('here');
+      console.log({ requestLines });
 
       setIsLoading(false);
 
@@ -165,7 +168,7 @@ export default function Charts() {
 
   useEffect(() => {
     // handle initial load and fetching on testrun or resolution change
-    fetchCharts;
+    fetchCharts();
   }, [currentTestrun, resolution]);
 
   useEffect(() => {
