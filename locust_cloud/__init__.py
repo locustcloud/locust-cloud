@@ -74,7 +74,7 @@ def create_connection_pool(
             password=pg_password,
             host=pg_host,
             sslmode="require",
-            options="-c statement_timeout=55000",
+            # options="-c statement_timeout=55000",
         )
         return ConnectionPool(
             conninfo,
