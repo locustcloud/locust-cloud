@@ -79,9 +79,12 @@ def register_auth(environment: locust.env.Environment):
 
                 return response
 
-            environment.web_ui.auth_args = {**environment.web_ui.auth_args, "error": "Invalid username or password"}
+            if auth_response.status_code == 401:
+                environment.web_ui.auth_args = {**environment.web_ui.auth_args, "error": "Invalid username or password"}
 
-            return redirect(url_for("login"))
+                return redirect(url_for("login"))
+
+            raise Exception("Unknown error")
         except Exception:
             environment.web_ui.auth_args = {
                 **environment.web_ui.auth_args,
