@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Box, SelectChangeEvent } from '@mui/material';
 import { Select } from 'locust-ui';
 
@@ -15,7 +16,12 @@ interface IToolbar {
 
 export default function Toolbar({ onSelectTestRun }: IToolbar) {
   const setToolbar = useAction(toolbarActions.setToolbar);
-  const { testruns, testrunsForDisplay } = useSelector(({ toolbar }) => toolbar);
+  const { testruns, testrunsForDisplay, currentTestrunIndex } = useSelector(
+    ({ toolbar }) => toolbar,
+  );
+  const [currentTestrunDisplayValue, setCurrentTestrunDisplayValue] = useState(
+    testrunsForDisplay[0],
+  );
 
   const handleTestrunChange = (e: SelectChangeEvent<string>) => {
     // find in test runs to get correct date format
@@ -27,6 +33,12 @@ export default function Toolbar({ onSelectTestRun }: IToolbar) {
     });
     pushQuery({ testrun: e.target.value });
   };
+
+  useEffect(() => {
+    if (currentTestrunIndex) {
+      setCurrentTestrunDisplayValue(testrunsForDisplay[currentTestrunIndex]);
+    }
+  }, [currentTestrunIndex, testrunsForDisplay]);
 
   return (
     <Box
@@ -55,6 +67,7 @@ export default function Toolbar({ onSelectTestRun }: IToolbar) {
           options={testrunsForDisplay}
           size='small'
           sx={{ width: '250px' }}
+          value={currentTestrunDisplayValue}
         />
       )}
     </Box>
