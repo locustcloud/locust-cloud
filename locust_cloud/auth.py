@@ -1,3 +1,4 @@
+import logging
 import os
 from datetime import UTC, datetime, timedelta
 from typing import TypedDict
@@ -11,6 +12,8 @@ from locust_cloud import __version__
 from locust_cloud.constants import DEFAULT_DEPLOYER_URL
 
 DEPLOYER_URL = os.environ.get("LOCUSTCLOUD_DEPLOYER_URL", DEFAULT_DEPLOYER_URL)
+
+logger = logging.getLogger(__name__)
 
 
 class Credentials(TypedDict):
@@ -71,21 +74,22 @@ def register_auth(environment: locust.env.Environment):
                 headers={"X-Client-Version": __version__},
             )
 
-            if auth_response.status_code == 200:
-                credentials = auth_response.json()
-                response = redirect(url_for("index"))
-                response = set_credentials(username, credentials, response)
-                login_user(AuthUser(credentials["user_sub_id"]))
+            auth_response.raise_for_status()
 
-                return response
+            credentials = auth_response.json()
+            response = redirect(url_for("index"))
+            response = set_credentials(username, credentials, response)
+            login_user(AuthUser(credentials["user_sub_id"]))
 
-            environment.web_ui.auth_args = {**environment.web_ui.auth_args, "error": "Invalid username or password"}
+            return response
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code == 401:
+                environment.web_ui.auth_args["error"] = "Invalid username or password"
+            else:
+                logger.error(f"Unknown response from auth: {e.response.status_code} {e.response.text}")
 
-            return redirect(url_for("login"))
-        except Exception:
-            environment.web_ui.auth_args = {
-                **environment.web_ui.auth_args,
-                "error": "An unknown error occured, please try again",
-            }
+                environment.web_ui.auth_args["error"] = (
+                    "Unknown error during authentication, check logs and/or contact support"
+                )
 
             return redirect(url_for("login"))
