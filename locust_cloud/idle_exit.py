@@ -21,9 +21,14 @@ class IdleExit:
 
     def _destroy(self):
         gevent.sleep(1800)
-        logger.info("Locust was detected as idle (no test running) for more than 30 minutes, shutting down")
+        logger.info("Locust was detected as idle (no test running) for more than 30 minutes")
         self.environment.runner.quit()
-        sys.exit(0)
+
+        if self.environment.web_ui:
+            self.environment.web_ui.greenlet.kill(timeout=5)
+
+            if self.environment.web_ui.greenlet.started:
+                sys.exit(1)
 
     def on_test_stop(self, **_kwargs):
         self._destroy_task = gevent.spawn(self._destroy)

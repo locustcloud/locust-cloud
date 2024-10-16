@@ -372,6 +372,7 @@ def main() -> None:
                     startTime=timestamp,
                     startFromHead=True,
                 )
+                locust_shutdown = False
                 for event in response.get("events", []):
                     message = event.get("message", "")
                     event_timestamp = event.get("timestamp", timestamp) + 1
@@ -379,9 +380,17 @@ def main() -> None:
                         message_json = json.loads(message)
                         if "log" in message_json:
                             print(message_json["log"])
+
+                            if "Shutting down (exit code" in message_json["log"]:
+                                locust_shutdown = True
+
                     except json.JSONDecodeError:
                         print(message)
                     timestamp = event_timestamp
+
+                if locust_shutdown:
+                    break
+
                 time.sleep(5)
             except ClientError as e:
                 error_code = e.response.get("Error", {}).get("Code", "")
