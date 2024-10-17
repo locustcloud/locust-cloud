@@ -22,6 +22,14 @@ def safe_serialize(obj):
     return json.dumps(obj, default=default)
 
 
+def format_datetime(datetime):
+    return datetime.strftime("%Y-%m-%d, %H:%M:%S.%f")
+
+
+def parse_datetime(datetime):
+    return datetime.strptime(datetime, "%Y-%m-%d, %H:%M:%S.%f").replace(tzinfo=UTC)
+
+
 class Exporter:
     def __init__(self, environment: locust.env.Environment, pool):
         self.env = environment
@@ -56,14 +64,12 @@ class Exporter:
     def on_test_start(self, environment: locust.env.Environment):
         if not self.env.parsed_options or not self.env.parsed_options.worker:
             self._run_id = environment._run_id = datetime.now(UTC)  # type: ignore
-            self.env.parsed_options.run_id = environment._run_id.strftime("%Y-%m-%d, %H:%M:%S.%f")  # type: ignore
+            self.env.parsed_options.run_id = format_datetime(environment._run_id)  # type: ignore
             self.log_start_testrun()
             self._user_count_logger = gevent.spawn(self._log_user_count)
             self._update_end_time_task = gevent.spawn(self._update_end_time)
         if self.env.parsed_options.worker:
-            self._run_id = datetime.strptime(self.env.parsed_options.run_id, "%Y-%m-%d, %H:%M:%S.%f").replace(
-                tzinfo=UTC
-            )
+            self._run_id = parse_datetime(self.env.parsed_options.run_id)
 
     def _log_user_count(self):
         while True:
@@ -162,9 +168,7 @@ class Exporter:
     ):
         # handle if a worker connects after test_start
         if not self._run_id:
-            self._run_id = datetime.strptime(self.env.parsed_options.run_id, "%Y-%m-%d, %H:%M:%S.%f").replace(
-                tzinfo=UTC
-            )
+            self._run_id = parse_datetime(self.env.parsed_options.run_id)
         success = 0 if exception else 1
         if start_time:
             time = datetime.fromtimestamp(start_time, tz=UTC)
