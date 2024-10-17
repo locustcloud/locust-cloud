@@ -43,13 +43,6 @@ class Exporter:
         events.spawning_complete.add_listener(self.spawning_complete)
         atexit.register(self.log_stop_test_run)
 
-        if self.env.runner is not None:
-            self.env.runner.register_message("run_id", self.set_run_id)
-
-    def set_run_id(self, environment, msg, **kwargs):
-        logging.debug(f"run id from master: {msg.data}")
-        self._run_id = datetime.strptime(msg.data, "%Y-%m-%d, %H:%M:%S.%f").replace(tzinfo=UTC)
-
     def on_cpu_warning(self, environment: locust.env.Environment, cpu_usage, message=None, timestamp=None, **kwargs):
         # passing a custom message & timestamp to the event is a haxx to allow using this event for reporting generic events
         if not timestamp:
@@ -64,12 +57,13 @@ class Exporter:
     def on_test_start(self, environment: locust.env.Environment):
         if not self.env.parsed_options or not self.env.parsed_options.worker:
             self._run_id = environment._run_id = datetime.now(UTC)  # type: ignore
-            msg = environment._run_id.strftime("%Y-%m-%d, %H:%M:%S.%f")  # type: ignore
-            if environment.runner is not None:
-                logging.debug(f"about to send run_id to workers: {msg}")
-                environment.runner.send_message("run_id", msg)
+            self.env.parsed_options.run_id = environment._run_id.strftime("%Y-%m-%d, %H:%M:%S.%f")  # type: ignore
             self.log_start_testrun()
             self._user_count_logger = gevent.spawn(self._log_user_count)
+        if self.env.parsed_options.worker:
+            self._run_id = datetime.strptime(self.env.parsed_options.run_id, "%Y-%m-%d, %H:%M:%S.%f").replace(
+                tzinfo=UTC
+            )
 
     def _log_user_count(self):
         while True:
@@ -99,6 +93,9 @@ class Exporter:
             gevent.sleep(0.5)
 
     def _update_end_time(self):
+        if self.env.parsed_options.worker:
+            return
+
         # Regularly update endtime to prevent missing endtimes when a test crashes
         while True:
             current_end_time = datetime.now(UTC)
@@ -159,7 +156,6 @@ class Exporter:
         url=None,
         **kwargs,
     ):
-        assert self._run_id  # this should never happen
         success = 0 if exception else 1
         if start_time:
             time = datetime.fromtimestamp(start_time, tz=UTC)
