@@ -22,12 +22,12 @@ def safe_serialize(obj):
     return json.dumps(obj, default=default)
 
 
-def format_datetime(datetime):
-    return datetime.strftime("%Y-%m-%d, %H:%M:%S.%f")
+def format_datetime(d: datetime):
+    return d.strftime("%Y-%m-%d, %H:%M:%S.%f")
 
 
-def parse_datetime(datetime):
-    return datetime.strptime(datetime, "%Y-%m-%d, %H:%M:%S.%f").replace(tzinfo=UTC)
+def parse_datetime(s: str):
+    return datetime.strptime(s, "%Y-%m-%d, %H:%M:%S.%f").replace(tzinfo=UTC)
 
 
 class Exporter:
