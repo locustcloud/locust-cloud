@@ -28,7 +28,6 @@ class Exporter:
         self._run_id = None
         self._samples: list[dict] = []
         self._background = gevent.spawn(self._run)
-        self._update_end_time_task = gevent.spawn(self._update_end_time)
         self._hostname = socket.gethostname()
         self._finished = False
         self._pid = os.getpid()
@@ -60,6 +59,7 @@ class Exporter:
             self.env.parsed_options.run_id = environment._run_id.strftime("%Y-%m-%d, %H:%M:%S.%f")  # type: ignore
             self.log_start_testrun()
             self._user_count_logger = gevent.spawn(self._log_user_count)
+            self._update_end_time_task = gevent.spawn(self._update_end_time)
         if self.env.parsed_options.worker:
             self._run_id = datetime.strptime(self.env.parsed_options.run_id, "%Y-%m-%d, %H:%M:%S.%f").replace(
                 tzinfo=UTC
@@ -93,8 +93,9 @@ class Exporter:
             gevent.sleep(0.5)
 
     def _update_end_time(self):
-        if self.env.parsed_options.worker:
-            return
+        # delay setting first end time
+        # so UI doesn't display temporary value
+        gevent.sleep(5)
 
         # Regularly update endtime to prevent missing endtimes when a test crashes
         while True:
@@ -126,6 +127,8 @@ class Exporter:
             logging.error("Failed to write samples to Postgresql timescale database: " + repr(error))
 
     def on_test_stop(self, environment):
+        if getattr(self, "_update_end_time_task", False):
+            self._update_end_time_task.kill()
         if getattr(self, "_user_count_logger", False):
             self._user_count_logger.kill()
             with self.pool.connection() as conn:
@@ -139,7 +142,8 @@ class Exporter:
         self._finished = True
         atexit._clear()  # make sure we dont capture additional ctrl-c:s
         self._background.join(timeout=10)
-        self._update_end_time_task.kill()
+        if getattr(self, "_update_end_time_task", False):
+            self._update_end_time_task.kill()
         if getattr(self, "_user_count_logger", False):
             self._user_count_logger.kill()
         self.log_stop_test_run(exit_code)
