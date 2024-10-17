@@ -8,6 +8,7 @@ import argparse
 import logging
 import sys
 
+import configargparse
 import locust.env
 import psycopg
 from locust import events
@@ -56,6 +57,14 @@ def add_arguments(parser: LocustArgumentParser):
         env_var="LOCUST_DESCRIPTION",
         default="",
         help="Description of the test being run",
+    )
+    # do not set
+    # used for sending the run id from master to workers
+    locust_cloud.add_argument(
+        "--run-id",
+        type=str,
+        env_var="LOCUSTCLOUD_RUN_ID",
+        help=configargparse.SUPPRESS,
     )
 
 
