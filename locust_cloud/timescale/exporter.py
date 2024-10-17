@@ -160,6 +160,11 @@ class Exporter:
         url=None,
         **kwargs,
     ):
+        # handle if a worker connects after test_start
+        if not self._run_id:
+            self._run_id = datetime.strptime(self.env.parsed_options.run_id, "%Y-%m-%d, %H:%M:%S.%f").replace(
+                tzinfo=UTC
+            )
         success = 0 if exception else 1
         if start_time:
             time = datetime.fromtimestamp(start_time, tz=UTC)
