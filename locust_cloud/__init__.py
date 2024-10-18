@@ -6,7 +6,6 @@ __version__ = importlib.metadata.version("locust-cloud")
 
 import argparse
 import logging
-import sys
 
 import configargparse
 import locust.env
@@ -72,43 +71,27 @@ def set_autocommit(conn: psycopg.Connection):
     conn.autocommit = True
 
 
-def create_connection_pool(
-    pg_user: str, pg_host: str, pg_password: str, pg_database: str, pg_port: str | int
-) -> ConnectionPool:
-    try:
-        conninfo = make_conninfo(
-            dbname=pg_database,
-            user=pg_user,
-            port=pg_port,
-            password=pg_password,
-            host=pg_host,
-            sslmode="require",
-            # options="-c statement_timeout=55000",
-        )
-        return ConnectionPool(
-            conninfo,
-            min_size=1,
-            max_size=10,
-            configure=set_autocommit,
-            check=ConnectionPool.check_connection,
-        )
-    except Exception:
-        sys.stderr.write(f"Could not connect to postgres ({pg_user}@{pg_host}:{pg_port}).")
-        sys.exit(1)
-
-
 @events.init.add_listener
 def on_locust_init(environment: locust.env.Environment, **_args):
     if not (PG_HOST and PG_USER and PG_PASSWORD and PG_DATABASE and PG_PORT):
         return
 
     try:
-        pool = create_connection_pool(
-            pg_user=PG_USER,
-            pg_host=PG_HOST,
-            pg_password=PG_PASSWORD,
-            pg_database=PG_DATABASE,
-            pg_port=PG_PORT,
+        conninfo = make_conninfo(
+            dbname=PG_DATABASE,
+            user=PG_USER,
+            port=PG_PORT,
+            password=PG_PASSWORD,
+            host=PG_HOST,
+            sslmode="require",
+            # options="-c statement_timeout=55000",
+        )
+        pool = ConnectionPool(
+            conninfo,
+            min_size=1,
+            max_size=10,
+            configure=set_autocommit,
+            check=ConnectionPool.check_connection,
         )
         pool.wait()
     except Exception as e:
