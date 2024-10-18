@@ -90,6 +90,7 @@ def create_connection_pool(
             min_size=1,
             max_size=10,
             configure=set_autocommit,
+            check=ConnectionPool.check_connection,
         )
     except Exception:
         sys.stderr.write(f"Could not connect to postgres ({pg_user}@{pg_host}:{pg_port}).")
