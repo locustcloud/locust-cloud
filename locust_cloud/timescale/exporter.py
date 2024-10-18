@@ -34,7 +34,7 @@ class Exporter:
     def __init__(self, environment: locust.env.Environment, pool):
         self.env = environment
         self._run_id = None
-        self._samples: list[dict] = []
+        self._samples: list[tuple] = []
         self._background = gevent.spawn(self._run)
         self._hostname = socket.gethostname()
         self._finished = False
@@ -121,14 +121,11 @@ class Exporter:
         try:
             with self.pool.connection() as conn:
                 conn: psycopg.connection.Connection
-                with conn.cursor() as cur:
-                    cur.executemany(
-                        """
-    INSERT INTO requests (time,run_id,greenlet_id,loadgen,name,request_type,response_time,success,response_length,exception,pid,url,context)
-    VALUES (%(time)s, %(run_id)s, %(greenlet_id)s, %(loadgen)s, %(name)s, %(request_type)s, %(response_time)s, %(success)s, %(response_length)s, %(exception)s, %(pid)s, %(url)s, %(context)s)
-    """,
-                        samples,
-                    )
+                with conn.cursor().copy(
+                    "COPY requests (time,run_id,greenlet_id,loadgen,name,request_type,response_time,success,response_length,exception,pid,url,context) FROM STDIN"
+                ) as copy:
+                    for sample in samples:
+                        copy.write_row(sample)
         except psycopg.Error as error:
             logging.error("Failed to write samples to Postgresql timescale database: " + repr(error))
 
@@ -177,35 +174,38 @@ class Exporter:
             # (which will be horribly wrong if users spend a lot of time in a with/catch_response-block)
             time = datetime.now(UTC) - timedelta(milliseconds=response_time or 0)
         greenlet_id = getattr(greenlet.getcurrent(), "minimal_ident", 0)  # if we're debugging there is no greenlet
-        sample = {
-            "time": time,
-            "run_id": self._run_id,
-            "greenlet_id": greenlet_id,
-            "loadgen": self._hostname,
-            "name": name,
-            "request_type": request_type,
-            "response_time": response_time,
-            "success": success,
-            "url": url[0:255] if url else None,
-            "pid": self._pid,
-            "context": psycopg.types.json.Json(context, safe_serialize),
-        }
 
         if response_length >= 0:
-            sample["response_length"] = response_length
+            response_length = response_length
         else:
-            sample["response_length"] = None
+            response_length = None
 
         if exception:
             if isinstance(exception, CatchResponseError):
-                sample["exception"] = str(exception)
+                exception = str(exception)
             else:
                 try:
-                    sample["exception"] = repr(exception)
+                    exception = repr(exception)
                 except AttributeError:
-                    sample["exception"] = f"{exception.__class__} (and it has no string representation)"
+                    exception = f"{exception.__class__} (and it has no string representation)"
         else:
-            sample["exception"] = None
+            exception = None
+
+        sample = (
+            time,
+            self._run_id,
+            greenlet_id,
+            self._hostname,
+            name,
+            request_type,
+            response_time,
+            success,
+            response_length,
+            exception,
+            self._pid,
+            url[0:255] if url else None,
+            psycopg.types.json.Json(context, safe_serialize),
+        )
 
         self._samples.append(sample)
 
