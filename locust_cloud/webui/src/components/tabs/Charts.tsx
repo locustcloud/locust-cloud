@@ -101,53 +101,52 @@ export default function Charts() {
         testrun: currentTestrun,
       };
 
-      const [
-        { data: requestLines = defaultRequestLines, error: requestLinesError },
-        { data: rpsPerRequest = defaultPerRequestState, error: rpsPerRequestError },
-        { data: avgResponseTimes = defaultPerRequestState, error: avgResponseTimesError },
-        { data: errorsPerRequest = defaultPerRequestState, error: errorsPerRequestError },
-        { data: perc99ResponseTimes = defaultPerRequestState, error: perc99ResponseTimesError },
-        { data: responseLength = defaultPerRequestState, error: responseLengthError },
-        { data: rpsData = defaultRpsDataState, error: rpsError },
-      ] = await Promise.all([
-        getRequestNames(payload),
-        getRpsPerRequest(payload),
-        getAvgResponseTimes(payload),
-        getErrorsPerRequest(payload),
-        getPerc99ResponseTimes(payload),
-        getResponseLength(payload),
-        getRps(payload),
-      ]);
+      const mutations = [
+        getRequestNames,
+        getRps,
+        getAvgResponseTimes,
+        getRpsPerRequest,
+        getErrorsPerRequest,
+        getPerc99ResponseTimes,
+        getResponseLength,
+      ];
 
-      const fetchError =
-        requestLinesError ||
-        rpsPerRequestError ||
-        avgResponseTimesError ||
-        errorsPerRequestError ||
-        perc99ResponseTimesError ||
-        responseLengthError ||
-        rpsError;
+      const mutationResults = await Promise.all(mutations.map(mutation => mutation(payload)));
+
+      const fetchError = mutationResults.filter(({ error }) => error);
 
       if (fetchError && 'error' in fetchError) {
-        setSnackbar({ message: fetchError.error });
+        setSnackbar({ message: String(fetchError.error) });
       }
+
+      const [
+        { data: requestLines = defaultRequestLines },
+        { data: rpsData = defaultRpsDataState },
+        { data: avgResponseTimes = defaultPerRequestState },
+        { data: rpsPerRequest = defaultPerRequestState },
+        { data: errorsPerRequest = defaultPerRequestState },
+        { data: perc99ResponseTimes = defaultPerRequestState },
+        { data: responseLength = defaultPerRequestState },
+      ] = mutationResults;
 
       // only show an error for the first testrun if no test is running
       if (
-        (currentTestrunIndex !== 0 && !requestLines.length) ||
-        (currentTestrunIndex === 0 && swarmState !== SWARM_STATE.RUNNING && !requestLines.length)
+        (currentTestrunIndex !== 0 && !(requestLines as IRequestLines[]).length) ||
+        (currentTestrunIndex === 0 &&
+          swarmState !== SWARM_STATE.RUNNING &&
+          !(requestLines as IRequestLines[]).length)
       ) {
         setIsError(true);
       }
 
       setCharts({
-        requestLines,
-        rpsPerRequest,
-        avgResponseTimes,
-        errorsPerRequest,
-        perc99ResponseTimes,
-        responseLength,
-        rpsData,
+        requestLines: requestLines as IRequestLines[],
+        rpsData: rpsData as IRpsData,
+        avgResponseTimes: avgResponseTimes as IPerRequestData,
+        rpsPerRequest: rpsPerRequest as IPerRequestData,
+        errorsPerRequest: errorsPerRequest as IPerRequestData,
+        perc99ResponseTimes: perc99ResponseTimes as IPerRequestData,
+        responseLength: responseLength as IPerRequestData,
       });
 
       setIsLoading(false);
