@@ -19,6 +19,7 @@ export interface IToolbarState {
   previousTestrun?: string;
   testruns: ITestrunsMap;
   testrunsForDisplay: string[];
+  shouldShowAdvanced?: boolean;
 }
 
 export type ToolbarAction = PayloadAction<Partial<IToolbarState>>;
@@ -28,6 +29,7 @@ const initialState: IToolbarState = {
   testruns: {},
   currentTestrunIndex: 0,
   testrunsForDisplay: [] as string[],
+  shouldShowAdvanced: false,
 };
 
 const toolbarSlice = createSlice({

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Box, SelectChangeEvent } from '@mui/material';
+import { Box, Checkbox, FormControlLabel, SelectChangeEvent } from '@mui/material';
 import { Select } from 'locust-ui';
 
 import {
@@ -12,9 +12,10 @@ import { pushQuery } from 'utils/url';
 
 interface IToolbar {
   onSelectTestRun?: (runId: string) => void;
+  showHideAdvanced?: boolean;
 }
 
-export default function Toolbar({ onSelectTestRun }: IToolbar) {
+export default function Toolbar({ onSelectTestRun, showHideAdvanced }: IToolbar) {
   const setToolbar = useAction(toolbarActions.setToolbar);
   const { testruns, testrunsForDisplay, currentTestrunIndex } = useSelector(
     ({ toolbar }) => toolbar,
@@ -32,6 +33,10 @@ export default function Toolbar({ onSelectTestRun }: IToolbar) {
       currentTestrunIndex: currentTestrun.index,
     });
     pushQuery({ testrun: e.target.value });
+  };
+
+  const handleShowHideAdvanced = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setToolbar({ shouldShowAdvanced: e.target.checked });
   };
 
   useEffect(() => {
@@ -68,6 +73,12 @@ export default function Toolbar({ onSelectTestRun }: IToolbar) {
           size='small'
           sx={{ width: '250px' }}
           value={currentTestrunDisplayValue}
+        />
+      )}
+      {showHideAdvanced && (
+        <FormControlLabel
+          control={<Checkbox onChange={handleShowHideAdvanced} />}
+          label='Advanced'
         />
       )}
     </Box>
