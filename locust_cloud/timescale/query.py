@@ -21,7 +21,7 @@ def register_query(environment, pool):
                 # start_time = time.perf_counter()
                 with pool.connection() as conn:
                     # get_conn_time = (time.perf_counter() - start_time) * 1000
-                    sql_params = request.get_json()
+                    sql_params = request.get_json() if request.content_type == "application/json" else {}
                     # start_time = time.perf_counter()
                     from datetime import datetime, timedelta
 

@@ -1,6 +1,7 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 
 import { adaptPerNameChartData, IPerRequestData, IPerRequestResponse } from 'utils/api';
+import { createAbsoluteUrl } from 'utils/url';
 
 interface IRequestLinesResponse {
   name: string;
@@ -52,6 +53,45 @@ export interface IRpsData {
   time: string[];
 }
 
+export interface ITestrunsTable {
+  runId: string;
+  arguments: string;
+  startTimeEpoch: string;
+  numUsers: string;
+  requests: string;
+  respTime: string;
+  rpsAvg: string;
+  failRatio: string;
+  endTime: string;
+  endTimeEpoch: string;
+  exitCode: string;
+  runTime: string;
+}
+
+interface ITestrunsRpsResponse {
+  avgRps: string;
+  avgRpsFailed: string;
+  time: string;
+}
+
+export interface ITestrunsRps {
+  avgRps: [string, string][];
+  avgRpsFailed: [string, string][];
+  time: string[];
+}
+
+interface ITestrunsResponseTimeResponse {
+  avgResponseTime: string;
+  avgResponseTimeFailed: string;
+  time: string;
+}
+
+export interface ITestrunsResponseTime {
+  avgResponseTime: [string, string][];
+  avgResponseTimeFailed: [string, string][];
+  time: string[];
+}
+
 /*
   Because of time_bucket_gapfill it's possible to have periods without data
   Rather than displaying gaps in the chart, we carry the last know value
@@ -65,7 +105,9 @@ const carryLastValue = (values?: [string, string][]) => {
 };
 
 export const cloudStats = createApi({
-  baseQuery: fetchBaseQuery({ baseUrl: 'cloud-stats' }),
+  baseQuery: fetchBaseQuery({
+    baseUrl: 'cloud-stats',
+  }),
   reducerPath: 'cloud-stats',
   endpoints: builder => ({
     getRequestNames: builder.mutation<IRequestLines[], IRequestBody>({
@@ -142,6 +184,61 @@ export const cloudStats = createApi({
           {} as IRpsData,
         ),
     }),
+
+    getTestrunsTable: builder.mutation<ITestrunsTable[], void>({
+      query: () => ({
+        url: 'testruns-table',
+        method: 'POST',
+      }),
+      transformResponse: (testruns: ITestrunsTable[]) =>
+        testruns.map(({ runId, ...testrunData }) => {
+          const testrunIdForDisplay = new Date(runId).toLocaleString();
+          const url = createAbsoluteUrl({ tab: 'charts', testrun: testrunIdForDisplay });
+
+          return {
+            ...testrunData,
+            runId: `[${testrunIdForDisplay}](${url})`,
+          };
+        }),
+    }),
+    getTestrunsRps: builder.mutation<ITestrunsRps, void>({
+      query: () => ({
+        url: 'testruns-rps',
+        method: 'POST',
+      }),
+      transformResponse: (response: ITestrunsRpsResponse[]) =>
+        response.reduce(
+          (rpsChart, { avgRps, avgRpsFailed, time }) => ({
+            ...rpsChart,
+            avgRps: [...(rpsChart.avgRps || []), [time, avgRps]],
+            avgRpsFailed: [...(rpsChart.avgRpsFailed || []), [time, avgRpsFailed]],
+            time: [...(rpsChart.time || []), time],
+          }),
+          {} as ITestrunsRps,
+        ),
+    }),
+    getTestrunsResponseTime: builder.mutation<ITestrunsResponseTime, void>({
+      query: () => ({
+        url: 'testruns-response-time',
+        method: 'POST',
+      }),
+      transformResponse: (response: ITestrunsResponseTimeResponse[]) =>
+        response.reduce(
+          (responseTimeChart, { avgResponseTime, avgResponseTimeFailed, time }) => ({
+            ...responseTimeChart,
+            avgResponseTime: [
+              ...(responseTimeChart.avgResponseTime || []),
+              [time, avgResponseTime],
+            ],
+            avgResponseTimeFailed: [
+              ...(responseTimeChart.avgResponseTimeFailed || []),
+              [time, avgResponseTimeFailed],
+            ],
+            time: [...(responseTimeChart.time || []), time],
+          }),
+          {} as ITestrunsResponseTime,
+        ),
+    }),
   }),
 });
 
@@ -153,4 +250,7 @@ export const {
   useGetPerc99ResponseTimesMutation,
   useGetResponseLengthMutation,
   useGetRpsMutation,
+  useGetTestrunsTableMutation,
+  useGetTestrunsRpsMutation,
+  useGetTestrunsResponseTimeMutation,
 } = cloudStats;

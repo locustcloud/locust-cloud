@@ -2,51 +2,20 @@ import { useEffect, useState } from 'react';
 import { Box } from '@mui/material';
 import { LineChart, Table } from 'locust-ui';
 
+import {
+  ITestrunsResponseTime,
+  ITestrunsRps,
+  ITestrunsTable,
+  useGetTestrunsResponseTimeMutation,
+  useGetTestrunsRpsMutation,
+  useGetTestrunsTableMutation,
+} from 'redux/api/cloud-stats';
 import { useAction, useLocustSelector, useSelector } from 'redux/hooks';
 import { snackbarActions } from 'redux/slice/snackbar.slice';
-import { chartValueFormatter, fetchQuery } from 'utils/api';
-
-interface ITestrunsTable {
-  runId: string;
-  arguments: string;
-  startTimeEpoch: string;
-  numUsers: string;
-  requests: string;
-  respTime: string;
-  rpsAvg: string;
-  failRatio: string;
-  endTime: string;
-  endTimeEpoch: string;
-  exitCode: string;
-  runTime: string;
-}
-
-interface ITestrunsRpsResponse {
-  avgRps: string;
-  avgRpsFailed: string;
-  time: string;
-}
-
-interface ITestrunsRps {
-  avgRps: [string, string][];
-  avgRpsFailed: [string, string][];
-  time: string[];
-}
-
-interface ITestrunsResponseTimeResponse {
-  avgResponseTime: string;
-  avgResponseTimeFailed: string;
-  time: string;
-}
-
-interface ITestrunsResponseTime {
-  avgResponseTime: [string, string][];
-  avgResponseTimeFailed: [string, string][];
-  time: string[];
-}
+import { chartValueFormatter } from 'utils/api';
 
 const testrunsTableStructure = [
-  { key: 'runId', title: 'Run Id' },
+  { key: 'runId', title: 'Run Id', markdown: true },
   { key: 'locustfile', title: 'Locustfile' },
   { key: 'username', title: 'Username' },
   { key: 'numUsers', title: '# Users' },
@@ -80,7 +49,9 @@ export default function Testruns() {
   const { testrunsForDisplay } = useSelector(({ toolbar }) => toolbar);
   const setSnackbar = useAction(snackbarActions.setSnackbar);
 
-  const onError = (error: string) => setSnackbar({ message: error });
+  const [getTestrunsTable] = useGetTestrunsTableMutation();
+  const [getTestrunsRps] = useGetTestrunsRpsMutation();
+  const [getTestrunsResponseTime] = useGetTestrunsResponseTimeMutation();
 
   const [testrunsTableData, setTestrunsTableData] = useState<ITestrunsTable[]>([]);
   const [testrunsRps, setTestrunsRps] = useState<ITestrunsRps>({
@@ -90,67 +61,26 @@ export default function Testruns() {
     time: [] as string[],
   } as ITestrunsResponseTime);
 
-  const getTestrunsTable = () =>
-    fetchQuery<ITestrunsTable[]>(
-      '/cloud-stats/testruns-table',
-      {},
-      testruns =>
-        setTestrunsTableData(
-          testruns.map(({ runId, ...testrunData }) => ({
-            ...testrunData,
-            runId: new Date(runId).toLocaleString(),
-          })),
-        ),
-      onError,
-    );
+  const fetchTestruns = async () => {
+    const [
+      { data: testrunsTableData, error: testrunsTableError },
+      { data: testrunsRps, error: testrunsRpsError },
+      { data: testrunsResponseTime, error: testrunsResponseTimeError },
+    ] = await Promise.all([getTestrunsTable(), getTestrunsRps(), getTestrunsResponseTime()]);
 
-  const getTestrunsRps = () =>
-    fetchQuery<ITestrunsRpsResponse[]>(
-      '/cloud-stats/testruns-rps',
-      {},
-      response =>
-        setTestrunsRps(
-          response.reduce(
-            (rpsChart, { avgRps, avgRpsFailed, time }) => ({
-              ...rpsChart,
-              avgRps: [...(rpsChart.avgRps || []), [time, avgRps]],
-              avgRpsFailed: [...(rpsChart.avgRpsFailed || []), [time, avgRpsFailed]],
-              time: [...(rpsChart.time || []), time],
-            }),
-            {} as ITestrunsRps,
-          ),
-        ),
-      onError,
-    );
-  const getTestrunsResponseTime = () =>
-    fetchQuery<ITestrunsResponseTimeResponse[]>(
-      '/cloud-stats/testruns-response-time',
-      {},
-      response =>
-        setTestrunsResponseTime(
-          response.reduce(
-            (responseTimeChart, { avgResponseTime, avgResponseTimeFailed, time }) => ({
-              ...responseTimeChart,
-              avgResponseTime: [
-                ...(responseTimeChart.avgResponseTime || []),
-                [time, avgResponseTime],
-              ],
-              avgResponseTimeFailed: [
-                ...(responseTimeChart.avgResponseTimeFailed || []),
-                [time, avgResponseTimeFailed],
-              ],
-              time: [...(responseTimeChart.time || []), time],
-            }),
-            {} as ITestrunsResponseTime,
-          ),
-        ),
-      onError,
-    );
+    const fetchError = testrunsTableError || testrunsRpsError || testrunsResponseTimeError;
+
+    if (fetchError && 'error' in fetchError) {
+      setSnackbar({ message: fetchError.error });
+    } else {
+      setTestrunsTableData(testrunsTableData as ITestrunsTable[]);
+      setTestrunsRps(testrunsRps as ITestrunsRps);
+      setTestrunsResponseTime(testrunsResponseTime as ITestrunsResponseTime);
+    }
+  };
 
   useEffect(() => {
-    getTestrunsTable();
-    getTestrunsRps();
-    getTestrunsResponseTime();
+    fetchTestruns();
   }, [testrunsForDisplay, swarmState]);
 
   return (
