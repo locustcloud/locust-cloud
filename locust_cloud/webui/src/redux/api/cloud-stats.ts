@@ -1,6 +1,7 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 
 import { adaptPerNameChartData, IPerRequestData, IPerRequestResponse } from 'utils/api';
+import { createAbsoluteUrl } from 'utils/url';
 
 interface IRequestLinesResponse {
   name: string;
@@ -190,10 +191,15 @@ export const cloudStats = createApi({
         method: 'POST',
       }),
       transformResponse: (testruns: ITestrunsTable[]) =>
-        testruns.map(({ runId, ...testrunData }) => ({
-          ...testrunData,
-          runId: new Date(runId).toLocaleString(),
-        })),
+        testruns.map(({ runId, ...testrunData }) => {
+          const testrunIdForDisplay = new Date(runId).toLocaleString();
+          const url = createAbsoluteUrl({ tab: 'charts', testrun: testrunIdForDisplay });
+
+          return {
+            ...testrunData,
+            runId: `[${testrunIdForDisplay}](${url})`,
+          };
+        }),
     }),
     getTestrunsRps: builder.mutation<ITestrunsRps, void>({
       query: () => ({

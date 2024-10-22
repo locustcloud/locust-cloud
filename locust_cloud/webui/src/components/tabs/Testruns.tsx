@@ -15,7 +15,7 @@ import { snackbarActions } from 'redux/slice/snackbar.slice';
 import { chartValueFormatter } from 'utils/api';
 
 const testrunsTableStructure = [
-  { key: 'runId', title: 'Run Id' },
+  { key: 'runId', title: 'Run Id', markdown: true },
   { key: 'locustfile', title: 'Locustfile' },
   { key: 'username', title: 'Username' },
   { key: 'numUsers', title: '# Users' },
