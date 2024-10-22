@@ -3070,10 +3070,10 @@ locate-path@^6.0.0:
   dependencies:
     p-locate "^5.0.0"
 
-locust-ui@^2.31.9-next-11279790649:
-  version "2.31.9-next-11279790649"
-  resolved "https://registry.yarnpkg.com/locust-ui/-/locust-ui-2.31.9-next-11279790649.tgz#71893e48e7ef9e90b7fbff911ac0229cd8059be9"
-  integrity sha512-slgA4KiciO9J1G0mySXVsJeYLBYPyy7i0Pri+6gjpgn09tjb+LxCGwQOVzaMe2rEbzqmWsihr5WJ9BBTS9yaAw==
+locust-ui@^2.32.1-next-11459774927:
+  version "2.32.1-next-11459774927"
+  resolved "https://registry.yarnpkg.com/locust-ui/-/locust-ui-2.32.1-next-11459774927.tgz#41a55cff4af730b009459bbb022c0496cf02ddd8"
+  integrity sha512-fSnU9TLsfCKljusM0TvjYzH3zuvnTpYi8p2swHJATgQfilvcAmkl3BB+PfXowwd6WMlh+mxHBuAD5AMLI8gPEA==
   dependencies:
     "@emotion/react" "^11.11.1"
     "@emotion/styled" "^11.11.0"
