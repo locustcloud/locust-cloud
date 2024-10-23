@@ -175,11 +175,6 @@ class Exporter:
             time = datetime.now(UTC) - timedelta(milliseconds=response_time or 0)
         greenlet_id = getattr(greenlet.getcurrent(), "minimal_ident", 0)  # if we're debugging there is no greenlet
 
-        if response_length >= 0:
-            response_length = response_length
-        else:
-            response_length = None
-
         if exception:
             if isinstance(exception, CatchResponseError):
                 exception = str(exception)
