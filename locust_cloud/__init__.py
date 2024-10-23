@@ -89,7 +89,7 @@ def on_locust_init(environment: locust.env.Environment, **_args):
         pool = ConnectionPool(
             conninfo,
             min_size=1,
-            max_size=10,
+            max_size=20,
             configure=set_autocommit,
             check=ConnectionPool.check_connection,
         )
