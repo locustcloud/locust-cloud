@@ -24,7 +24,7 @@ SELECT
   count(*)
 FROM requests
 WHERE time BETWEEN %(start)s AND %(end)s AND
- exception is not null
+ success = 1
 AND run_id = %(testrun)s
 GROUP BY "name",left(exception,300)
 """
