@@ -1,45 +1,25 @@
 import { useEffect, useState } from 'react';
 import { Box, Paper, Typography } from '@mui/material';
-import { Table, useInterval, roundToDecimalPlaces, SWARM_STATE } from 'locust-ui';
+import { Table, SWARM_STATE } from 'locust-ui';
 
 import Gauge from 'components/Gauge/Gauge';
 import Toolbar from 'components/Toolbar/Toolbar';
+import useAwaitInterval from 'hooks/useAwaitInterval';
+import {
+  IFailuresData,
+  IStatsData,
+  useGetErrorPercentageMutation,
+  useGetFailuresMutation,
+  useGetRequestsMutation,
+  useGetTotalFailuresMutation,
+  useGetTotalRequestsMutation,
+} from 'redux/api/cloud-stats';
 import { useAction, useLocustSelector, useSelector } from 'redux/hooks';
 import { snackbarActions } from 'redux/slice/snackbar.slice';
-import { IRequestBody, fetchQuery } from 'utils/api';
-
-interface IStatsData {
-  method: string;
-  name: string;
-  average: number;
-  requests: number;
-  failed: number;
-  min: number;
-  max: number;
-  errorPercentage: number;
-}
-
-interface IFailuresData {
-  name: string;
-  exception: string;
-  count: number;
-}
-
-interface ITotalRequestsResponse {
-  totalRequests: number;
-}
-
-interface ITotalFailuresResponse {
-  totalFailures: number;
-}
-
-interface IErrorPercentageResponse {
-  errorPercentage: number;
-}
 
 export default function Stats() {
   const swarmState = useLocustSelector(({ swarm }) => swarm.state);
-  const { currentTestrun } = useSelector(({ toolbar }) => toolbar);
+  const { currentTestrun, testruns } = useSelector(({ toolbar }) => toolbar);
   const setSnackbar = useAction(snackbarActions.setSnackbar);
 
   const [timestamp, setTimestamp] = useState(new Date().toISOString());
@@ -49,67 +29,72 @@ export default function Stats() {
   const [statsData, setStatsData] = useState<IStatsData[]>([]);
   const [failuresData, setFailuresData] = useState<IFailuresData[]>([]);
 
-  const onError = (error: string) => setSnackbar({ message: error });
+  const [getRequests] = useGetRequestsMutation();
+  const [getFailures] = useGetFailuresMutation();
+  const [getTotalRequests] = useGetTotalRequestsMutation();
+  const [getTotalFailures] = useGetTotalFailuresMutation();
+  const [getErrorPercentage] = useGetErrorPercentageMutation();
 
-  const getRequests = (body: IRequestBody) =>
-    fetchQuery<IStatsData[]>('/cloud-stats/requests', body, setStatsData, onError);
-  const getFailures = (body: IRequestBody) =>
-    fetchQuery<IFailuresData[]>('/cloud-stats/failures', body, setFailuresData, onError);
-  const getTotalRequests = (body: IRequestBody) =>
-    fetchQuery<ITotalRequestsResponse[]>(
-      '/cloud-stats/total-requests',
-      body,
-      ([{ totalRequests }]) => setTotalRequests(totalRequests || 0),
-      onError,
-    );
-  const getTotalFailures = (body: IRequestBody) =>
-    fetchQuery<ITotalFailuresResponse[]>(
-      '/cloud-stats/total-failures',
-      body,
-      ([{ totalFailures }]) => setTotalFailures(totalFailures || 0),
-      onError,
-    );
-  const getErrorPercentage = (body: IRequestBody) =>
-    fetchQuery<IErrorPercentageResponse[]>(
-      '/cloud-stats/error-percentage',
-      body,
-      ([{ errorPercentage }]) => {
-        const roundedPercentage = roundToDecimalPlaces(errorPercentage, 2);
-        setErrorPercentage(isNaN(roundedPercentage) ? 0 : roundedPercentage);
-      },
-      onError,
-    );
+  const fetchStats = async () => {
+    if (currentTestrun) {
+      const currentTimestamp = new Date().toISOString();
+      const { endTime } = testruns[new Date(currentTestrun).toLocaleString()];
 
-  const fetchStats = () => {
-    const currentTimestamp = new Date().toISOString();
-    const payload = {
-      start: currentTestrun,
-      end: timestamp,
-      testrun: currentTestrun,
-    };
+      const payload = {
+        start: currentTestrun,
+        end: endTime || timestamp,
+        testrun: currentTestrun,
+      };
 
-    getTotalRequests(payload);
-    getTotalFailures(payload);
-    getErrorPercentage(payload);
-    getRequests(payload);
-    getFailures(payload);
+      const [
+        { data: statsData, error: statsDataError },
+        { data: failuresData, error: failuresDataError },
+        { data: totalRequests, error: totalRequestsError },
+        { data: totalFailures, error: totalFailuresError },
+        { data: errorPercentage, error: errorPercentageError },
+      ] = await Promise.all([
+        getRequests(payload),
+        getFailures(payload),
+        getTotalRequests(payload),
+        getTotalFailures(payload),
+        getErrorPercentage(payload),
+      ]);
 
-    setTimestamp(currentTimestamp);
+      const fetchError =
+        statsDataError ||
+        failuresDataError ||
+        totalRequestsError ||
+        totalFailuresError ||
+        errorPercentageError;
+
+      if (fetchError && 'error' in fetchError) {
+        setSnackbar({ message: String(fetchError.error) });
+      } else {
+        setStatsData(statsData as IStatsData[]);
+        setFailuresData(failuresData as IFailuresData[]);
+        setTotalRequests(totalRequests as number);
+        setTotalFailures(totalFailures as number);
+        setErrorPercentage(errorPercentage as number);
+      }
+
+      if (swarmState !== SWARM_STATE.STOPPED) {
+        setTimestamp(currentTimestamp);
+      }
+    }
   };
 
-  useInterval(fetchStats, 1000, {
+  useAwaitInterval(fetchStats, 1000, {
     shouldRunInterval: swarmState === SWARM_STATE.SPAWNING || swarmState == SWARM_STATE.RUNNING,
   });
 
   useEffect(() => {
-    if (currentTestrun) {
-      fetchStats();
-    }
+    // handle inital load
+    fetchStats();
   }, [currentTestrun]);
 
   return (
     <>
-      <Toolbar />
+      <Toolbar shouldShowResolution={false} />
       <Paper elevation={3} sx={{ display: 'flex', justifyContent: 'space-between', px: 4, mb: 4 }}>
         <Box
           sx={{

@@ -13,9 +13,14 @@ import { pushQuery } from 'utils/url';
 interface IToolbar {
   onSelectTestRun?: (runId: string) => void;
   showHideAdvanced?: boolean;
+  shouldShowResolution?: boolean;
 }
 
-export default function Toolbar({ onSelectTestRun, showHideAdvanced }: IToolbar) {
+export default function Toolbar({
+  onSelectTestRun,
+  showHideAdvanced,
+  shouldShowResolution = false,
+}: IToolbar) {
   const setToolbar = useAction(toolbarActions.setToolbar);
   const { testruns, testrunsForDisplay, currentTestrunIndex } = useSelector(
     ({ toolbar }) => toolbar,
@@ -53,17 +58,19 @@ export default function Toolbar({ onSelectTestRun, showHideAdvanced }: IToolbar)
         mb: 1,
       }}
     >
-      <Select
-        defaultValue={TOOLBAR_DEFAULT_RESOLUTION}
-        label='Resolution'
-        name='resolution'
-        onChange={(e: SelectChangeEvent<string>) =>
-          setToolbar({ resolution: Number(e.target.value) })
-        }
-        options={TOOLBAR_RESOLUTION_OPTIONS}
-        size='small'
-        sx={{ width: '150px' }}
-      />
+      {shouldShowResolution && (
+        <Select
+          defaultValue={TOOLBAR_DEFAULT_RESOLUTION}
+          label='Resolution'
+          name='resolution'
+          onChange={(e: SelectChangeEvent<string>) =>
+            setToolbar({ resolution: Number(e.target.value) })
+          }
+          options={TOOLBAR_RESOLUTION_OPTIONS}
+          size='small'
+          sx={{ width: '150px' }}
+        />
+      )}
       {!!testrunsForDisplay.length && (
         <Select
           label='Test Run'
