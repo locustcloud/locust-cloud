@@ -6,7 +6,7 @@ import {
   TOOLBAR_DEFAULT_RESOLUTION,
   TOOLBAR_RESOLUTION_OPTIONS,
 } from 'components/Toolbar/Toolbar.constants';
-import { useAction, useSelector } from 'redux/hooks';
+import { useAction, useLocustSelector, useSelector } from 'redux/hooks';
 import { toolbarActions } from 'redux/slice/toolbar.slice';
 import { pushQuery } from 'utils/url';
 
@@ -25,6 +25,9 @@ export default function Toolbar({
   const { testruns, testrunsForDisplay, currentTestrunIndex } = useSelector(
     ({ toolbar }) => toolbar,
   );
+  const shouldShowAdvancedFromUrl = useLocustSelector(
+    ({ url }) => (url.query && url.query.showAdvanced === 'true') || false,
+  );
   const [currentTestrunDisplayValue, setCurrentTestrunDisplayValue] = useState(
     testrunsForDisplay[0],
   );
@@ -42,13 +45,20 @@ export default function Toolbar({
 
   const handleShowHideAdvanced = (e: React.ChangeEvent<HTMLInputElement>) => {
     setToolbar({ shouldShowAdvanced: e.target.checked });
+    pushQuery({ showAdvanced: String(e.target.checked) });
   };
 
   useEffect(() => {
-    if (currentTestrunIndex) {
+    if (currentTestrunIndex && currentTestrunIndex >= 0) {
       setCurrentTestrunDisplayValue(testrunsForDisplay[currentTestrunIndex]);
     }
   }, [currentTestrunIndex, testrunsForDisplay]);
+
+  useEffect(() => {
+    if (shouldShowAdvancedFromUrl) {
+      setToolbar({ shouldShowAdvanced: shouldShowAdvancedFromUrl });
+    }
+  }, [shouldShowAdvancedFromUrl]);
 
   return (
     <Box
@@ -84,7 +94,12 @@ export default function Toolbar({
       )}
       {showHideAdvanced && (
         <FormControlLabel
-          control={<Checkbox onChange={handleShowHideAdvanced} />}
+          control={
+            <Checkbox
+              defaultChecked={shouldShowAdvancedFromUrl}
+              onChange={handleShowHideAdvanced}
+            />
+          }
           label='Advanced'
         />
       )}
