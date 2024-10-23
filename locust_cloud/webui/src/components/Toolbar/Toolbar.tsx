@@ -45,7 +45,7 @@ export default function Toolbar({
   };
 
   useEffect(() => {
-    if (currentTestrunIndex) {
+    if (currentTestrunIndex && currentTestrunIndex >= 0) {
       setCurrentTestrunDisplayValue(testrunsForDisplay[currentTestrunIndex]);
     }
   }, [currentTestrunIndex, testrunsForDisplay]);
