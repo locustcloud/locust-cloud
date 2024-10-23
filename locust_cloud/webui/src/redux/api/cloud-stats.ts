@@ -1,4 +1,5 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { roundToDecimalPlaces } from 'locust-ui';
 
 import { adaptPerNameChartData, IPerRequestData, IPerRequestResponse } from 'utils/api';
 import { createAbsoluteUrl } from 'utils/url';
@@ -90,6 +91,27 @@ export interface ITestrunsResponseTime {
   avgResponseTime: [string, string][];
   avgResponseTimeFailed: [string, string][];
   time: string[];
+}
+
+export interface IStatsData {
+  method: string;
+  name: string;
+  average: number;
+  requests: number;
+  failed: number;
+  min: number;
+  max: number;
+  errorPercentage: number;
+}
+
+export interface IFailuresData {
+  name: string;
+  exception: string;
+  count: number;
+}
+
+export interface ITotalRequestsResponse {
+  totalRequests: number;
 }
 
 /*
@@ -239,6 +261,48 @@ export const cloudStats = createApi({
           {} as ITestrunsResponseTime,
         ),
     }),
+
+    getRequests: builder.mutation<IStatsData[], IRequestBody>({
+      query: body => ({
+        url: 'requests',
+        method: 'POST',
+        body,
+      }),
+    }),
+    getFailures: builder.mutation<IFailuresData[], IRequestBody>({
+      query: body => ({
+        url: 'failures',
+        method: 'POST',
+        body,
+      }),
+    }),
+    getTotalRequests: builder.mutation<number, IRequestBody>({
+      query: body => ({
+        url: 'total-requests',
+        method: 'POST',
+        body,
+      }),
+      transformResponse: ([{ totalRequests }]) => totalRequests || 0,
+    }),
+    getTotalFailures: builder.mutation<number, IRequestBody>({
+      query: body => ({
+        url: 'total-failures',
+        method: 'POST',
+        body,
+      }),
+      transformResponse: ([{ totalFailures }]) => totalFailures || 0,
+    }),
+    getErrorPercentage: builder.mutation<number, IRequestBody>({
+      query: body => ({
+        url: 'error-percentage',
+        method: 'POST',
+        body,
+      }),
+      transformResponse: ([{ errorPercentage }]) => {
+        const roundedPercentage = roundToDecimalPlaces(errorPercentage, 2);
+        return isNaN(roundedPercentage) ? 0 : roundedPercentage;
+      },
+    }),
   }),
 });
 
@@ -253,4 +317,9 @@ export const {
   useGetTestrunsTableMutation,
   useGetTestrunsRpsMutation,
   useGetTestrunsResponseTimeMutation,
+  useGetRequestsMutation,
+  useGetFailuresMutation,
+  useGetTotalRequestsMutation,
+  useGetTotalFailuresMutation,
+  useGetErrorPercentageMutation,
 } = cloudStats;

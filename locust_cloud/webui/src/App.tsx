@@ -45,6 +45,7 @@ const baseTabs = [
     key: 'testruns',
     component: Testruns,
   },
+  tabConfig.exceptions,
   tabConfig.logs,
   tabConfig.workers,
   tabConfig.reports,

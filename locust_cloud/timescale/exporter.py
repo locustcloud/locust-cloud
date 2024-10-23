@@ -188,6 +188,8 @@ class Exporter:
                     exception = repr(exception)
                 except AttributeError:
                     exception = f"{exception.__class__} (and it has no string representation)"
+
+            exception = exception[:300]
         else:
             exception = None
 
