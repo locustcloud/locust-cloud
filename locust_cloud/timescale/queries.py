@@ -20,13 +20,13 @@ GROUP BY name, method
 failures_query = """
 SELECT
   name as name,
-  left(exception,300) as exception,
+  exception,
   count(*)
 FROM requests
 WHERE time BETWEEN %(start)s AND %(end)s AND
- success = 1
+ success = 0
 AND run_id = %(testrun)s
-GROUP BY "name",left(exception,300)
+GROUP BY "name",exception
 """
 
 
