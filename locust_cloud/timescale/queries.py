@@ -138,7 +138,7 @@ ORDER BY 1
 
 
 perc99_response_times = """
-SELECT time_bucket(%(resolution)s * interval '1 second', bucket) AS time,
+SELECT time_bucket_gapfill(%(resolution)s * interval '1 second', bucket) AS time,
   name,
   MAX(perc99) as perc99
 FROM requests_summary
@@ -151,7 +151,7 @@ ORDER BY 1
 
 response_length = """
 SELECT
-    time_bucket(%(resolution)s * interval '1 second', bucket) as time,
+    time_bucket_gapfill(%(resolution)s * interval '1 second', bucket) as time,
     AVG(response_length) as "responseLength",
     name
 FROM requests_summary

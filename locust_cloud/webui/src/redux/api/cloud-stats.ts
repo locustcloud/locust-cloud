@@ -178,16 +178,20 @@ export const cloudStats = createApi({
         body,
       }),
       transformResponse: (perc99ResponseTimes: IPerc99ResponseTimesResponse[]) =>
-        adaptPerNameChartData<IPerc99ResponseTimesResponse>(perc99ResponseTimes, 'perc99'),
+        adaptPerNameChartData<IPerc99ResponseTimesResponse>(perc99ResponseTimes, 'perc99', {
+          fallbackValue: null,
+        }),
     }),
     getResponseLength: builder.mutation<IPerRequestData, IRequestBody>({
       query: body => ({
-        url: 'perc99-response-times',
+        url: 'response-length',
         method: 'POST',
         body,
       }),
       transformResponse: (responseLength: IResponseLengthResponse[]) =>
-        adaptPerNameChartData<IResponseLengthResponse>(responseLength, 'responseLength'),
+        adaptPerNameChartData<IResponseLengthResponse>(responseLength, 'responseLength', {
+          fallbackValue: null,
+        }),
     }),
     getRps: builder.mutation<IRpsData, IRequestBody>({
       query: body => ({

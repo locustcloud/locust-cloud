@@ -33,16 +33,17 @@ export interface IPerRequestResponse {
 }
 
 export type IPerRequestData = {
-  [key: string]: string[][];
+  [key: string]: (string | null)[][];
 } & { time: string[] };
 
 export const adaptPerNameChartData = <ChartType extends IPerRequestResponse>(
   chartData: ChartType[],
   key: keyof ChartType,
+  { fallbackValue }: { fallbackValue: string | null } = { fallbackValue: '0' },
 ) =>
   chartData.reduce((chart, data) => {
     const { name, time } = data;
-    const value = (data[key] as string) || '0';
+    const value = (data[key] as string) || fallbackValue;
     const timeAxis = chart.time || [];
     timeAxis.push(time);
 
