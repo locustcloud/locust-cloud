@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, Box, CircularProgress } from '@mui/material';
-import { roundToDecimalPlaces, SWARM_STATE, LineChart } from 'locust-ui';
+import { LineChart, roundToDecimalPlaces, SWARM_STATE } from 'locust-ui';
 
 import Toolbar from 'components/Toolbar/Toolbar';
 import useAwaitInterval from 'hooks/useAwaitInterval';
@@ -79,6 +79,7 @@ export default function Charts() {
   const [isError, setIsError] = useState(false);
   const [timestamp, setTimestamp] = useState(new Date().toISOString());
   const [charts, setCharts] = useState<ICharts>(defaultChartData);
+  const [shouldReplaceMergeLines, setShouldReplaceMergeLines] = useState(false);
 
   const [getRequestNames] = useGetRequestNamesMutation();
   const [getRpsPerRequest] = useGetRpsPerRequestMutation();
@@ -111,36 +112,48 @@ export default function Charts() {
 
       const mutationResults = await Promise.all(mutations.map(({ mutation }) => mutation(payload)));
 
-      const fetchError = mutationResults.filter(({ error }) => error);
+      const fetchError = mutationResults.find(({ error }) => error);
 
-      if (fetchError && 'error' in fetchError) {
-        setSnackbar({ message: String(fetchError.error) });
+      if (fetchError && fetchError.error && 'error' in fetchError.error) {
+        setSnackbar({ message: fetchError.error.error });
+      } else {
+        const chartData = mutations.reduce(
+          (charts, { key }, index) => ({ ...charts, [key]: mutationResults[index].data }),
+          {} as ICharts,
+        );
+
+        const currentRequestLinesLength = chartData.requestLines.length;
+
+        // only show an error for the first testrun if no test is running
+        if (
+          !currentRequestLinesLength &&
+          (currentTestrunIndex !== 0 || swarmState !== SWARM_STATE.RUNNING)
+        ) {
+          setIsError(true);
+        }
+
+        const shouldUpdateRequestLines =
+          currentRequestLinesLength !== charts.requestLines.length ||
+          chartData.requestLines.some(({ key }, index) => key !== charts.requestLines[index].key);
+
+        chartData.requestLines = shouldUpdateRequestLines
+          ? chartData.requestLines
+          : charts.requestLines;
+
+        if (shouldUpdateRequestLines) {
+          setShouldReplaceMergeLines(swarmState !== SWARM_STATE.RUNNING);
+        }
+
+        setCharts({ ...charts, ...chartData });
+
+        setIsLoading(false);
       }
-
-      const chartData = mutations.reduce(
-        (charts, { key }, index) => ({ ...charts, [key]: mutationResults[index].data }),
-        {} as ICharts,
-      );
-
-      // only show an error for the first testrun if no test is running
-      if (
-        (currentTestrunIndex !== 0 && !chartData.requestLines.length) ||
-        (currentTestrunIndex === 0 &&
-          swarmState !== SWARM_STATE.RUNNING &&
-          !chartData.requestLines.length)
-      ) {
-        setIsError(true);
-      }
-
-      setCharts({ ...charts, ...chartData });
-      setIsLoading(false);
 
       if (swarmState !== SWARM_STATE.STOPPED) {
         setTimestamp(currentTimestamp);
       }
     }
   };
-
   useAwaitInterval(fetchCharts, 1000, {
     shouldRunInterval: swarmState === SWARM_STATE.SPAWNING || swarmState == SWARM_STATE.RUNNING,
     immediate: true,
@@ -207,8 +220,10 @@ export default function Charts() {
             charts={charts.avgResponseTimes}
             colors={CHART_COLORS.PER_REQUEST}
             lines={charts.requestLines}
+            shouldReplaceMergeLines={shouldReplaceMergeLines}
             title='Average Response Times'
           />
+
           {shouldShowAdvanced && (
             <>
               <LineChart<IPerRequestData>
@@ -216,6 +231,7 @@ export default function Charts() {
                 charts={charts.rpsPerRequest}
                 colors={CHART_COLORS.PER_REQUEST}
                 lines={charts.requestLines}
+                shouldReplaceMergeLines={shouldReplaceMergeLines}
                 title='RPS per Request'
               />
               <LineChart<IPerRequestData>
@@ -223,6 +239,7 @@ export default function Charts() {
                 charts={charts.errorsPerRequest}
                 colors={CHART_COLORS.ERROR}
                 lines={charts.requestLines}
+                shouldReplaceMergeLines={shouldReplaceMergeLines}
                 title='Errors per Request'
               />
               <LineChart<IPerRequestData>
@@ -230,6 +247,7 @@ export default function Charts() {
                 charts={charts.perc99ResponseTimes}
                 colors={CHART_COLORS.PER_REQUEST}
                 lines={charts.requestLines}
+                shouldReplaceMergeLines={shouldReplaceMergeLines}
                 title='99th Percentile Response Times'
               />
               <LineChart<IPerRequestData>
@@ -237,6 +255,7 @@ export default function Charts() {
                 charts={charts.responseLength}
                 colors={CHART_COLORS.PER_REQUEST}
                 lines={charts.requestLines}
+                shouldReplaceMergeLines={shouldReplaceMergeLines}
                 title='Response Length'
               />
             </>
