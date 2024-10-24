@@ -140,12 +140,8 @@ export default function Charts() {
           ? chartData.requestLines
           : charts.requestLines;
 
-        if (shouldUpdateRequestLines) {
-          setShouldReplaceMergeLines(swarmState !== SWARM_STATE.RUNNING);
-        }
-
+        setShouldReplaceMergeLines(shouldUpdateRequestLines);
         setCharts({ ...charts, ...chartData });
-
         setIsLoading(false);
       }
 
