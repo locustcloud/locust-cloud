@@ -31,7 +31,7 @@ def parse_datetime(s: str):
 
 
 class Exporter:
-    def __init__(self, environment: locust.env.Environment, pool, customer):
+    def __init__(self, environment: locust.env.Environment, pool):
         self.env = environment
         self._run_id = None
         self._samples: list[tuple] = []
@@ -40,7 +40,6 @@ class Exporter:
         self._finished = False
         self._pid = os.getpid()
         self.pool = pool
-        self._customer = customer
 
         events = self.env.events
         events.test_start.add_listener(self.on_test_start)
@@ -59,8 +58,8 @@ class Exporter:
             message = f"High CPU usage ({cpu_usage}%)"
         with self.pool.connection() as conn:
             conn.execute(
-                "INSERT INTO events (time, text, run_id, customer) VALUES (%s, %s, %s, %s)",
-                (timestamp, message, self._run_id, self._customer),
+                "INSERT INTO events (time, text, run_id, customer) VALUES (%s, %s, %s, current_user)",
+                (timestamp, message, self._run_id),
             )
 
     def on_test_start(self, environment: locust.env.Environment):
@@ -80,8 +79,8 @@ class Exporter:
             try:
                 with self.pool.connection() as conn:
                     conn.execute(
-                        """INSERT INTO number_of_users(time, run_id, user_count, customer) VALUES (%s, %s, %s, %s)""",
-                        (datetime.now(UTC).isoformat(), self._run_id, self.env.runner.user_count, self._customer),
+                        """INSERT INTO number_of_users(time, run_id, user_count, customer) VALUES (%s, %s, %s, current_user)""",
+                        (datetime.now(UTC).isoformat(), self._run_id, self.env.runner.user_count),
                     )
             except psycopg.Error as error:
                 logging.error("Failed to write user count to Postgresql: " + repr(error))
@@ -116,7 +115,6 @@ class Exporter:
                     )
                 gevent.sleep(60)
             except psycopg.Error as error:
-                print("error updating here...")
                 logging.error("Failed to update testruns table with end time: " + repr(error))
                 gevent.sleep(1)
 
@@ -130,7 +128,6 @@ class Exporter:
                     for sample in samples:
                         copy.write_row(sample)
         except psycopg.Error as error:
-            print(error)
             logging.error("Failed to write samples to Postgresql timescale database: " + repr(error))
 
     def on_test_stop(self, environment):
@@ -140,8 +137,8 @@ class Exporter:
             self._user_count_logger.kill()
             with self.pool.connection() as conn:
                 conn.execute(
-                    """INSERT INTO number_of_users(time, run_id, user_count, customer) VALUES (%s, %s, %s, %s)""",
-                    (datetime.now(UTC).isoformat(), self._run_id, 0, self._customer),
+                    """INSERT INTO number_of_users(time, run_id, user_count, customer) VALUES (%s, %s, %s, current_user)""",
+                    (datetime.now(UTC).isoformat(), self._run_id, 0),
                 )
         self.log_stop_test_run()
 
@@ -214,7 +211,7 @@ class Exporter:
         cmd = sys.argv[1:]
         with self.pool.connection() as conn:
             conn.execute(
-                "INSERT INTO testruns (id, num_users, worker_count, username, locustfile, description, arguments, customer) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)",
+                "INSERT INTO testruns (id, num_users, worker_count, username, locustfile, description, arguments, customer) VALUES (%s,%s,%s,%s,%s,%s,%s,current_user)",
                 (
                     self._run_id,
                     self.env.runner.target_user_count if self.env.runner else 1,
@@ -228,12 +225,11 @@ class Exporter:
                     self.env.parsed_locustfiles[0].split("/")[-1],
                     self.env.parsed_options.description,
                     " ".join(cmd),
-                    self._customer,
                 ),
             )
             conn.execute(
-                "INSERT INTO events (time, text, run_id, customer) VALUES (%s, %s, %s, %s)",
-                (datetime.now(UTC).isoformat(), "Test run started", self._run_id, self._customer),
+                "INSERT INTO events (time, text, run_id, customer) VALUES (%s, %s, %s, current_user)",
+                (datetime.now(UTC).isoformat(), "Test run started", self._run_id),
             )
 
     def spawning_complete(self, user_count):
@@ -242,8 +238,8 @@ class Exporter:
             try:
                 with self.pool.connection() as conn:
                     conn.execute(
-                        "INSERT INTO events (time, text, run_id, customer) VALUES (%s, %s, %s, %s)",
-                        (end_time, f"Rampup complete, {user_count} users spawned", self._run_id, self._customer),
+                        "INSERT INTO events (time, text, run_id, customer) VALUES (%s, %s, %s, current_user)",
+                        (end_time, f"Rampup complete, {user_count} users spawned", self._run_id),
                     )
             except psycopg.Error as error:
                 logging.error(
@@ -256,15 +252,14 @@ class Exporter:
             return  # only run on master or standalone
         end_time = datetime.now(UTC)
         try:
-            print(self._run_id)
             with self.pool.connection() as conn:
                 conn.execute(
                     "UPDATE testruns SET end_time = %s, exit_code = %s WHERE id = %s",
                     (end_time, exit_code, self._run_id),
                 )
                 conn.execute(
-                    "INSERT INTO events (time, text, run_id, customer) VALUES (%s, %s, %s, %s)",
-                    (end_time, f"Finished with exit code: {exit_code}", self._run_id, self._customer),
+                    "INSERT INTO events (time, text, run_id, customer) VALUES (%s, %s, %s, current_user)",
+                    (end_time, f"Finished with exit code: {exit_code}", self._run_id),
                 )
                 # The AND time > run_id clause in the following statements are there to help Timescale performance
                 # We dont use start_time / end_time to calculate RPS, instead we use the time between the actual first and last request
