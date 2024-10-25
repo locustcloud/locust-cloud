@@ -78,6 +78,7 @@ target-version = "py311"
 line-length = 120
 lint.ignore = ["E402", "E501", "E713", "E731"]
 lint.select = ["E", "F", "W", "UP", "I001", "ARG001"]
+lint.dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?)|resp)$"
 
 [tool.ruff.lint.isort.sections]
 locust_cloud = ["locust_cloud"]
