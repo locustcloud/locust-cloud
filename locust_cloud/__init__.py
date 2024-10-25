@@ -103,7 +103,7 @@ def on_locust_init(environment: locust.env.Environment, **_args):
         IdleExit(environment)
 
     if not GRAPH_VIEWER and environment.parsed_options and environment.parsed_options.exporter:
-        Exporter(environment, pool)
+        Exporter(environment, pool, PG_USER)
 
     if environment.web_ui:
         environment.web_ui.template_args["maxUserCount"] = MAX_USER_COUNT

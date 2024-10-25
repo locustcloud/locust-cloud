@@ -10,7 +10,7 @@ SELECT
 	MIN(min),
 	MAX(max),
 	SUM(failed_count) / SUM(count) * 100 as "errorPercentage"
-FROM requests_summary
+FROM requests_summary_view
 WHERE bucket BETWEEN %(start)s AND %(end)s
 AND run_id = %(testrun)s
 GROUP BY name, method
@@ -22,7 +22,7 @@ SELECT
   name as name,
   exception,
   count(*)
-FROM requests
+FROM requests_view
 WHERE time BETWEEN %(start)s AND %(end)s AND
  success = 0
 AND run_id = %(testrun)s
@@ -35,7 +35,7 @@ WITH request_count_agg AS (
   SELECT
     time_bucket_gapfill(%(resolution)s * interval '1 second', bucket) AS time,
     COALESCE(SUM(count)/%(resolution)s, 0) as rps
-  FROM requests_summary
+  FROM requests_summary_view
   WHERE bucket BETWEEN %(start)s AND %(end)s
   AND run_id = %(testrun)s
   GROUP BY 1
@@ -55,7 +55,7 @@ errors_per_s_agg AS (
   SELECT
     time_bucket_gapfill(%(resolution)s * interval '1 second', bucket) AS time,
     COALESCE(SUM(failed_count)/%(resolution)s, 0) as error_rate
-  FROM requests_summary
+  FROM requests_summary_view
   WHERE bucket BETWEEN %(start)s AND %(end)s
   AND run_id = %(testrun)s
   GROUP BY 1
@@ -76,7 +76,7 @@ ORDER BY r.time;
 total_requests = """
 SELECT
  SUM(count) as "totalRequests"
-FROM requests_summary
+FROM requests_summary_view
 WHERE bucket BETWEEN %(start)s AND %(end)s
 AND run_id = %(testrun)s
 """
@@ -85,7 +85,7 @@ AND run_id = %(testrun)s
 total_failed = """
 SELECT
  SUM(failed_count) as "totalFailures"
-FROM requests_summary
+FROM requests_summary_view
 WHERE bucket BETWEEN %(start)s AND %(end)s
 AND run_id = %(testrun)s
 """
@@ -94,7 +94,7 @@ AND run_id = %(testrun)s
 error_percentage = """
 SELECT
 	SUM(failed_count) / SUM(count) * 100 "errorPercentage"
-FROM requests_summary
+FROM requests_summary_view
 WHERE bucket BETWEEN %(start)s AND %(end)s
 AND run_id = %(testrun)s
 """
@@ -104,7 +104,7 @@ SELECT
     time_bucket_gapfill(%(resolution)s * interval '1 second', bucket) AS time,
     name,
     COALESCE(SUM(count)/%(resolution)s, 0) as throughput
-FROM requests_summary
+FROM requests_summary_view
 WHERE bucket BETWEEN %(start)s AND %(end)s
 AND run_id = %(testrun)s
 GROUP BY 1, name
@@ -117,7 +117,7 @@ SELECT
     time_bucket_gapfill(%(resolution)s * interval '1 second', bucket) as time,
     name,
     avg(average) as "responseTime"
-FROM requests_summary
+FROM requests_summary_view
 WHERE bucket BETWEEN %(start)s AND %(end)s
 AND run_id = %(testrun)s
 GROUP BY 1, name
@@ -129,7 +129,7 @@ SELECT
     time_bucket_gapfill(%(resolution)s * interval '1 second', bucket) AS time,
     name,
     SUM(failed_count)/%(resolution)s as "errorRate"
-FROM requests_summary
+FROM requests_summary_view
 WHERE bucket BETWEEN %(start)s AND %(end)s
 AND run_id = %(testrun)s
 GROUP BY 1, name
@@ -141,7 +141,7 @@ perc99_response_times = """
 SELECT time_bucket_gapfill(%(resolution)s * interval '1 second', bucket) AS time,
   name,
   MAX(perc99) as perc99
-FROM requests_summary
+FROM requests_summary_view
 WHERE bucket BETWEEN %(start)s AND %(end)s
 AND run_id = %(testrun)s
 GROUP BY 1, name
@@ -154,7 +154,7 @@ SELECT
     time_bucket_gapfill(%(resolution)s * interval '1 second', bucket) as time,
     AVG(response_length) as "responseLength",
     name
-FROM requests_summary
+FROM requests_summary_view
 WHERE bucket BETWEEN %(start)s AND %(end)s
 AND run_id = %(testrun)s
 GROUP BY 1, name
@@ -164,7 +164,7 @@ ORDER BY 1
 
 request_names = """
 SELECT DISTINCT name
-FROM requests_summary
+FROM requests_summary_view
 WHERE bucket BETWEEN %(start)s AND %(end)s
 AND run_id = %(testrun)s
 """
@@ -174,7 +174,7 @@ SELECT
  time,
  name,
  response_time as "responseTime"
-FROM requests
+FROM requests_view
 WHERE time BETWEEN %(start)s AND %(end)s
 AND run_id = %(testrun)s
 ORDER BY 1,2
