@@ -82,6 +82,8 @@ lint.select = ["E", "F", "W", "UP", "I001", "ARG001"]
 [tool.ruff.lint.isort.sections]
 locust_cloud = ["locust_cloud"]
 
+[tool.ruff.lint.flake8-unused-arguments]
+ignore-variadic-names = true
 
 [tool.uv]
 dev-dependencies = [
