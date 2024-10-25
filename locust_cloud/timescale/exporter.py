@@ -58,7 +58,8 @@ class Exporter:
             message = f"High CPU usage ({cpu_usage}%)"
         with self.pool.connection() as conn:
             conn.execute(
-                "INSERT INTO events (time, text, run_id) VALUES (%s, %s, %s)", (timestamp, message, self._run_id)
+                "INSERT INTO events (time, text, run_id, customer) VALUES (%s, %s, %s, current_user)",
+                (timestamp, message, self._run_id),
             )
 
     def on_test_start(self, environment: locust.env.Environment):
@@ -78,7 +79,7 @@ class Exporter:
             try:
                 with self.pool.connection() as conn:
                     conn.execute(
-                        """INSERT INTO number_of_users(time, run_id, user_count) VALUES (%s, %s, %s)""",
+                        """INSERT INTO number_of_users(time, run_id, user_count, customer) VALUES (%s, %s, %s, current_user)""",
                         (datetime.now(UTC).isoformat(), self._run_id, self.env.runner.user_count),
                     )
             except psycopg.Error as error:
@@ -136,7 +137,7 @@ class Exporter:
             self._user_count_logger.kill()
             with self.pool.connection() as conn:
                 conn.execute(
-                    """INSERT INTO number_of_users(time, run_id, user_count) VALUES (%s, %s, %s)""",
+                    """INSERT INTO number_of_users(time, run_id, user_count, customer) VALUES (%s, %s, %s, current_user)""",
                     (datetime.now(UTC).isoformat(), self._run_id, 0),
                 )
         self.log_stop_test_run()
@@ -210,7 +211,7 @@ class Exporter:
         cmd = sys.argv[1:]
         with self.pool.connection() as conn:
             conn.execute(
-                "INSERT INTO testruns (id, num_users, worker_count, username, locustfile, description, arguments) VALUES (%s,%s,%s,%s,%s,%s,%s)",
+                "INSERT INTO testruns (id, num_users, worker_count, username, locustfile, description, arguments, customer) VALUES (%s,%s,%s,%s,%s,%s,%s,current_user)",
                 (
                     self._run_id,
                     self.env.runner.target_user_count if self.env.runner else 1,
@@ -227,7 +228,7 @@ class Exporter:
                 ),
             )
             conn.execute(
-                "INSERT INTO events (time, text, run_id) VALUES (%s, %s, %s)",
+                "INSERT INTO events (time, text, run_id, customer) VALUES (%s, %s, %s, current_user)",
                 (datetime.now(UTC).isoformat(), "Test run started", self._run_id),
             )
 
@@ -237,7 +238,7 @@ class Exporter:
             try:
                 with self.pool.connection() as conn:
                     conn.execute(
-                        "INSERT INTO events (time, text, run_id) VALUES (%s, %s, %s)",
+                        "INSERT INTO events (time, text, run_id, customer) VALUES (%s, %s, %s, current_user)",
                         (end_time, f"Rampup complete, {user_count} users spawned", self._run_id),
                     )
             except psycopg.Error as error:
@@ -253,11 +254,11 @@ class Exporter:
         try:
             with self.pool.connection() as conn:
                 conn.execute(
-                    "UPDATE testruns SET end_time = %s, exit_code = %s where id = %s",
+                    "UPDATE testruns SET end_time = %s, exit_code = %s WHERE id = %s",
                     (end_time, exit_code, self._run_id),
                 )
                 conn.execute(
-                    "INSERT INTO events (time, text, run_id) VALUES (%s, %s, %s)",
+                    "INSERT INTO events (time, text, run_id, customer) VALUES (%s, %s, %s, current_user)",
                     (end_time, f"Finished with exit code: {exit_code}", self._run_id),
                 )
                 # The AND time > run_id clause in the following statements are there to help Timescale performance
@@ -272,12 +273,12 @@ SET (requests, resp_time_avg, rps_avg, fail_ratio) =
 (SELECT
  COUNT(*)::numeric AS reqs,
  AVG(response_time)::numeric as resp_time
- FROM requests WHERE run_id = %(run_id)s AND time > %(run_id)s) AS _,
+ FROM requests_view WHERE run_id = %(run_id)s AND time > %(run_id)s) AS _,
 (SELECT
- EXTRACT(epoch FROM (SELECT MAX(time)-MIN(time) FROM requests WHERE run_id = %(run_id)s AND time > %(run_id)s))::numeric AS duration) AS __,
+ EXTRACT(epoch FROM (SELECT MAX(time)-MIN(time) FROM requests_view WHERE run_id = %(run_id)s AND time > %(run_id)s))::numeric AS duration) AS __,
 (SELECT
  COUNT(*)::numeric AS fails
- FROM requests WHERE run_id = %(run_id)s AND time > %(run_id)s AND success = 0) AS ___
+ FROM requests_view WHERE run_id = %(run_id)s AND time > %(run_id)s AND success = 0) AS ___
 WHERE id = %(run_id)s""",
                         {"run_id": self._run_id},
                     )
