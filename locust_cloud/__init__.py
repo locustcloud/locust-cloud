@@ -19,9 +19,9 @@ from locust_cloud.timescale.query import register_query
 from psycopg.conninfo import make_conninfo
 from psycopg_pool import ConnectionPool
 
-PG_USER = os.environ.get("PG_USER")
+PG_USER = os.environ.get("LOCUST_CLOUD_TS_USERNAME") or os.environ.get("PG_USER")
+PG_PASSWORD = os.environ.get("LOCUST_CLOUD_TS_PASSWORD") or os.environ.get("PG_PASSWORD")
 PG_HOST = os.environ.get("PG_HOST")
-PG_PASSWORD = os.environ.get("PG_PASSWORD")
 PG_DATABASE = os.environ.get("PG_DATABASE")
 PG_PORT = os.environ.get("PG_PORT", 5432)
 GRAPH_VIEWER = os.environ.get("GRAPH_VIEWER")
