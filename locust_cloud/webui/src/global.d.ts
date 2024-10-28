@@ -2,7 +2,6 @@ import { IWindow } from 'locust-ui';
 
 interface ITemplateArgs extends IWindow['templateArgs'] {
   isGraphViewer: boolean;
-  maxUserCount?: boolean;
   username: string;
 }
 

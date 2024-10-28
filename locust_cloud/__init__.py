@@ -25,7 +25,6 @@ PG_PASSWORD = os.environ.get("PG_PASSWORD")
 PG_DATABASE = os.environ.get("PG_DATABASE")
 PG_PORT = os.environ.get("PG_PORT", 5432)
 GRAPH_VIEWER = os.environ.get("GRAPH_VIEWER")
-MAX_USER_COUNT = os.environ.get("MAX_USER_COUNT")
 logger = logging.getLogger(__name__)
 
 
@@ -106,8 +105,6 @@ def on_locust_init(environment: locust.env.Environment, **_args):
         Exporter(environment, pool)
 
     if environment.web_ui:
-        environment.web_ui.template_args["maxUserCount"] = MAX_USER_COUNT
-
         if GRAPH_VIEWER:
             environment.web_ui.template_args["isGraphViewer"] = True
 

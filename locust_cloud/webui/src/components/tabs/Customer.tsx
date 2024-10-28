@@ -1,12 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Box, Paper, Typography } from '@mui/material';
 
-import { useLocustSelector } from 'redux/hooks';
-import { fetchQuery } from 'utils/api';
-
-interface IVuhResponse {
-  totalVuh: string;
-}
+import { IVuhResponse, useGetTotalVuhMutation } from 'redux/api/cloud-stats';
+import { useAction, useLocustSelector, useSelector } from 'redux/hooks';
+import { snackbarActions } from 'redux/slice/snackbar.slice';
 
 const pluralize = (n: number) => (n === 1 ? '' : 's');
 
@@ -39,11 +36,25 @@ export default function Customer() {
   const [totalVuh, setTotalVuh] = useState<string>();
 
   const swarmState = useLocustSelector(({ swarm }) => swarm.state);
+  const { maxVuh } = useSelector(({ customer }) => customer);
+  const setSnackbar = useAction(snackbarActions.setSnackbar);
+
+  const [getTotalVuh] = useGetTotalVuhMutation();
+
+  const fetchTotalVuh = async () => {
+    const { data: totalVuh, error: totalVuhError } = await getTotalVuh();
+
+    const fetchError = totalVuhError;
+
+    if (fetchError && 'error' in fetchError) {
+      setSnackbar({ message: fetchError.error });
+    } else {
+      setTotalVuh(formatTotalVuh(totalVuh as IVuhResponse[]));
+    }
+  };
 
   useEffect(() => {
-    fetchQuery<IVuhResponse[]>('/cloud-stats/total-runtime', {}, totalVuhResponse =>
-      setTotalVuh(formatTotalVuh(totalVuhResponse)),
-    );
+    fetchTotalVuh();
   }, [swarmState]);
 
   return (
@@ -81,7 +92,8 @@ export default function Customer() {
         }}
       >
         <Typography sx={{ fontWeight: 'bold' }}>Current Month Virtual User Time</Typography>
-        {totalVuh && totalVuh}
+        <Typography>Included in Plan: {maxVuh}</Typography>
+        <Typography>Used: {totalVuh}</Typography>
       </Box>
     </Paper>
   );
