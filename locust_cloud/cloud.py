@@ -203,7 +203,7 @@ def main() -> None:
         logger.error("You asked for more than 5000000 Users, that isn't allowed.")
         sys.exit(1)
     if worker_count > 1000:
-        logger.error("You asked for more than 20 workers, that isn't allowed.")
+        logger.error("You asked for more than 1000 workers, that isn't allowed.")
         sys.exit(1)
     try:
         if not (
