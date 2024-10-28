@@ -19,21 +19,23 @@ from locust_cloud.timescale.query import register_query
 from psycopg.conninfo import make_conninfo
 from psycopg_pool import ConnectionPool
 
-PG_USER = os.environ.get("LOCUST_CLOUD_TS_USERNAME") or os.environ.get("PG_USER")
-PG_PASSWORD = os.environ.get("LOCUST_CLOUD_TS_PASSWORD") or os.environ.get("PG_PASSWORD")
-PG_HOST = os.environ.get("PG_HOST")
-PG_DATABASE = os.environ.get("PG_DATABASE")
-PG_PORT = os.environ.get("PG_PORT", 5432)
+# backwards compatability
+os.environ["PGUSER"] = os.environ.get("PGUSER") or os.environ.get("PG_USER") or ""
+os.environ["PGPASSWORD"] = os.environ.get("PGPASSWORD") or os.environ.get("PG_PASSWORD") or ""
+os.environ["PGHOST"] = os.environ.get("PGHOST") or os.environ.get("PG_HOST") or ""
+os.environ["PGDATABASE"] = os.environ.get("PGDATABASE") or os.environ.get("PG_DATABASE") or ""
+os.environ["PGPORT"] = os.environ.get("PGPORT") or os.environ.get("PG_PORT") or ""
+
 GRAPH_VIEWER = os.environ.get("GRAPH_VIEWER")
 logger = logging.getLogger(__name__)
 
 
 @events.init_command_line_parser.add_listener
 def add_arguments(parser: LocustArgumentParser):
-    if not (PG_HOST or GRAPH_VIEWER):
+    if not (os.environ["PGHOST"] or GRAPH_VIEWER):
         parser.add_argument_group(
             "locust-cloud",
-            "locust-cloud disabled, because PG_HOST was not set - this is normal for local runs",
+            "locust-cloud disabled, because PGHOST was not set - this is normal for local runs",
         )
         return
 
@@ -72,18 +74,12 @@ def set_autocommit(conn: psycopg.Connection):
 
 @events.init.add_listener
 def on_locust_init(environment: locust.env.Environment, **_args):
-    if not (PG_HOST and PG_USER and PG_PASSWORD and PG_DATABASE and PG_PORT):
+    if not (os.environ["PGHOST"]):
         return
 
     try:
         conninfo = make_conninfo(
-            dbname=PG_DATABASE,
-            user=PG_USER,
-            port=PG_PORT,
-            password=PG_PASSWORD,
-            host=PG_HOST,
             sslmode="require",
-            # options="-c statement_timeout=55000",
         )
         pool = ConnectionPool(
             conninfo,
@@ -95,7 +91,6 @@ def on_locust_init(environment: locust.env.Environment, **_args):
         pool.wait()
     except Exception as e:
         logger.exception(e)
-        logger.error(f"{PG_HOST=}")
         raise
 
     if not GRAPH_VIEWER:
