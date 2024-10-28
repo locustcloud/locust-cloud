@@ -3,7 +3,7 @@ import { ICustomer } from 'types/customer.types';
 
 import { updateStateWithPayload } from 'redux/utils';
 
-export interface ICustomerState extends ICustomer {
+export interface ICustomerState extends Partial<ICustomer> {
   username: string;
 }
 

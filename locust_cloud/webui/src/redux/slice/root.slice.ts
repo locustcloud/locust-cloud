@@ -9,6 +9,7 @@ import toolbar, { IToolbarState, ToolbarAction } from 'redux/slice/toolbar.slice
 import ui, { IUiState, UiAction } from 'redux/slice/ui.slice';
 
 export interface IRootState {
+  [cloudStats.reducerPath]: ReturnType<typeof cloudStats.reducer>;
   customer: ICustomerState;
   snackbar: ISnackbarState;
   toolbar: IToolbarState;
