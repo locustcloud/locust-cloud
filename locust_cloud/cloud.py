@@ -199,12 +199,7 @@ def main() -> None:
     deployments: list[Any] = []
     worker_count: int = max(options.workers or math.ceil(options.users / USERS_PER_WORKER), 2)
     os.environ["AWS_DEFAULT_REGION"] = options.region
-    if options.users > 5000000:
-        logger.error("You asked for more than 5000000 Users, that isn't allowed.")
-        sys.exit(1)
-    if worker_count > 1000:
-        logger.error("You asked for more than 1000 workers, that isn't allowed.")
-        sys.exit(1)
+
     try:
         if not (
             (options.username and options.password) or (options.aws_access_key_id and options.aws_secret_access_key)
@@ -295,6 +290,7 @@ def main() -> None:
                 *locust_env_variables,
             ],
             "worker_count": worker_count,
+            "user_count": options.users,
             "image_tag": options.image_tag,
         }
         headers = {
