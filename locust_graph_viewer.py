@@ -6,5 +6,5 @@ class WebsiteUser(HttpUser):
 
 
 @events.init.add_listener
-def locust_init(environment, **_kwargs):
+def locust_init(environment, **kwargs):
     environment.web_ui.template_args["isGraphViewer"] = True

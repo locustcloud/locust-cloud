@@ -30,9 +30,9 @@ class IdleExit:
             if self.environment.web_ui.greenlet.started:
                 sys.exit(1)
 
-    def on_test_stop(self, **_kwargs):
+    def on_test_stop(self, **kwargs):
         self._destroy_task = gevent.spawn(self._destroy)
 
-    def on_locust_state_change(self, **_kwargs):
+    def on_locust_state_change(self, **kwargs):
         if self._destroy_task:
             self._destroy_task.kill()
