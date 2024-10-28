@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import { AlertColor } from '@mui/material';
 
-import { useLocustSelector } from 'redux/hooks';
+import { useLocustSelector, useSelector } from 'redux/hooks';
 
 interface IAlert {
   level?: AlertColor;
@@ -10,6 +10,7 @@ interface IAlert {
 
 export default function useSwarmForm() {
   const { numUsers, workerCount } = useLocustSelector(({ swarm }) => swarm);
+  const { maxUsers, usersPerWorker } = useSelector(({ customer }) => customer);
 
   const [alert, setAlert] = useState<IAlert>();
   const [shouldDisableForm, setShouldDisableForm] = useState(false);
@@ -19,13 +20,13 @@ export default function useSwarmForm() {
       if (target && target.name === 'userCount') {
         const userCount = target.value;
 
-        if (window.templateArgs.maxUserCount && userCount > window.templateArgs.maxUserCount) {
+        if (maxUsers && userCount > maxUsers) {
           setAlert({
             level: 'error',
             message: 'The number of users has exceeded the allowance for this account.',
           });
           setShouldDisableForm(true);
-        } else if (userCount > workerCount * 500) {
+        } else if (userCount > workerCount * Number(usersPerWorker)) {
           setAlert({
             level: 'warning',
             message: `Locust worker count is determined by the User count you specified at start up (${numUsers}), and launching more users risks overloading workers, impacting your results. Re-run locust-cloud with your desired user count to avoid this.`,

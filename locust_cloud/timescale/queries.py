@@ -260,11 +260,21 @@ JOIN avg_response_time_failed f ON a.time = f.time
 ORDER BY a.time
 """
 
-total_runtime = """
+total_vuh = """
 SELECT
   SUM((end_time - id) * num_users) AS "totalVuh"
 FROM testruns
 WHERE id >= date_trunc('month', NOW()) AND NOT refund
+"""
+
+customer = """
+SELECT
+  max_vuh as "maxVuh",
+  max_workers as "maxWorkers",
+  max_users as "maxUsers",
+  users_per_worker as "usersPerWorker"
+FROM customers
+WHERE customer = current_user
 """
 
 queries: dict["str", LiteralString] = {
@@ -285,5 +295,6 @@ queries: dict["str", LiteralString] = {
     "testruns-table": testruns_table,
     "testruns-rps": testruns_rps,
     "testruns-response-time": testruns_response_time,
-    "total-runtime": total_runtime,
+    "total-vuh": total_vuh,
+    "customer": customer,
 }

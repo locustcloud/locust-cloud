@@ -6,7 +6,6 @@ import {
   useCreateTheme,
   useFetchExceptions,
   useFetchStats,
-  useFetchTasks,
   useLogViewer,
   baseTabs as locustBaseTabs,
   SwarmForm,
@@ -19,6 +18,7 @@ import Customer from 'components/tabs/Customer';
 import Scatterplot from 'components/tabs/Scatterplot';
 import Stats from 'components/tabs/Stats';
 import Testruns from 'components/tabs/Testruns';
+import useFetchCustomer from 'hooks/useFetchCustomer';
 import useFetchTestruns from 'hooks/useFetchTestruns';
 import useSwarmForm from 'hooks/useSwarmForm';
 import { useLocustSelector, useSelector } from 'redux/hooks';
@@ -89,9 +89,9 @@ const tabs = window.templateArgs.isGraphViewer ? graphViewerTabs : baseTabs;
 export default function App() {
   useFetchStats();
   useFetchExceptions();
-  useFetchTasks();
   useLogViewer();
   useFetchTestruns();
+  useFetchCustomer();
 
   const swarmState = useLocustSelector(({ swarm }) => swarm.state);
   const viewType = useSelector(({ ui }) => ui.viewType);

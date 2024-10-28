@@ -1,5 +1,6 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { roundToDecimalPlaces } from 'locust-ui';
+import { ICustomer } from 'types/customer.types';
 
 import { adaptPerNameChartData, IPerRequestData, IPerRequestResponse } from 'utils/api';
 import { createAbsoluteUrl } from 'utils/url';
@@ -112,6 +113,10 @@ export interface IFailuresData {
 
 export interface ITotalRequestsResponse {
   totalRequests: number;
+}
+
+export interface IVuhResponse {
+  totalVuh: string;
 }
 
 /*
@@ -307,6 +312,20 @@ export const cloudStats = createApi({
         return isNaN(roundedPercentage) ? 0 : roundedPercentage;
       },
     }),
+
+    getTotalVuh: builder.mutation<IVuhResponse[], void>({
+      query: () => ({
+        url: 'total-vuh',
+        method: 'POST',
+      }),
+    }),
+    getCustomerData: builder.mutation<ICustomer, void>({
+      query: () => ({
+        url: 'customer',
+        method: 'POST',
+      }),
+      transformResponse: ([customerData]) => customerData,
+    }),
   }),
 });
 
@@ -326,4 +345,6 @@ export const {
   useGetTotalRequestsMutation,
   useGetTotalFailuresMutation,
   useGetErrorPercentageMutation,
+  useGetTotalVuhMutation,
+  useGetCustomerDataMutation,
 } = cloudStats;

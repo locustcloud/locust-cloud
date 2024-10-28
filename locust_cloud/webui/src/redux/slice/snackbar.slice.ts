@@ -2,13 +2,13 @@ import { PayloadAction, createSlice } from '@reduxjs/toolkit';
 
 import { updateStateWithPayload } from 'redux/utils';
 
-export interface ISnackbarSlice {
+export interface ISnackbarState {
   message: string | null;
 }
 
-export type SnackbarAction = PayloadAction<Partial<ISnackbarSlice>>;
+export type SnackbarAction = PayloadAction<Partial<ISnackbarState>>;
 
-const initialState: ISnackbarSlice = {
+const initialState: ISnackbarState = {
   message: null,
 };
 
