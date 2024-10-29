@@ -19,20 +19,13 @@ from locust_cloud.timescale.query import register_query
 from psycopg.conninfo import make_conninfo
 from psycopg_pool import ConnectionPool
 
-# backwards compatability
-os.environ["PGUSER"] = os.environ.get("PGUSER") or os.environ.get("PG_USER") or ""
-os.environ["PGPASSWORD"] = os.environ.get("PGPASSWORD") or os.environ.get("PG_PASSWORD") or ""
-os.environ["PGHOST"] = os.environ.get("PGHOST") or os.environ.get("PG_HOST") or ""
-os.environ["PGDATABASE"] = os.environ.get("PGDATABASE") or os.environ.get("PG_DATABASE") or ""
-os.environ["PGPORT"] = os.environ.get("PGPORT") or os.environ.get("PG_PORT") or ""
-
 GRAPH_VIEWER = os.environ.get("GRAPH_VIEWER")
 logger = logging.getLogger(__name__)
 
 
 @events.init_command_line_parser.add_listener
 def add_arguments(parser: LocustArgumentParser):
-    if not (os.environ["PGHOST"] or GRAPH_VIEWER):
+    if not (os.environ.get("PGHOST") or GRAPH_VIEWER):
         parser.add_argument_group(
             "locust-cloud",
             "locust-cloud disabled, because PGHOST was not set - this is normal for local runs",
@@ -74,7 +67,7 @@ def set_autocommit(conn: psycopg.Connection):
 
 @events.init.add_listener
 def on_locust_init(environment: locust.env.Environment, **_args):
-    if not (os.environ["PGHOST"]):
+    if not (os.environ.get("PGHOST")):
         return
 
     try:
