@@ -154,7 +154,9 @@ class Exporter:
         if getattr(self, "_user_count_logger", False):
             self._user_count_logger.kill()
         if not self._has_logged_test_stop:
-            self.log_stop_test_run(exit_code)
+            self.log_stop_test_run()
+        if not self.env.parsed_options.worker:
+            self.log_exit_code(exit_code)
 
     def on_request(
         self,
@@ -250,7 +252,7 @@ class Exporter:
                     "Failed to insert rampup complete event time to Postgresql timescale database: " + repr(error)
                 )
 
-    def log_stop_test_run(self, exit_code=None):
+    def log_stop_test_run(self):
         logging.debug(f"Test run id {self._run_id} stopping")
         if self.env.parsed_options.worker:
             return  # only run on master or standalone
@@ -258,17 +260,14 @@ class Exporter:
         try:
             with self.pool.connection() as conn:
                 conn.execute(
-                    "UPDATE testruns SET end_time = %s, exit_code = %s WHERE id = %s",
-                    (end_time, exit_code, self._run_id),
+                    "UPDATE testruns SET end_time = %s WHERE id = %s",
+                    (end_time, self._run_id),
                 )
-                conn.execute(
-                    "INSERT INTO events (time, text, run_id, customer) VALUES (%s, %s, %s, current_user)",
-                    (end_time, f"Finished with exit code: {exit_code}", self._run_id),
-                )
-                # The AND time > run_id clause in the following statements are there to help Timescale performance
-                # We dont use start_time / end_time to calculate RPS, instead we use the time between the actual first and last request
-                # (as this is a more accurate measurement of the actual test)
+
                 try:
+                    # The AND time > run_id clause in the following statements are there to help Timescale performance
+                    # We dont use start_time / end_time to calculate RPS, instead we use the time between the actual first and last request
+                    # (as this is a more accurate measurement of the actual test)
                     conn.execute(
                         """
 UPDATE testruns
@@ -290,6 +289,23 @@ WHERE id = %(run_id)s""",
                     logging.info(
                         "Got DivisionByZero error when trying to update testruns, most likely because there were no requests logged"
                     )
+        except psycopg.Error as error:
+            logging.error(
+                "Failed to update testruns record (or events) with end time to Postgresql timescale database: "
+                + repr(error)
+            )
+
+    def log_exit_code(self, exit_code=None):
+        try:
+            with self.pool.connection() as conn:
+                conn.execute(
+                    "UPDATE testruns SET exit_code = %s WHERE id = %s",
+                    (exit_code, self._run_id),
+                )
+                conn.execute(
+                    "INSERT INTO events (time, text, run_id, customer) VALUES (%s, %s, %s, current_user)",
+                    (datetime.now(UTC).isoformat(), f"Finished with exit code: {exit_code}", self._run_id),
+                )
         except psycopg.Error as error:
             logging.error(
                 "Failed to update testruns record (or events) with end time to Postgresql timescale database: "
