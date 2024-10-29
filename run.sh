@@ -13,4 +13,4 @@ if [ ! -z "$LOCUSTCLOUD_REQUIREMENTS_URL" ]; then
     fi
 fi
 
-locust $LOCUST_FLAGS
+exec locust $LOCUST_FLAGS
