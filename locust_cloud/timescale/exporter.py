@@ -38,6 +38,7 @@ class Exporter:
         self._background = gevent.spawn(self._run)
         self._hostname = socket.gethostname()
         self._finished = False
+        self._has_logged_test_stop = False
         self._pid = os.getpid()
         self.pool = pool
 
@@ -64,6 +65,7 @@ class Exporter:
 
     def on_test_start(self, environment: locust.env.Environment):
         if not self.env.parsed_options or not self.env.parsed_options.worker:
+            self._has_logged_test_stop = False
             self._run_id = environment._run_id = datetime.now(UTC)  # type: ignore
             self.env.parsed_options.run_id = format_datetime(environment._run_id)  # type: ignore
             self.log_start_testrun()
@@ -141,6 +143,7 @@ class Exporter:
                     (datetime.now(UTC).isoformat(), self._run_id, 0),
                 )
         self.log_stop_test_run()
+        self._has_logged_test_stop = True
 
     def on_quit(self, exit_code, **kwargs):
         self._finished = True
@@ -150,7 +153,8 @@ class Exporter:
             self._update_end_time_task.kill()
         if getattr(self, "_user_count_logger", False):
             self._user_count_logger.kill()
-        self.log_stop_test_run(exit_code)
+        if not self._has_logged_test_stop:
+            self.log_stop_test_run(exit_code)
 
     def on_request(
         self,
