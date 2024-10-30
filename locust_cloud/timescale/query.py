@@ -57,7 +57,7 @@ def register_query(environment, pool):
                 return results
             else:
                 logger.warning(f"Received invalid query key: '{query}'")
-                return make_response("Invalid query key", 401)
+                return make_response({"error": "Invalid query key"}, 401)
         except Exception as e:
             logger.info(f"Error executing UI query '{query}': {e}", exc_info=True)
-            return make_response("Error executing query", 401)
+            return make_response({"error": "Error executing query"}, 401)
