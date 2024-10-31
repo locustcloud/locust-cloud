@@ -108,6 +108,7 @@ def register_auth(environment: locust.env.Environment):
                     "callback_url": "/confirm-signup",
                     "submit_button_text": "Confirm Email",
                 },
+                "info": "Please check your email and enter the confirmation code",
             }
         else:
             sign_up_args = {
@@ -179,6 +180,7 @@ def register_auth(environment: locust.env.Environment):
             auth_response.raise_for_status()
 
             session["username"] = None
+            session["auth_info"] = "Account created successfully!"
 
             return redirect(url_for("login"))
         except requests.exceptions.HTTPError as e:
