@@ -178,6 +178,8 @@ def register_auth(environment: locust.env.Environment):
 
             auth_response.raise_for_status()
 
+            session["username"] = None
+
             return redirect(url_for("login"))
         except requests.exceptions.HTTPError as e:
             message = e.response.json().get("Message")
