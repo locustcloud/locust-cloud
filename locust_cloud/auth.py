@@ -13,6 +13,8 @@ from locust_cloud import __version__
 from locust_cloud.constants import DEFAULT_DEPLOYER_URL
 
 DEPLOYER_URL = os.environ.get("LOCUSTCLOUD_DEPLOYER_URL", DEFAULT_DEPLOYER_URL)
+ALLOW_SIGNUP = os.environ.get("ALLOW_SIGNUP", False)
+
 
 logger = logging.getLogger(__name__)
 
@@ -61,8 +63,10 @@ def register_auth(environment: locust.env.Environment):
     environment.web_ui.login_manager.user_loader(load_user)
     environment.web_ui.auth_args = {
         "username_password_callback": "/authenticate",
-        "auth_providers": [{"label": "Sign Up", "callback_url": "/signup"}],
     }
+
+    if ALLOW_SIGNUP:
+        environment.web_ui.auth_args["auth_providers"] = [{"label": "Sign Up", "callback_url": "/signup"}]
 
     @environment.web_ui.app.route("/authenticate", methods=["POST"])
     def login_submit():
@@ -96,6 +100,9 @@ def register_auth(environment: locust.env.Environment):
 
     @environment.web_ui.app.route("/signup")
     def signup():
+        if not ALLOW_SIGNUP:
+            return redirect(url_for("login"))
+
         if session.get("username"):
             sign_up_args = {
                 "custom_form": {
@@ -143,6 +150,9 @@ def register_auth(environment: locust.env.Environment):
 
     @environment.web_ui.app.route("/create-account", methods=["POST"])
     def create_account():
+        if not ALLOW_SIGNUP:
+            return redirect(url_for("login"))
+
         session["auth_sign_up_error"] = ""
 
         username = request.form.get("username", "")
@@ -168,6 +178,9 @@ def register_auth(environment: locust.env.Environment):
 
     @environment.web_ui.app.route("/confirm-signup", methods=["POST"])
     def confirm_signup():
+        if not ALLOW_SIGNUP:
+            return redirect(url_for("login"))
+
         session["auth_sign_up_error"] = ""
         confirmation_code = request.form.get("confirmation_code")
 
