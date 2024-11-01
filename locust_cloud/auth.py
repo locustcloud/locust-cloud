@@ -13,7 +13,7 @@ from locust_cloud import __version__
 from locust_cloud.constants import DEFAULT_DEPLOYER_URL
 
 DEPLOYER_URL = os.environ.get("LOCUSTCLOUD_DEPLOYER_URL", DEFAULT_DEPLOYER_URL)
-ALLOW_SIGNUP = os.environ.get("ALLOW_SIGNUP", False)
+ALLOW_SIGNUP = os.environ.get("ALLOW_SIGNUP", True)
 
 
 logger = logging.getLogger(__name__)
@@ -167,7 +167,9 @@ def register_auth(environment: locust.env.Environment):
 
             auth_response.raise_for_status()
 
+            session["user_sub"] = auth_response.json().get("user_sub")
             session["username"] = username
+            print(session["user_sub"])
 
             return redirect(url_for("signup"))
         except requests.exceptions.HTTPError as e:
@@ -187,7 +189,11 @@ def register_auth(environment: locust.env.Environment):
         try:
             auth_response = requests.post(
                 f"{DEPLOYER_URL}/auth/confirm-signup",
-                json={"username": session.get("username"), "confirmation_code": confirmation_code},
+                json={
+                    "username": session.get("username"),
+                    "user_sub": session["user_sub"],
+                    "confirmation_code": confirmation_code,
+                },
             )
 
             auth_response.raise_for_status()
