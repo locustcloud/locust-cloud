@@ -1,7 +1,7 @@
 import logging
 import os
 from datetime import UTC, datetime, timedelta
-from typing import TypedDict
+from typing import Any, TypedDict, cast
 
 import locust.env
 import requests
@@ -9,7 +9,6 @@ import werkzeug
 from flask import redirect, request, session, url_for
 from flask_login import UserMixin, login_user
 from locust.html import render_template_from
-from locust.web import AuthArgs
 from locust_cloud import __version__
 from locust_cloud.constants import DEFAULT_DEPLOYER_URL
 
@@ -62,10 +61,11 @@ def register_auth(environment: locust.env.Environment):
         return None
 
     environment.web_ui.login_manager.user_loader(load_user)
-    environment.web_ui.auth_args = AuthArgs(
+    environment.web_ui.auth_args = cast(
+        Any,
         {
             "username_password_callback": "/authenticate",
-        }
+        },
     )
 
     if ALLOW_SIGNUP:
