@@ -9,6 +9,7 @@ import werkzeug
 from flask import redirect, request, session, url_for
 from flask_login import UserMixin, login_user
 from locust.html import render_template_from
+from locust.web import AuthArgs
 from locust_cloud import __version__
 from locust_cloud.constants import DEFAULT_DEPLOYER_URL
 
@@ -61,9 +62,11 @@ def register_auth(environment: locust.env.Environment):
         return None
 
     environment.web_ui.login_manager.user_loader(load_user)
-    environment.web_ui.auth_args = {
-        "username_password_callback": "/authenticate",
-    }
+    environment.web_ui.auth_args = AuthArgs(
+        {
+            "username_password_callback": "/authenticate",
+        }
+    )
 
     if ALLOW_SIGNUP:
         environment.web_ui.auth_args["auth_providers"] = [{"label": "Sign Up", "callback_url": "/signup"}]
@@ -169,7 +172,6 @@ def register_auth(environment: locust.env.Environment):
 
             session["user_sub"] = auth_response.json().get("user_sub")
             session["username"] = username
-            print(session["user_sub"])
 
             return redirect(url_for("signup"))
         except requests.exceptions.HTTPError as e:
