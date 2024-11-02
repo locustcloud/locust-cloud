@@ -1,7 +1,7 @@
 import logging
 import os
 from datetime import UTC, datetime, timedelta
-from typing import TypedDict
+from typing import Any, TypedDict, cast
 
 import locust.env
 import requests
@@ -13,6 +13,8 @@ from locust_cloud import __version__
 from locust_cloud.constants import DEFAULT_DEPLOYER_URL
 
 DEPLOYER_URL = os.environ.get("LOCUSTCLOUD_DEPLOYER_URL", DEFAULT_DEPLOYER_URL)
+ALLOW_SIGNUP = os.environ.get("ALLOW_SIGNUP", True)
+
 
 logger = logging.getLogger(__name__)
 
@@ -59,10 +61,15 @@ def register_auth(environment: locust.env.Environment):
         return None
 
     environment.web_ui.login_manager.user_loader(load_user)
-    environment.web_ui.auth_args = {
-        "username_password_callback": "/authenticate",
-        "auth_providers": [{"label": "Sign Up", "callback_url": "/signup"}],
-    }
+    environment.web_ui.auth_args = cast(
+        Any,
+        {
+            "username_password_callback": "/authenticate",
+        },
+    )
+
+    if ALLOW_SIGNUP:
+        environment.web_ui.auth_args["auth_providers"] = [{"label": "Sign Up", "callback_url": "/signup"}]
 
     @environment.web_ui.app.route("/authenticate", methods=["POST"])
     def login_submit():
@@ -96,6 +103,9 @@ def register_auth(environment: locust.env.Environment):
 
     @environment.web_ui.app.route("/signup")
     def signup():
+        if not ALLOW_SIGNUP:
+            return redirect(url_for("login"))
+
         if session.get("username"):
             sign_up_args = {
                 "custom_form": {
@@ -143,6 +153,9 @@ def register_auth(environment: locust.env.Environment):
 
     @environment.web_ui.app.route("/create-account", methods=["POST"])
     def create_account():
+        if not ALLOW_SIGNUP:
+            return redirect(url_for("login"))
+
         session["auth_sign_up_error"] = ""
 
         username = request.form.get("username", "")
@@ -157,6 +170,7 @@ def register_auth(environment: locust.env.Environment):
 
             auth_response.raise_for_status()
 
+            session["user_sub"] = auth_response.json().get("user_sub")
             session["username"] = username
 
             return redirect(url_for("signup"))
@@ -168,13 +182,20 @@ def register_auth(environment: locust.env.Environment):
 
     @environment.web_ui.app.route("/confirm-signup", methods=["POST"])
     def confirm_signup():
+        if not ALLOW_SIGNUP:
+            return redirect(url_for("login"))
+
         session["auth_sign_up_error"] = ""
         confirmation_code = request.form.get("confirmation_code")
 
         try:
             auth_response = requests.post(
                 f"{DEPLOYER_URL}/auth/confirm-signup",
-                json={"username": session.get("username"), "confirmation_code": confirmation_code},
+                json={
+                    "username": session.get("username"),
+                    "user_sub": session["user_sub"],
+                    "confirmation_code": confirmation_code,
+                },
             )
 
             auth_response.raise_for_status()
