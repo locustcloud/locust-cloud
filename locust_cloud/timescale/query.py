@@ -1,6 +1,6 @@
 import logging
 
-from flask import make_response, request
+from flask import Blueprint, make_response, request
 from flask_login import login_required
 from locust_cloud.timescale.queries import queries
 
@@ -12,7 +12,11 @@ def adapt_timestamp(result):
 
 
 def register_query(environment, pool):
-    @environment.web_ui.app.route("/cloud-stats/<query>", methods=["POST"])
+    cloud_stats_blueprint = Blueprint(
+        "locust_cloud_stats", __name__, url_prefix=environment.parsed_options.web_base_path
+    )
+
+    @cloud_stats_blueprint.route("/cloud-stats/<query>", methods=["POST"])
     @login_required
     def query(query):
         results = []
@@ -61,3 +65,5 @@ def register_query(environment, pool):
         except Exception as e:
             logger.info(f"Error executing UI query '{query}': {e}", exc_info=True)
             return make_response({"error": "Error executing query"}, 401)
+
+    environment.web_ui.app.register_blueprint(cloud_stats_blueprint)
