@@ -16,7 +16,7 @@
     "@emotion/styled": "^11.11.5",
     "@mui/icons-material": "^5.16.4",
     "@mui/material": "^5.16.4",
-    "locust-ui": "^2.32.1-next-11569609998",
+    "locust-ui": "^2.32.2-next-11683740665",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-redux": "^9.1.2",
@@ -36,6 +36,6 @@
     "eslint-plugin-unused-imports": "^3.0.0",
     "prettier": "^3.0.3",
     "typescript": "^5.5.3",
-    "vite": "^5.3.3"
+    "vite": "^5.4.8"
   }
 }
