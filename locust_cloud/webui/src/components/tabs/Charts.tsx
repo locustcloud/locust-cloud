@@ -173,7 +173,7 @@ export default function Charts() {
 
   return (
     <>
-      <Toolbar onSelectTestRun={onSelectTestRun} showHideAdvanced />
+      <Toolbar onSelectTestRun={onSelectTestRun} shouldShowResolution showHideAdvanced />
       {isError && (
         <Alert severity='error'>There was a problem loading some graphs for this testrun.</Alert>
       )}

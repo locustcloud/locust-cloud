@@ -9,8 +9,9 @@ import { fetchQuery } from 'utils/api';
 export default function useFetchTestruns() {
   const setToolbar = useAction(toolbarActions.setToolbar);
   const swarmState = useLocustSelector(({ swarm }) => swarm.state);
-  const { testrunsForDisplay, previousTestrun } = useSelector(({ toolbar }) => toolbar);
   const testrunFromUrl = useLocustSelector(({ url }) => url.query && url.query.testrun);
+  const { testrunsForDisplay, previousTestrun } = useSelector(({ toolbar }) => toolbar);
+  const { hasDismissedSwarmForm } = useSelector(({ ui }) => ui);
   const setSnackbar = useAction(snackbarActions.setSnackbar);
 
   const onError = (error: string) => setSnackbar({ message: error });
@@ -59,8 +60,8 @@ export default function useFetchTestruns() {
   }, [swarmState, testrunsForDisplay]);
 
   useEffect(() => {
-    if (window.templateArgs.isGraphViewer) {
+    if (window.templateArgs.isGraphViewer || hasDismissedSwarmForm) {
       fetchTestruns();
     }
-  }, []);
+  }, [hasDismissedSwarmForm]);
 }
