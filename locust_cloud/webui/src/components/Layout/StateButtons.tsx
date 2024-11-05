@@ -7,7 +7,7 @@ import { UI_VIEW_TYPES } from 'redux/slice/ui.slice';
 
 export default function StateButtons() {
   const swarmState = useLocustSelector(({ swarm }) => swarm.state);
-  const viewType = useSelector(({ ui }) => ui.viewType);
+  const { viewType, hasDismissedSwarmForm } = useSelector(({ ui }) => ui);
   const {
     alert: newTestFormAlert,
     shouldDisableForm: shouldDisableNewTestForm,
@@ -19,13 +19,13 @@ export default function StateButtons() {
     handleFormChange: handleEditFormChange,
   } = useSwarmForm();
 
-  if (swarmState === SWARM_STATE.READY) {
+  if (!hasDismissedSwarmForm && swarmState === SWARM_STATE.READY) {
     return null;
   }
 
   return (
     <Box sx={{ display: 'flex', columnGap: 2, marginY: 'auto', height: '50px' }}>
-      {swarmState === SWARM_STATE.STOPPED ? (
+      {swarmState === SWARM_STATE.STOPPED || hasDismissedSwarmForm ? (
         <NewTestButton
           alert={newTestFormAlert}
           isDisabled={shouldDisableNewTestForm}
