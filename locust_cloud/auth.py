@@ -6,7 +6,7 @@ from typing import Any, TypedDict, cast
 import locust.env
 import requests
 import werkzeug
-from flask import redirect, request, session, url_for
+from flask import Blueprint, redirect, request, session, url_for
 from flask_login import UserMixin, login_user
 from locust.html import render_template_from
 from locust_cloud import __version__
@@ -50,6 +50,9 @@ def register_auth(environment: locust.env.Environment):
     environment.web_ui.app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
     environment.web_ui.app.debug = False
 
+    web_base_path = environment.parsed_options.web_base_path
+    auth_blueprint = Blueprint("locust_cloud_auth", __name__, url_prefix=web_base_path)
+
     def load_user(user_sub_id: str):
         username = request.cookies.get("username")
         refresh_token = request.cookies.get("user_token")
@@ -64,14 +67,16 @@ def register_auth(environment: locust.env.Environment):
     environment.web_ui.auth_args = cast(
         Any,
         {
-            "username_password_callback": "/authenticate",
+            "username_password_callback": f"{web_base_path}/authenticate",
         },
     )
 
     if ALLOW_SIGNUP:
-        environment.web_ui.auth_args["auth_providers"] = [{"label": "Sign Up", "callback_url": "/signup"}]
+        environment.web_ui.auth_args["auth_providers"] = [
+            {"label": "Sign Up", "callback_url": f"{web_base_path}/signup"}
+        ]
 
-    @environment.web_ui.app.route("/authenticate", methods=["POST"])
+    @auth_blueprint.route("/authenticate", methods=["POST"])
     def login_submit():
         username = request.form.get("username", "")
         password = request.form.get("password")
@@ -86,7 +91,7 @@ def register_auth(environment: locust.env.Environment):
             auth_response.raise_for_status()
 
             credentials = auth_response.json()
-            response = redirect(url_for("index"))
+            response = redirect(url_for("locust.index"))
             response = set_credentials(username, credentials, response)
             login_user(AuthUser(credentials["user_sub_id"]))
 
@@ -99,12 +104,12 @@ def register_auth(environment: locust.env.Environment):
 
                 session["auth_error"] = "Unknown error during authentication, check logs and/or contact support"
 
-            return redirect(url_for("login"))
+            return redirect(url_for("locust.login"))
 
-    @environment.web_ui.app.route("/signup")
+    @auth_blueprint.route("/signup")
     def signup():
         if not ALLOW_SIGNUP:
-            return redirect(url_for("login"))
+            return redirect(url_for("locust.login"))
 
         if session.get("username"):
             sign_up_args = {
@@ -115,7 +120,7 @@ def register_auth(environment: locust.env.Environment):
                             "name": "confirmation_code",
                         },
                     ],
-                    "callback_url": "/confirm-signup",
+                    "callback_url": f"{web_base_path}/confirm-signup",
                     "submit_button_text": "Confirm Email",
                 },
                 "info": "Please check your email and enter the confirmation code",
@@ -138,7 +143,7 @@ def register_auth(environment: locust.env.Environment):
                             "name": "access_code",
                         },
                     ],
-                    "callback_url": "/create-account",
+                    "callback_url": f"{web_base_path}/create-account",
                     "submit_button_text": "Sign Up",
                 },
             }
@@ -151,10 +156,10 @@ def register_auth(environment: locust.env.Environment):
             auth_args=sign_up_args,
         )
 
-    @environment.web_ui.app.route("/create-account", methods=["POST"])
+    @auth_blueprint.route("/create-account", methods=["POST"])
     def create_account():
         if not ALLOW_SIGNUP:
-            return redirect(url_for("login"))
+            return redirect(url_for("locust.login"))
 
         session["auth_sign_up_error"] = ""
 
@@ -173,17 +178,17 @@ def register_auth(environment: locust.env.Environment):
             session["user_sub"] = auth_response.json().get("user_sub")
             session["username"] = username
 
-            return redirect(url_for("signup"))
+            return redirect(url_for("locust_cloud_auth.signup"))
         except requests.exceptions.HTTPError as e:
             message = e.response.json().get("Message")
             session["auth_sign_up_error"] = message
 
-            return redirect(url_for("signup"))
+            return redirect(url_for("locust_cloud_auth.signup"))
 
-    @environment.web_ui.app.route("/confirm-signup", methods=["POST"])
+    @auth_blueprint.route("/confirm-signup", methods=["POST"])
     def confirm_signup():
         if not ALLOW_SIGNUP:
-            return redirect(url_for("login"))
+            return redirect(url_for("locust.login"))
 
         session["auth_sign_up_error"] = ""
         confirmation_code = request.form.get("confirmation_code")
@@ -203,9 +208,11 @@ def register_auth(environment: locust.env.Environment):
             session["username"] = None
             session["auth_info"] = "Account created successfully!"
 
-            return redirect(url_for("login"))
+            return redirect(url_for("locust.login"))
         except requests.exceptions.HTTPError as e:
             message = e.response.json().get("Message")
             session["auth_sign_up_error"] = message
 
-            return redirect(url_for("signup"))
+            return redirect(url_for("locust_cloud_auth.signup"))
+
+    environment.web_ui.app.register_blueprint(auth_blueprint)
