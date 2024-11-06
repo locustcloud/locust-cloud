@@ -3,16 +3,14 @@ import { Box } from '@mui/material';
 import { LineChart, Table } from 'locust-ui';
 
 import {
-  ITestrunsResponseTime,
-  ITestrunsRps,
-  ITestrunsTable,
   useGetTestrunsResponseTimeMutation,
   useGetTestrunsRpsMutation,
   useGetTestrunsTableMutation,
 } from 'redux/api/cloud-stats';
 import { useAction, useLocustSelector, useSelector } from 'redux/hooks';
 import { snackbarActions } from 'redux/slice/snackbar.slice';
-import { chartValueFormatter } from 'utils/api';
+import { ITestrunsResponseTime, ITestrunsRps, ITestrunsTable } from 'types/testruns.types';
+import { chartValueFormatter } from 'utils/chart';
 
 const testrunsTableStructure = [
   { key: 'runId', title: 'Run Id', markdown: true },

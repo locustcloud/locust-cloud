@@ -2,67 +2,32 @@ import { useEffect, useState } from 'react';
 import { LineChart, useInterval, SWARM_STATE } from 'locust-ui';
 
 import Toolbar from 'components/Toolbar/Toolbar';
+import { useGetRequestNamesMutation, useGetScatterplotMutation } from 'redux/api/cloud-stats';
 import { useAction, useLocustSelector, useSelector } from 'redux/hooks';
 import { snackbarActions } from 'redux/slice/snackbar.slice';
-import {
-  IPerRequestData,
-  IPerRequestResponse,
-  IRequestBody,
-  adaptPerNameChartData,
-  fetchQuery,
-  chartValueFormatter,
-} from 'utils/api';
-
-interface IScatterplotData {
-  name: string;
-  responseTime: number;
-  time: string;
-}
-
-interface IScatterplotResponse extends IPerRequestResponse {
-  responseTime: number;
-}
+import { IPerRequestData } from 'types/request.types';
+import { chartValueFormatter } from 'utils/chart';
 
 interface IRequestLines {
   name: string;
   key: string;
 }
 
+const SCATTERPLOT_COLORS = ['#8A2BE2', '#0000FF', '#00ca5a', '#FFA500', '#FFFF00', '#EE82EE'];
+
 export default function Scatterplot() {
   const swarmState = useLocustSelector(({ swarm }) => swarm.state);
   const { currentTestrun } = useSelector(({ toolbar }) => toolbar);
   const setSnackbar = useAction(snackbarActions.setSnackbar);
 
-  const onError = (error: string) => setSnackbar({ message: error });
-
   const [timestamp, setTimestamp] = useState(new Date().toISOString());
   const [scatterplot, setScatterplot] = useState<IPerRequestData>({ time: [] });
   const [requestLines, setRequestLines] = useState<IRequestLines[]>([]);
 
-  const getScatterplot = (body: IRequestBody) =>
-    fetchQuery<IScatterplotData[]>(
-      '/cloud-stats/scatterplot',
-      body,
-      scatterplot =>
-        setScatterplot(adaptPerNameChartData<IScatterplotResponse>(scatterplot, 'responseTime')),
-      onError,
-    );
+  const [getRequestNames] = useGetRequestNamesMutation();
+  const [getScatterplot] = useGetScatterplotMutation();
 
-  const getRequestNames = (body: IRequestBody) =>
-    fetchQuery<{ name: string }[]>(
-      '/cloud-stats/request-names',
-      body,
-      requestNames =>
-        setRequestLines(
-          requestNames.map(({ name: requestName }) => ({
-            name: `${requestName}`,
-            key: requestName,
-          })),
-        ),
-      onError,
-    );
-
-  const fetchScatterplot = () => {
+  const fetchScatterplot = async () => {
     if (currentTestrun) {
       const currentTimestamp = new Date().toISOString();
       const payload = {
@@ -71,22 +36,31 @@ export default function Scatterplot() {
         testrun: currentTestrun,
       };
 
-      getRequestNames(payload);
-      getScatterplot(payload);
+      const [
+        { data: requestLines, error: requestLinesError },
+        { data: scatterplot, error: scatterplotError },
+      ] = await Promise.all([getRequestNames(payload), getScatterplot(payload)]);
 
-      setTimestamp(currentTimestamp);
+      const fetchError = requestLinesError || scatterplotError;
+
+      if (fetchError && 'error' in fetchError) {
+        setSnackbar({ message: fetchError.error });
+      }
+
+      if (requestLines && scatterplot) {
+        setRequestLines(requestLines);
+        setScatterplot(scatterplot);
+      }
+
+      if (swarmState !== SWARM_STATE.STOPPED) {
+        setTimestamp(currentTimestamp);
+      }
     }
   };
 
-  useInterval(
-    () => {
-      fetchScatterplot();
-    },
-    5000,
-    {
-      shouldRunInterval: swarmState === SWARM_STATE.SPAWNING || swarmState == SWARM_STATE.RUNNING,
-    },
-  );
+  useInterval(fetchScatterplot, 5000, {
+    shouldRunInterval: swarmState === SWARM_STATE.SPAWNING || swarmState == SWARM_STATE.RUNNING,
+  });
 
   useEffect(() => {
     fetchScatterplot();
@@ -98,7 +72,7 @@ export default function Scatterplot() {
       <LineChart<IPerRequestData>
         chartValueFormatter={chartValueFormatter}
         charts={scatterplot}
-        colors={['#8A2BE2', '#0000FF', '#00ca5a', '#FFA500', '#FFFF00', '#EE82EE']}
+        colors={SCATTERPLOT_COLORS}
         lines={requestLines}
         scatterplot
         title='Scatterplot'

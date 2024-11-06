@@ -1,10 +1,11 @@
 import { useEffect } from 'react';
 import { SWARM_STATE, useInterval } from 'locust-ui';
 
+import { useGetTestrunsMutation } from 'redux/api/cloud-stats';
 import { useAction, useLocustSelector, useSelector } from 'redux/hooks';
 import { snackbarActions } from 'redux/slice/snackbar.slice';
-import { ITestrun, ITestrunsMap, toolbarActions } from 'redux/slice/toolbar.slice';
-import { fetchQuery } from 'utils/api';
+import { toolbarActions } from 'redux/slice/toolbar.slice';
+import { ITestrunsMap } from 'types/testruns.types';
 
 export default function useFetchTestruns() {
   const setToolbar = useAction(toolbarActions.setToolbar);
@@ -14,35 +15,36 @@ export default function useFetchTestruns() {
   const { hasDismissedSwarmForm } = useSelector(({ ui }) => ui);
   const setSnackbar = useAction(snackbarActions.setSnackbar);
 
-  const onError = (error: string) => setSnackbar({ message: error });
+  const [getTestruns] = useGetTestrunsMutation();
 
-  const fetchTestruns = () => {
-    fetchQuery<ITestrun[]>(
-      '/cloud-stats/testruns',
-      {},
-      testrunIds => {
-        const testruns = testrunIds.reduce(
-          (testrunMap, { runId, endTime }, index) => ({
-            ...testrunMap,
-            [new Date(runId).toLocaleString()]: { runId, endTime, index },
-          }),
-          {} as ITestrunsMap,
-        );
+  const fetchTestruns = async () => {
+    const { data: testrunIds, error: fetchError } = await getTestruns();
 
-        const currentTestrun =
-          swarmState === SWARM_STATE.RUNNING
-            ? testrunIds[0]
-            : (testrunFromUrl && testruns[testrunFromUrl]) || testrunIds[0];
+    if (fetchError && 'error' in fetchError) {
+      setSnackbar({ message: fetchError.error });
+    }
 
-        setToolbar({
-          testruns,
-          currentTestrun: currentTestrun.runId,
-          currentTestrunIndex: currentTestrun.index || 0,
-          testrunsForDisplay: testrunIds.map(({ runId }) => new Date(runId).toLocaleString()),
-        });
-      },
-      onError,
-    );
+    if (testrunIds) {
+      const testruns = testrunIds.reduce(
+        (testrunMap, { runId, endTime }, index) => ({
+          ...testrunMap,
+          [new Date(runId).toLocaleString()]: { runId, endTime, index },
+        }),
+        {} as ITestrunsMap,
+      );
+
+      const currentTestrun =
+        swarmState === SWARM_STATE.RUNNING
+          ? testrunIds[0]
+          : (testrunFromUrl && testruns[testrunFromUrl]) || testrunIds[0];
+
+      setToolbar({
+        testruns,
+        currentTestrun: currentTestrun.runId,
+        currentTestrunIndex: currentTestrun.index || 0,
+        testrunsForDisplay: testrunIds.map(({ runId }) => new Date(runId).toLocaleString()),
+      });
+    }
   };
 
   useInterval(fetchTestruns, 500, {

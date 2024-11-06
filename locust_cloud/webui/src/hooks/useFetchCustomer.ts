@@ -1,10 +1,10 @@
 import { useEffect } from 'react';
-import { ICustomer } from 'types/customer.types';
 
 import { useGetCustomerDataMutation } from 'redux/api/cloud-stats';
 import { useAction } from 'redux/hooks';
 import { customerActions } from 'redux/slice/customer.slice';
 import { snackbarActions } from 'redux/slice/snackbar.slice';
+import { ICustomer } from 'types/customer.types';
 
 export default function useFetchCustomer() {
   const [getCustomerData] = useGetCustomerDataMutation();

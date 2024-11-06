@@ -1,123 +1,34 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { roundToDecimalPlaces } from 'locust-ui';
+
 import { ICustomer } from 'types/customer.types';
-
-import { adaptPerNameChartData, IPerRequestData, IPerRequestResponse } from 'utils/api';
+import {
+  IAvgResponseTimesResponse,
+  IErrorsPerRequestResponse,
+  IFailuresData,
+  IPerc99ResponseTimesResponse,
+  IPerRequestData,
+  IRequestBody,
+  IRequestLines,
+  IRequestLinesResponse,
+  IResponseLengthResponse,
+  IRpsData,
+  IRpsPerRequestResponse,
+  IRpsResponse,
+  IScatterplotData,
+  IStatsData,
+  IVuhResponse,
+} from 'types/request.types';
+import {
+  ITestrun,
+  ITestrunsResponseTime,
+  ITestrunsResponseTimeResponse,
+  ITestrunsRps,
+  ITestrunsRpsResponse,
+  ITestrunsTable,
+} from 'types/testruns.types';
+import { adaptPerNameChartData } from 'utils/chart';
 import { createAbsoluteUrl } from 'utils/url';
-
-interface IRequestLinesResponse {
-  name: string;
-}
-
-export interface IRequestLines {
-  name: string;
-  key: string;
-}
-
-interface IRpsPerRequestResponse extends IPerRequestResponse {
-  throughput: number;
-}
-
-interface IAvgResponseTimesResponse extends IPerRequestResponse {
-  responseTime: number;
-}
-
-interface IErrorsPerRequestResponse extends IPerRequestResponse {
-  errorRate: number;
-}
-
-interface IPerc99ResponseTimesResponse extends IPerRequestResponse {
-  perc99: number;
-}
-
-interface IResponseLengthResponse extends IPerRequestResponse {
-  responseLength: number;
-}
-
-export interface IRequestBody {
-  start?: string;
-  end?: string;
-  resolution?: number;
-  testrun?: string;
-}
-
-interface IRpsResponse {
-  users: string | null;
-  rps: string | null;
-  errorRate: string | null;
-  time: string;
-}
-
-export interface IRpsData {
-  users: [string, string][];
-  rps: [string, string][];
-  errorRate: [string, string][];
-  time: string[];
-}
-
-export interface ITestrunsTable {
-  runId: string;
-  arguments: string;
-  startTimeEpoch: string;
-  numUsers: string;
-  requests: string;
-  respTime: string;
-  rpsAvg: string;
-  failRatio: string;
-  endTime: string;
-  endTimeEpoch: string;
-  exitCode: string;
-  runTime: string;
-}
-
-interface ITestrunsRpsResponse {
-  avgRps: string;
-  avgRpsFailed: string;
-  time: string;
-}
-
-export interface ITestrunsRps {
-  avgRps: [string, string][];
-  avgRpsFailed: [string, string][];
-  time: string[];
-}
-
-interface ITestrunsResponseTimeResponse {
-  avgResponseTime: string;
-  avgResponseTimeFailed: string;
-  time: string;
-}
-
-export interface ITestrunsResponseTime {
-  avgResponseTime: [string, string][];
-  avgResponseTimeFailed: [string, string][];
-  time: string[];
-}
-
-export interface IStatsData {
-  method: string;
-  name: string;
-  average: number;
-  requests: number;
-  failed: number;
-  min: number;
-  max: number;
-  errorPercentage: number;
-}
-
-export interface IFailuresData {
-  name: string;
-  exception: string;
-  count: number;
-}
-
-export interface ITotalRequestsResponse {
-  totalRequests: number;
-}
-
-export interface IVuhResponse {
-  totalVuh: string;
-}
 
 /*
   Because of time_bucket_gapfill it's possible to have periods without data
@@ -326,6 +237,23 @@ export const cloudStats = createApi({
       }),
       transformResponse: ([customerData]) => customerData,
     }),
+
+    getTestruns: builder.mutation<ITestrun[], void>({
+      query: () => ({
+        url: 'testruns',
+        method: 'POST',
+      }),
+    }),
+
+    getScatterplot: builder.mutation<IPerRequestData, IRequestBody>({
+      query: body => ({
+        url: 'scatterplot',
+        method: 'POST',
+        body,
+      }),
+      transformResponse: (scatterplot: IScatterplotData[]) =>
+        adaptPerNameChartData<IScatterplotData>(scatterplot, 'responseTime'),
+    }),
   }),
 });
 
@@ -347,4 +275,6 @@ export const {
   useGetErrorPercentageMutation,
   useGetTotalVuhMutation,
   useGetCustomerDataMutation,
+  useGetTestrunsMutation,
+  useGetScatterplotMutation,
 } = cloudStats;

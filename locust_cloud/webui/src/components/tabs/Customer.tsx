@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Box, Paper, Typography } from '@mui/material';
 
-import { IVuhResponse, useGetTotalVuhMutation } from 'redux/api/cloud-stats';
+import { useGetTotalVuhMutation } from 'redux/api/cloud-stats';
 import { useAction, useLocustSelector, useSelector } from 'redux/hooks';
 import { snackbarActions } from 'redux/slice/snackbar.slice';
+import { IVuhResponse } from 'types/request.types';
 
 const pluralize = (n: number) => (n === 1 ? '' : 's');
 
