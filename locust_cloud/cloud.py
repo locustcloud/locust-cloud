@@ -1,6 +1,5 @@
 import json
 import logging
-import math
 import os
 import sys
 import time
@@ -14,13 +13,6 @@ import configargparse
 import requests
 from botocore.exceptions import ClientError
 from locust_cloud import __version__
-from locust_cloud.constants import (
-    DEFAULT_CLUSTER_NAME,
-    DEFAULT_DEPLOYER_URL,
-    DEFAULT_NAMESPACE,
-    DEFAULT_REGION_NAME,
-    USERS_PER_WORKER,
-)
 from locust_cloud.credential_manager import CredentialError, CredentialManager
 
 
@@ -110,28 +102,8 @@ advanced.add_argument(
 advanced.add_argument(
     "--region",
     type=str,
-    default=os.environ.get("AWS_DEFAULT_REGION", DEFAULT_REGION_NAME),
+    default=os.environ.get("AWS_DEFAULT_REGION", "us-east-1"),
     help="Sets the AWS region to use for the deployed cluster, e.g. us-east-1. It defaults to use AWS_DEFAULT_REGION env var, like AWS tools.",
-)
-advanced.add_argument(
-    "--kube-cluster-name",
-    type=str,
-    default=DEFAULT_CLUSTER_NAME,
-    help=configargparse.SUPPRESS,
-    env_var="KUBE_CLUSTER_NAME",
-)
-advanced.add_argument(
-    "--kube-namespace",
-    type=str,
-    default=DEFAULT_NAMESPACE,
-    help=configargparse.SUPPRESS,
-    env_var="KUBE_NAMESPACE",
-)
-parser.add_argument(
-    "--deployer-url",
-    type=str,
-    default=DEFAULT_DEPLOYER_URL,
-    help=configargparse.SUPPRESS,
 )
 parser.add_argument(
     "--aws-access-key-id",
@@ -162,7 +134,7 @@ parser.add_argument(
 parser.add_argument(
     "--workers",
     type=int,
-    help=f"Number of workers to use for the deployment. Defaults to number of users divided by {USERS_PER_WORKER}.",
+    help="Number of workers to use for the deployment. Defaults to number of users divided by 500, but the default may be customized for your account.",
     default=None,
 )
 parser.add_argument(
@@ -194,10 +166,12 @@ logging.getLogger("requests").setLevel(logging.INFO)
 logging.getLogger("urllib3").setLevel(logging.INFO)
 
 
+api_url = f"https://api.{options.region}.locust.cloud/1"
+
+
 def main() -> None:
-    s3_bucket = f"{options.kube_cluster_name}-{options.kube_namespace}"
+    s3_bucket = "dmdb-default" if options.region == "us-east-1" else "locust-default"
     deployments: list[Any] = []
-    worker_count: int = max(options.workers or math.ceil(options.users / USERS_PER_WORKER), 2)
     os.environ["AWS_DEFAULT_REGION"] = options.region
 
     try:
@@ -210,9 +184,9 @@ def main() -> None:
             sys.exit(1)
 
         logger.info(f"Authenticating ({os.environ['AWS_DEFAULT_REGION']}, v{__version__})")
-        logger.debug(f"Lambda url: {options.deployer_url}")
+        logger.debug(f"Lambda url: {api_url}")
         credential_manager = CredentialManager(
-            lambda_url=options.deployer_url,
+            lambda_url=api_url,
             access_key=options.aws_access_key_id,
             secret_key=options.aws_secret_access_key,
             username=options.username,
@@ -279,20 +253,21 @@ def main() -> None:
             ]
             and os.environ[env_variable]
         ]
-        deploy_endpoint = f"{options.deployer_url}/{options.kube_cluster_name}"
+        deploy_endpoint = f"{api_url}/deploy"
         payload = {
             "locust_args": [
                 {"name": "LOCUST_LOCUSTFILE", "value": locustfile_url},
                 {"name": "LOCUST_USERS", "value": str(options.users)},
                 {"name": "LOCUST_FLAGS", "value": " ".join(locust_options)},
                 {"name": "LOCUSTCLOUD_REQUIREMENTS_URL", "value": requirements_url},
-                {"name": "LOCUSTCLOUD_DEPLOYER_URL", "value": options.deployer_url},
+                {"name": "LOCUSTCLOUD_DEPLOYER_URL", "value": api_url},
                 *locust_env_variables,
             ],
-            "worker_count": worker_count,
             "user_count": options.users,
             "image_tag": options.image_tag,
         }
+        if options.workers is not None:
+            payload["worker_count"] = options.workers
         headers = {
             "Authorization": f"Bearer {cognito_client_id_token}",
             "Content-Type": "application/json",
@@ -325,7 +300,7 @@ def main() -> None:
         logger.debug("Interrupted by user")
         sys.exit(0)
 
-    log_group_name = f"/eks/{options.kube_cluster_name}-{options.kube_namespace}"
+    log_group_name = "/eks/dmdb-default" if options.region == "us-east-1" else "/eks/locust-default"
     master_pod_name = next((deployment for deployment in deployments if "master" in deployment), None)
 
     if not master_pod_name:
@@ -420,9 +395,8 @@ def delete(s3_bucket, credential_manager):
             headers["AWS_SESSION_TOKEN"] = token
 
         response = requests.delete(
-            f"{options.deployer_url}/{options.kube_cluster_name}",
+            f"{api_url}/teardown",
             headers=headers,
-            params={"namespace": options.kube_namespace} if options.kube_namespace else {},
         )
 
         if response.status_code != 200:
