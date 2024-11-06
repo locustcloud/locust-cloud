@@ -1,6 +1,7 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { roundToDecimalPlaces } from 'locust-ui';
 import { ICustomer } from 'types/customer.types';
+import { ITestrun } from 'types/testruns.types';
 
 import { adaptPerNameChartData, IPerRequestData, IPerRequestResponse } from 'utils/api';
 import { createAbsoluteUrl } from 'utils/url';
@@ -117,6 +118,12 @@ export interface ITotalRequestsResponse {
 
 export interface IVuhResponse {
   totalVuh: string;
+}
+
+interface IScatterplotData {
+  name: string;
+  responseTime: number;
+  time: string;
 }
 
 /*
@@ -326,6 +333,23 @@ export const cloudStats = createApi({
       }),
       transformResponse: ([customerData]) => customerData,
     }),
+
+    getTestruns: builder.mutation<ITestrun[], void>({
+      query: () => ({
+        url: 'testruns',
+        method: 'POST',
+      }),
+    }),
+
+    getScatterplot: builder.mutation<IPerRequestData, IRequestBody>({
+      query: body => ({
+        url: 'scatterplot',
+        method: 'POST',
+        body,
+      }),
+      transformResponse: (scatterplot: IScatterplotData[]) =>
+        adaptPerNameChartData<IScatterplotData>(scatterplot, 'responseTime'),
+    }),
   }),
 });
 
@@ -347,4 +371,6 @@ export const {
   useGetErrorPercentageMutation,
   useGetTotalVuhMutation,
   useGetCustomerDataMutation,
+  useGetTestrunsMutation,
+  useGetScatterplotMutation,
 } = cloudStats;

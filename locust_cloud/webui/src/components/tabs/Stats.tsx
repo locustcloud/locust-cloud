@@ -68,10 +68,12 @@ export default function Stats() {
         errorPercentageError;
 
       if (fetchError && 'error' in fetchError) {
-        setSnackbar({ message: String(fetchError.error) });
-      } else {
-        setStatsData(statsData as IStatsData[]);
-        setFailuresData(failuresData as IFailuresData[]);
+        setSnackbar({ message: fetchError.error });
+      }
+
+      if (statsData && failuresData) {
+        setStatsData(statsData);
+        setFailuresData(failuresData);
         setTotalRequests(totalRequests as number);
         setTotalFailures(totalFailures as number);
         setErrorPercentage(errorPercentage as number);

@@ -1,16 +1,7 @@
 import { PayloadAction, createSlice } from '@reduxjs/toolkit';
+import { ITestrunsMap } from 'types/testruns.types';
 
 import { updateStateWithPayload } from 'redux/utils';
-
-export interface ITestrun {
-  runId: string;
-  endTime: string;
-  index: number;
-}
-
-export interface ITestrunsMap {
-  [key: string]: ITestrun;
-}
 
 export interface IToolbarState {
   resolution: number;
