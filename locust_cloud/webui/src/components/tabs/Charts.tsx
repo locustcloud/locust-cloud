@@ -5,8 +5,6 @@ import { LineChart, roundToDecimalPlaces, SWARM_STATE } from 'locust-ui';
 import Toolbar from 'components/Toolbar/Toolbar';
 import useAwaitInterval from 'hooks/useAwaitInterval';
 import {
-  IRequestLines,
-  IRpsData,
   useGetAvgResponseTimesMutation,
   useGetErrorsPerRequestMutation,
   useGetPerc99ResponseTimesMutation,
@@ -17,7 +15,8 @@ import {
 } from 'redux/api/cloud-stats';
 import { useAction, useLocustSelector, useSelector } from 'redux/hooks';
 import { snackbarActions } from 'redux/slice/snackbar.slice';
-import { IPerRequestData, chartValueFormatter } from 'utils/api';
+import { IPerRequestData, IRequestLines, IRpsData } from 'types/request.types';
+import { chartValueFormatter } from 'utils/chart';
 
 const defaultPerRequestState = { time: [] } as IPerRequestData;
 const defaultRpsDataState = { time: [] as string[] } as IRpsData;

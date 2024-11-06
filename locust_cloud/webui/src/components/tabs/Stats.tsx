@@ -6,8 +6,6 @@ import Gauge from 'components/Gauge/Gauge';
 import Toolbar from 'components/Toolbar/Toolbar';
 import useAwaitInterval from 'hooks/useAwaitInterval';
 import {
-  IFailuresData,
-  IStatsData,
   useGetErrorPercentageMutation,
   useGetFailuresMutation,
   useGetRequestsMutation,
@@ -16,6 +14,7 @@ import {
 } from 'redux/api/cloud-stats';
 import { useAction, useLocustSelector, useSelector } from 'redux/hooks';
 import { snackbarActions } from 'redux/slice/snackbar.slice';
+import { IFailuresData, IStatsData } from 'types/request.types';
 
 export default function Stats() {
   const swarmState = useLocustSelector(({ swarm }) => swarm.state);

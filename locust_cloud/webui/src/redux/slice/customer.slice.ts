@@ -1,7 +1,7 @@
 import { PayloadAction, createSlice } from '@reduxjs/toolkit';
-import { ICustomer } from 'types/customer.types';
 
 import { updateStateWithPayload } from 'redux/utils';
+import { ICustomer } from 'types/customer.types';
 
 export interface ICustomerState extends Partial<ICustomer> {
   username: string;

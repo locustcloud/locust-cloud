@@ -1,40 +1,6 @@
 import { roundToDecimalPlaces } from 'locust-ui';
 
-export interface IRequestBody {
-  start?: string;
-  end?: string;
-  resolution?: number;
-  testrun?: string;
-}
-
-export function fetchQuery<ResponseType>(
-  url: string,
-  body: IRequestBody,
-  onSuccess: (response: ResponseType) => void,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  onError?: (error: string) => void,
-) {
-  fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(body),
-  })
-    .then(res => res.json())
-    .then(data => onSuccess(data))
-    // eslint-disable-next-line no-console
-    .catch(error => console.error(error));
-}
-
-export interface IPerRequestResponse {
-  name: string;
-  time: string;
-}
-
-export type IPerRequestData = {
-  [key: string]: (string | null)[][];
-} & { time: string[] };
+import { IPerRequestData, IPerRequestResponse } from 'types/request.types';
 
 export const adaptPerNameChartData = <ChartType extends IPerRequestResponse>(
   chartData: ChartType[],

@@ -5,7 +5,8 @@ import Toolbar from 'components/Toolbar/Toolbar';
 import { useGetRequestNamesMutation, useGetScatterplotMutation } from 'redux/api/cloud-stats';
 import { useAction, useLocustSelector, useSelector } from 'redux/hooks';
 import { snackbarActions } from 'redux/slice/snackbar.slice';
-import { IPerRequestData, chartValueFormatter } from 'utils/api';
+import { IPerRequestData } from 'types/request.types';
+import { chartValueFormatter } from 'utils/chart';
 
 interface IRequestLines {
   name: string;

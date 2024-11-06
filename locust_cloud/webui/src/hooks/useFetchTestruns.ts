@@ -1,11 +1,11 @@
 import { useEffect } from 'react';
 import { SWARM_STATE, useInterval } from 'locust-ui';
-import { ITestrunsMap } from 'types/testruns.types';
 
 import { useGetTestrunsMutation } from 'redux/api/cloud-stats';
 import { useAction, useLocustSelector, useSelector } from 'redux/hooks';
 import { snackbarActions } from 'redux/slice/snackbar.slice';
 import { toolbarActions } from 'redux/slice/toolbar.slice';
+import { ITestrunsMap } from 'types/testruns.types';
 
 export default function useFetchTestruns() {
   const setToolbar = useAction(toolbarActions.setToolbar);
