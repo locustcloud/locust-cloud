@@ -100,13 +100,16 @@ class CredentialManager:
 
         except requests.exceptions.HTTPError as http_err:
             response = http_err.response
-            if response is not None and response.status_code == 401:
+            if response is None:
+                raise CredentialError("Response was None?!") from http_err
+
+            if response.status_code == 401:
                 raise CredentialError("Incorrect username or password.") from http_err
             else:
                 if js := response.json():
                     if message := js.get("Message"):
                         raise CredentialError(message)
-                error_info = f"HTTP {response.status_code} {response.reason}" if response else "No response received."
+                error_info = f"HTTP {response.status_code} {response.reason}"
                 raise CredentialError(f"HTTP error occurred while obtaining credentials: {error_info}") from http_err
         except requests.exceptions.RequestException as req_err:
             raise CredentialError(f"Request exception occurred while obtaining credentials: {req_err}") from req_err
