@@ -123,7 +123,6 @@ def register_auth(environment: locust.env.Environment):
                     "callback_url": f"{web_base_path}/confirm-signup",
                     "submit_button_text": "Confirm Email",
                 },
-                "info": "Please check your email and enter the confirmation code",
             }
         else:
             sign_up_args = {
@@ -142,12 +141,19 @@ def register_auth(environment: locust.env.Environment):
                             "label": "Access Code",
                             "name": "access_code",
                         },
+                        {
+                            "label": "I consent to:\n\n1.&nbsp;Only test your own website/service or our example example target\n\n2.&nbsp;Only use locust-cloud for its intended purpose: to load test other sites/services.\n\n3.&nbsp;Not attempt to circumvent your account limitations (e.g. max user count or max request count)\n\n4.&nbsp;Not use personal data (real names, addresses etc) in your tests.",
+                            "name": "consent",
+                            "default_value": False,
+                        },
                     ],
                     "callback_url": f"{web_base_path}/create-account",
                     "submit_button_text": "Sign Up",
                 },
             }
 
+        if session.get("auth_info"):
+            sign_up_args["info"] = session["auth_info"]
         if session.get("auth_sign_up_error"):
             sign_up_args["error"] = session["auth_sign_up_error"]
 
@@ -162,10 +168,17 @@ def register_auth(environment: locust.env.Environment):
             return redirect(url_for("locust.login"))
 
         session["auth_sign_up_error"] = ""
+        session["auth_info"] = ""
 
         username = request.form.get("username", "")
         password = request.form.get("password")
         access_code = request.form.get("access_code")
+        has_consented = request.form.get("consent")
+
+        if not has_consented:
+            session["auth_sign_up_error"] = "Please accept the terms and conditions to create an account."
+
+            return redirect(url_for("locust_cloud_auth.signup"))
 
         try:
             auth_response = requests.post(
@@ -177,10 +190,35 @@ def register_auth(environment: locust.env.Environment):
 
             session["user_sub"] = auth_response.json().get("user_sub")
             session["username"] = username
+            session["auth_info"] = (
+                "Please check your email and enter the confirmation code. If you didn't get a code after one minute, you can [request a new one](/resend-code)"
+            )
 
             return redirect(url_for("locust_cloud_auth.signup"))
         except requests.exceptions.HTTPError as e:
-            message = e.response.json().get("Message")
+            message = e.response.json().get("Message", "An unexpected error occured. Please try again.")
+            session["auth_info"] = ""
+            session["auth_sign_up_error"] = message
+
+            return redirect(url_for("locust_cloud_auth.signup"))
+
+    @auth_blueprint.route("/resend-code")
+    def resend_code():
+        try:
+            auth_response = requests.post(
+                "http://localhost:8000/1/auth/resend-confirmation",
+                json={"username": session["username"]},
+            )
+
+            auth_response.raise_for_status()
+
+            session["auth_sign_up_error"] = ""
+            session["auth_info"] = "Confirmation code sent, please check your email."
+
+            return redirect(url_for("locust_cloud_auth.signup"))
+        except requests.exceptions.HTTPError as e:
+            message = e.response.json().get("Message", "An unexpected error occured. Please try again.")
+            session["auth_info"] = ""
             session["auth_sign_up_error"] = message
 
             return redirect(url_for("locust_cloud_auth.signup"))
@@ -207,10 +245,12 @@ def register_auth(environment: locust.env.Environment):
 
             session["username"] = None
             session["auth_info"] = "Account created successfully!"
+            session["auth_sign_up_error"] = ""
 
             return redirect(url_for("locust.login"))
         except requests.exceptions.HTTPError as e:
-            message = e.response.json().get("Message")
+            message = e.response.json().get("Message", "An unexpected error occured. Please try again.")
+            session["auth_info"] = ""
             session["auth_sign_up_error"] = message
 
             return redirect(url_for("locust_cloud_auth.signup"))
