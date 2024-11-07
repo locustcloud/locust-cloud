@@ -102,7 +102,7 @@ advanced.add_argument(
 advanced.add_argument(
     "--region",
     type=str,
-    default=os.environ.get("AWS_DEFAULT_REGION", "us-east-1"),
+    default=os.environ.get("AWS_DEFAULT_REGION"),
     help="Sets the AWS region to use for the deployed cluster, e.g. us-east-1. It defaults to use AWS_DEFAULT_REGION env var, like AWS tools.",
 )
 parser.add_argument(
@@ -170,20 +170,23 @@ api_url = f"https://api.{options.region}.locust.cloud/1"
 
 
 def main() -> None:
+    if not options.region:
+        logger.error(
+            "Setting a region is required to use Locust Cloud. Please ensure the AWS_DEFAULT_REGION env variable or the --region flag is set."
+        )
+        sys.exit(1)
+
     s3_bucket = "dmdb-default" if options.region == "us-east-1" else "locust-default"
     deployments: list[Any] = []
-    os.environ["AWS_DEFAULT_REGION"] = options.region
+
+    if not ((options.username and options.password) or (options.aws_access_key_id and options.aws_secret_access_key)):
+        logger.error(
+            "Authentication is required to use Locust Cloud. Please ensure the LOCUST_CLOUD_USERNAME and LOCUST_CLOUD_PASSWORD environment variables are set."
+        )
+        sys.exit(1)
 
     try:
-        if not (
-            (options.username and options.password) or (options.aws_access_key_id and options.aws_secret_access_key)
-        ):
-            logger.error(
-                "Authentication is required to use Locust Cloud. Please ensure the LOCUST_CLOUD_USERNAME and LOCUST_CLOUD_PASSWORD environment variables are set."
-            )
-            sys.exit(1)
-
-        logger.info(f"Authenticating ({os.environ['AWS_DEFAULT_REGION']}, v{__version__})")
+        logger.info(f"Authenticating ({options.region}, v{__version__})")
         logger.debug(f"Lambda url: {api_url}")
         credential_manager = CredentialManager(
             lambda_url=api_url,
@@ -261,6 +264,7 @@ def main() -> None:
                 {"name": "LOCUST_FLAGS", "value": " ".join(locust_options)},
                 {"name": "LOCUSTCLOUD_REQUIREMENTS_URL", "value": requirements_url},
                 {"name": "LOCUSTCLOUD_DEPLOYER_URL", "value": api_url},
+                {"name": "AWS_DEFAULT_REGION", "value": options.region},
                 *locust_env_variables,
             ],
             "user_count": options.users,
