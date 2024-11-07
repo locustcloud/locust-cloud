@@ -264,7 +264,6 @@ def main() -> None:
                 {"name": "LOCUST_FLAGS", "value": " ".join(locust_options)},
                 {"name": "LOCUSTCLOUD_REQUIREMENTS_URL", "value": requirements_url},
                 {"name": "LOCUSTCLOUD_DEPLOYER_URL", "value": api_url},
-                {"name": "AWS_DEFAULT_REGION", "value": options.region},
                 *locust_env_variables,
             ],
             "user_count": options.users,

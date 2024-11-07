@@ -11,7 +11,7 @@ from flask_login import UserMixin, login_user
 from locust.html import render_template_from
 from locust_cloud import __version__
 
-REGION = os.environ.get("AWS_REGION", os.environ.get("AWS_DEFAULT_REGION", "us-east-1"))
+REGION = os.environ.get("AWS_DEFAULT_REGION")
 DEPLOYER_URL = f"https://api.{REGION}.locust.cloud/1"
 ALLOW_SIGNUP = os.environ.get("ALLOW_SIGNUP", True)
 
