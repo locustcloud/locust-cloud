@@ -168,10 +168,17 @@ def register_auth(environment: locust.env.Environment):
             return redirect(url_for("locust.login"))
 
         session["auth_sign_up_error"] = ""
+        session["auth_info"] = ""
 
         username = request.form.get("username", "")
         password = request.form.get("password")
         access_code = request.form.get("access_code")
+        has_consented = request.form.get("consent")
+
+        if not has_consented:
+            session["auth_sign_up_error"] = "Please accept the terms and conditions to create an account."
+
+            return redirect(url_for("locust_cloud_auth.signup"))
 
         try:
             auth_response = requests.post(
