@@ -14,7 +14,7 @@ class MyUser(FastHttpUser):
                 resp.failure(error)
 
         for product_id in random.sample(product_ids, 2):
-            with self.rest("POST", "/add_to_cart", json={"productId": product_id}) as resp:
+            with self.rest("POST", "/cart/add", json={"productId": product_id}) as resp:
                 pass
 
         with self.rest("POST", "/checkout/confirm") as resp:
