@@ -203,17 +203,18 @@ def main() -> None:
         aws_session_token = credentials.get("token", "")
 
         if options.delete:
-            delete(s3_bucket, credential_manager)
+            delete(credential_manager)
             return
 
         logger.info(f"Uploading {options.locustfile}")
         logger.debug(f"... to {s3_bucket}")
         s3 = credential_manager.session.client("s3")
         try:
-            s3.upload_file(options.locustfile, s3_bucket, os.path.basename(options.locustfile))
+            filename = options.username + os.path.basename(options.locustfile)
+            s3.upload_file(options.locustfile, s3_bucket, filename)
             locustfile_url = s3.generate_presigned_url(
                 ClientMethod="get_object",
-                Params={"Bucket": s3_bucket, "Key": os.path.basename(options.locustfile)},
+                Params={"Bucket": s3_bucket, "Key": filename},
                 ExpiresIn=3600,
             )
             logger.debug(f"Uploaded {options.locustfile} successfully")
@@ -228,10 +229,11 @@ def main() -> None:
         if options.requirements:
             logger.info(f"Uploading {options.requirements}")
             try:
-                s3.upload_file(options.requirements, s3_bucket, "requirements.txt")
+                filename = options.username + "requirements.txt"
+                s3.upload_file(options.requirements, s3_bucket, filename)
                 requirements_url = s3.generate_presigned_url(
                     ClientMethod="get_object",
-                    Params={"Bucket": s3_bucket, "Key": "requirements.txt"},
+                    Params={"Bucket": s3_bucket, "Key": filename},
                     ExpiresIn=3600,
                 )
                 logger.debug(f"Uploaded {options.requirements} successfully")
@@ -377,10 +379,10 @@ def main() -> None:
         logger.exception(e)
         sys.exit(1)
     finally:
-        delete(s3_bucket, credential_manager)
+        delete(credential_manager)
 
 
-def delete(s3_bucket, credential_manager):
+def delete(credential_manager):
     try:
         logger.info("Tearing down Locust cloud...")
         credential_manager.refresh_credentials()
@@ -412,9 +414,9 @@ def delete(s3_bucket, credential_manager):
 
     try:
         logger.debug("Cleaning up locustfiles")
-        s3 = credential_manager.session.resource("s3")
-        bucket = s3.Bucket(s3_bucket)
-        bucket.objects.all().delete()
+        # s3 = credential_manager.session.resource("s3")
+        # bucket = s3.Bucket(s3_bucket)
+        # bucket.objects.all().delete()
     except ClientError as e:
         logger.debug(f"Failed to clean up locust files: {e}")
         # sys.exit(1)
