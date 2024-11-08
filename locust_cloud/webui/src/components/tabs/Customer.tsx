@@ -15,6 +15,10 @@ function formatTotalVuh(totalVuhResponse: IVuhResponse[]) {
 
   const [{ totalVuh }] = totalVuhResponse;
 
+  if (totalVuh === '0') {
+    return totalVuh;
+  }
+
   const [days, hourMinuteSeconds] = totalVuh.includes('days')
     ? totalVuh.split(', ')
     : ['0 days', totalVuh];
