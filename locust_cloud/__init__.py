@@ -1,10 +1,10 @@
 import importlib.metadata
 import os
+import sys
 
 os.environ["LOCUST_SKIP_MONKEY_PATCH"] = "1"
 __version__ = importlib.metadata.version("locust-cloud")
 
-import argparse
 import logging
 
 import configargparse
@@ -19,37 +19,28 @@ from locust_cloud.timescale.query import register_query
 from psycopg.conninfo import make_conninfo
 from psycopg_pool import ConnectionPool
 
-GRAPH_VIEWER = os.environ.get("GRAPH_VIEWER")
 logger = logging.getLogger(__name__)
 
 
 @events.init_command_line_parser.add_listener
 def add_arguments(parser: LocustArgumentParser):
-    if not (os.environ.get("PGHOST") or GRAPH_VIEWER):
+    if not (os.environ.get("PGHOST")):
         parser.add_argument_group(
             "locust-cloud",
             "locust-cloud disabled, because PGHOST was not set - this is normal for local runs",
         )
         return
 
+    try:
+        REGION = os.environ["AWS_DEFAULT_REGION"]
+    except KeyError:
+        logger.fatal("Missing AWS_DEFAULT_REGION env var")
+        sys.exit(1)
+
     os.environ["LOCUST_BUILD_PATH"] = os.path.join(os.path.dirname(__file__), "webui/dist")
     locust_cloud = parser.add_argument_group(
         "locust-cloud",
         "Arguments for use with Locust cloud",
-    )
-    locust_cloud.add_argument(
-        "--exporter",
-        default=True,
-        action=argparse.BooleanOptionalAction,
-        env_var="LOCUST_EXPORTER",
-        help="Exports Locust stats to Timescale",
-    )
-    locust_cloud.add_argument(
-        "--description",
-        type=str,
-        env_var="LOCUST_DESCRIPTION",
-        default="",
-        help="Description of the test being run",
     )
     # do not set
     # used for sending the run id from master to workers
@@ -58,6 +49,27 @@ def add_arguments(parser: LocustArgumentParser):
         type=str,
         env_var="LOCUSTCLOUD_RUN_ID",
         help=configargparse.SUPPRESS,
+    )
+    locust_cloud.add_argument(
+        "--allow-signup",
+        env_var="LOCUSTCLOUD_ALLOW_SIGNUP",
+        help=configargparse.SUPPRESS,
+        default=False,
+        action="store_true",
+    )
+    locust_cloud.add_argument(
+        "--graph-viewer",
+        env_var="LOCUSTCLOUD_GRAPH_VIEWER",
+        help=configargparse.SUPPRESS,
+        default=False,
+        action="store_true",
+    )
+    locust_cloud.add_argument(
+        "--deployer-url",
+        type=str,
+        env_var="LOCUSTCLOUD_DEPLOYER_URL",
+        help=configargparse.SUPPRESS,
+        default=f"https://api.{REGION}.locust.cloud/1",
     )
 
 
@@ -86,14 +98,12 @@ def on_locust_init(environment: locust.env.Environment, **_args):
         logger.exception(e)
         raise
 
-    if not GRAPH_VIEWER:
+    if not environment.parsed_options.graph_viewer:
         IdleExit(environment)
-
-    if not GRAPH_VIEWER and environment.parsed_options and environment.parsed_options.exporter:
         Exporter(environment, pool)
 
     if environment.web_ui:
-        if GRAPH_VIEWER:
+        if environment.parsed_options.graph_viewer:
             environment.web_ui.template_args["isGraphViewer"] = True
 
         register_auth(environment)
