@@ -13,7 +13,7 @@ from locust_cloud import __version__
 
 REGION = os.environ.get("AWS_DEFAULT_REGION")
 DEPLOYER_URL = f"https://api.{REGION}.locust.cloud/1"
-ALLOW_SIGNUP = os.environ.get("ALLOW_SIGNUP", True)
+ALLOW_SIGNUP = os.environ.get("ALLOW_SIGNUP", False)
 
 
 logger = logging.getLogger(__name__)
