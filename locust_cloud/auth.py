@@ -128,6 +128,10 @@ def register_auth(environment: locust.env.Environment):
                             "name": "username",
                         },
                         {
+                            "label": "Full Name",
+                            "name": "full_name",
+                        },
+                        {
                             "label": "Password",
                             "name": "password",
                             "is_secret": True,
@@ -166,6 +170,7 @@ def register_auth(environment: locust.env.Environment):
         session["auth_info"] = ""
 
         username = request.form.get("username", "")
+        full_name = request.form.get("full_name", "")
         password = request.form.get("password")
         access_code = request.form.get("access_code")
         has_consented = request.form.get("consent")
@@ -185,6 +190,7 @@ def register_auth(environment: locust.env.Environment):
 
             session["user_sub"] = auth_response.json().get("user_sub")
             session["username"] = username
+            session["full_name"] = full_name
             session["auth_info"] = (
                 "Please check your email and enter the confirmation code. If you didn't get a code after one minute, you can [request a new one](/resend-code)"
             )
@@ -231,6 +237,7 @@ def register_auth(environment: locust.env.Environment):
                 f"{environment.parsed_options.deployer_url}/auth/confirm-signup",
                 json={
                     "username": session.get("username"),
+                    "full_name": session.get("full_name"),
                     "user_sub": session["user_sub"],
                     "confirmation_code": confirmation_code,
                 },
