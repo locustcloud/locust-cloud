@@ -148,6 +148,12 @@ parser.add_argument(
     default="latest",
     help=configargparse.SUPPRESS,  # overrides the locust-cloud docker image tag. for internal use
 )
+parser.add_argument(
+    "--mock-server",
+    action="store_true",
+    default=False,
+    help=configargparse.SUPPRESS,
+)
 
 options, locust_options = parser.parse_known_args()
 options: Namespace
@@ -270,6 +276,7 @@ def main() -> None:
             ],
             "user_count": options.users,
             "image_tag": options.image_tag,
+            "mock_server": options.mock_server,
         }
         if options.workers is not None:
             payload["worker_count"] = options.workers
