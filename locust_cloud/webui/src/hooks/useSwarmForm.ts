@@ -18,7 +18,7 @@ export default function useSwarmForm() {
   const handleFormChange = useCallback(
     ({ target }: React.ChangeEvent<HTMLFormElement>) => {
       if (target && target.name === 'userCount') {
-        const userCount = target.value;
+        const userCount = Number(target.value);
 
         if (maxUsers && userCount > maxUsers) {
           setAlert({
