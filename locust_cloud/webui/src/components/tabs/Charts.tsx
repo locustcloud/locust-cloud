@@ -126,9 +126,12 @@ export default function Charts() {
         // only show an error for the first testrun if no test is running
         if (
           !currentRequestLinesLength &&
+          !charts.requestLines &&
           (currentTestrunIndex !== 0 || swarmState !== SWARM_STATE.RUNNING)
         ) {
           setIsError(true);
+        } else {
+          setIsError(false);
         }
 
         const shouldUpdateRequestLines =
