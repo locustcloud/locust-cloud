@@ -235,7 +235,13 @@ export const cloudStats = createApi({
         url: 'customer',
         method: 'POST',
       }),
-      transformResponse: ([customerData]) => customerData,
+      transformResponse: ([customerData]) => ({
+        ...customerData,
+        maxUsers: Number(customerData.maxUsers),
+        maxVuh: Number(customerData.maxVuh),
+        maxWorkers: Number(customerData.maxWorkers),
+        usersPerWorker: Number(customerData.usersPerWorker),
+      }),
     }),
 
     getTestruns: builder.mutation<ITestrun[], void>({
