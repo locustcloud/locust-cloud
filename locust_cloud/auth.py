@@ -59,12 +59,16 @@ def register_auth(environment: locust.env.Environment):
         return None
 
     environment.web_ui.login_manager.user_loader(load_user)
+
     environment.web_ui.auth_args = cast(
         Any,
         {
             "username_password_callback": f"{web_base_path}/authenticate",
         },
     )
+
+    if environment.parsed_options.graph_viewer:
+        environment.web_ui.auth_args["username_password_callback"] = None
 
     if environment.parsed_options.allow_signup:
         environment.web_ui.auth_args["auth_providers"] = [
@@ -73,6 +77,9 @@ def register_auth(environment: locust.env.Environment):
 
     @auth_blueprint.route("/authenticate", methods=["POST"])
     def login_submit():
+        if environment.parsed_options.graph_viewer:
+            return redirect(url_for("locust.login"))
+
         username = request.form.get("username", "")
         password = request.form.get("password")
 
