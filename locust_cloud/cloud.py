@@ -210,7 +210,7 @@ def main() -> None:
         logger.debug(f"... to {s3_bucket}")
         s3 = credential_manager.session.client("s3")
         try:
-            filename = options.username + os.path.basename(options.locustfile)
+            filename = options.username + "__" + os.path.basename(options.locustfile)
             s3.upload_file(options.locustfile, s3_bucket, filename)
             locustfile_url = s3.generate_presigned_url(
                 ClientMethod="get_object",
@@ -229,7 +229,7 @@ def main() -> None:
         if options.requirements:
             logger.info(f"Uploading {options.requirements}")
             try:
-                filename = options.username + "requirements.txt"
+                filename = options.username + "__" + "requirements.txt"
                 s3.upload_file(options.requirements, s3_bucket, filename)
                 requirements_url = s3.generate_presigned_url(
                     ClientMethod="get_object",
