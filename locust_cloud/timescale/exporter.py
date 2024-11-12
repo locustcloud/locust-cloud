@@ -228,7 +228,7 @@ class Exporter:
                     )
                     else 0,
                     self.env.web_ui.template_args.get("username", "") if self.env.web_ui else "",
-                    self.env.parsed_locustfiles[0].split("/")[-1],
+                    self.env.parsed_locustfiles[0].split("/")[-1].split("__")[-1],
                     " ".join(cmd),
                 ),
             )
