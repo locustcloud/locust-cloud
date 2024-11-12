@@ -262,6 +262,6 @@ def register_auth(environment: locust.env.Environment):
             session["auth_info"] = ""
             session["auth_sign_up_error"] = message
 
-            return redirect(url_for("locust_cloud_auth.signup"))
+            return redirect("https://docs.locust.cloud/")
 
     environment.web_ui.app.register_blueprint(auth_blueprint)
