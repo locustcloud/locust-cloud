@@ -113,6 +113,7 @@ def register_auth(environment: locust.env.Environment):
                         {
                             "label": "Confirmation Code",
                             "name": "confirmation_code",
+                            "is_required": True,
                         },
                     ],
                     "callback_url": f"{web_base_path}/confirm-signup",
@@ -126,24 +127,29 @@ def register_auth(environment: locust.env.Environment):
                         {
                             "label": "Username",
                             "name": "username",
+                            "is_required": True,
                         },
                         {
                             "label": "Full Name",
                             "name": "full_name",
+                            "is_required": True,
                         },
                         {
                             "label": "Password",
                             "name": "password",
                             "is_secret": True,
+                            "is_required": True,
                         },
                         {
                             "label": "Access Code",
                             "name": "access_code",
+                            "is_required": True,
                         },
                         {
                             "label": "I consent to:\n\n1.&nbsp;Only test your own website/service or our example example target\n\n2.&nbsp;Only use locust-cloud for its intended purpose: to load test other sites/services.\n\n3.&nbsp;Not attempt to circumvent your account limitations (e.g. max user count or max request count)\n\n4.&nbsp;Not use personal data (real names, addresses etc) in your tests.",
                             "name": "consent",
                             "default_value": False,
+                            "is_required": True,
                         },
                     ],
                     "callback_url": f"{web_base_path}/create-account",
@@ -173,12 +179,6 @@ def register_auth(environment: locust.env.Environment):
         full_name = request.form.get("full_name", "")
         password = request.form.get("password")
         access_code = request.form.get("access_code")
-        has_consented = request.form.get("consent")
-
-        if not has_consented:
-            session["auth_sign_up_error"] = "Please accept the terms and conditions to create an account."
-
-            return redirect(url_for("locust_cloud_auth.signup"))
 
         try:
             auth_response = requests.post(
@@ -207,7 +207,7 @@ def register_auth(environment: locust.env.Environment):
     def resend_code():
         try:
             auth_response = requests.post(
-                "http://localhost:8000/1/auth/resend-confirmation",
+                f"{environment.parsed_options.deployer_url}/1/auth/resend-confirmation",
                 json={"username": session["username"]},
             )
 
