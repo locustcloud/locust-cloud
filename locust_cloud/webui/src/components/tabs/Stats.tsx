@@ -18,7 +18,7 @@ import { IFailuresData, IStatsData } from 'types/request.types';
 
 export default function Stats() {
   const swarmState = useLocustSelector(({ swarm }) => swarm.state);
-  const { currentTestrun, testruns } = useSelector(({ toolbar }) => toolbar);
+  const { currentTestrun, currentTestrunIndex, testruns } = useSelector(({ toolbar }) => toolbar);
   const setSnackbar = useAction(snackbarActions.setSnackbar);
 
   const [timestamp, setTimestamp] = useState(new Date().toISOString());
@@ -41,7 +41,7 @@ export default function Stats() {
 
       const payload = {
         start: currentTestrun,
-        end: endTime || timestamp,
+        end: swarmState === SWARM_STATE.RUNNING && currentTestrunIndex === 0 ? timestamp : endTime,
         testrun: currentTestrun,
       };
 
