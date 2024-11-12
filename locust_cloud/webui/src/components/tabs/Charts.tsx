@@ -94,7 +94,10 @@ export default function Charts() {
       const { endTime } = testruns[new Date(currentTestrun).toLocaleString()];
       const payload = {
         start: currentTestrun,
-        end: swarmState === SWARM_STATE.RUNNING && currentTestrunIndex === 0 ? timestamp : endTime,
+        end:
+          !endTime || (swarmState === SWARM_STATE.RUNNING && currentTestrunIndex === 0)
+            ? timestamp
+            : endTime,
         resolution,
         testrun: currentTestrun,
       };

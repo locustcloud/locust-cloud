@@ -41,7 +41,10 @@ export default function Stats() {
 
       const payload = {
         start: currentTestrun,
-        end: swarmState === SWARM_STATE.RUNNING && currentTestrunIndex === 0 ? timestamp : endTime,
+        end:
+          !endTime || (swarmState === SWARM_STATE.RUNNING && currentTestrunIndex === 0)
+            ? timestamp
+            : endTime,
         testrun: currentTestrun,
       };
 
