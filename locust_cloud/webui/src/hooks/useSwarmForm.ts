@@ -38,7 +38,7 @@ export default function useSwarmForm() {
         }
       }
     },
-    [numUsers, workerCount],
+    [numUsers, workerCount, maxUsers, usersPerWorker],
   );
 
   return {
