@@ -153,7 +153,7 @@ def register_auth(environment: locust.env.Environment):
                             "is_required": True,
                         },
                         {
-                            "label": "I consent to:\n\n1.&nbsp;Only test your own website/service or our example example target\n\n2.&nbsp;Only use locust-cloud for its intended purpose: to load test other sites/services.\n\n3.&nbsp;Not attempt to circumvent your account limitations (e.g. max user count or max request count)\n\n4.&nbsp;Not use personal data (real names, addresses etc) in your tests.",
+                            "label": "I consent to:\n\n1.&nbsp;Only test your own website/service or our example target\n\n2.&nbsp;Only use locust-cloud for its intended purpose: to load test other sites/services.\n\n3.&nbsp;Not attempt to circumvent your account limitations (e.g. max user count or max request count)\n\n4.&nbsp;Not use personal data (real names, addresses etc) in your tests.",
                             "name": "consent",
                             "default_value": False,
                             "is_required": True,
