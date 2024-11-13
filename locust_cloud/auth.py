@@ -94,7 +94,7 @@ def register_auth(environment: locust.env.Environment):
 
             credentials = auth_response.json()
 
-            if credentials["user_sub_id"] != os.getenv("CUSTOMER_ID", ""):
+            if os.getenv("CUSTOMER_ID", "") and credentials["user_sub_id"] != os.getenv("CUSTOMER_ID", ""):
                 session["auth_error"] = "Invalid login for this deployment"
                 return redirect(url_for("locust.login"))
 
