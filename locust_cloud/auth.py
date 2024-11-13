@@ -219,7 +219,7 @@ def register_auth(environment: locust.env.Environment):
     def resend_code():
         try:
             auth_response = requests.post(
-                f"{environment.parsed_options.deployer_url}/1/auth/resend-confirmation",
+                f"{environment.parsed_options.deployer_url}/auth/resend-confirmation",
                 json={"username": session["username"]},
             )
 
