@@ -42,7 +42,7 @@ def set_credentials(username: str, credentials: Credentials, response: werkzeug.
 
 
 def register_auth(environment: locust.env.Environment):
-    environment.web_ui.app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
+    environment.web_ui.app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "") + os.getenv("CUSTOMER_ID", "")
     environment.web_ui.app.debug = False
 
     web_base_path = environment.parsed_options.web_base_path
@@ -93,6 +93,11 @@ def register_auth(environment: locust.env.Environment):
             auth_response.raise_for_status()
 
             credentials = auth_response.json()
+
+            if credentials["user_sub_id"] != os.getenv("CUSTOMER_ID", ""):
+                session["auth_error"] = "Invalid login for this deployment"
+                return redirect(url_for("locust.login"))
+
             response = redirect(url_for("locust.index"))
             response = set_credentials(username, credentials, response)
             login_user(AuthUser(credentials["user_sub_id"]))
