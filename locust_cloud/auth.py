@@ -256,12 +256,12 @@ def register_auth(environment: locust.env.Environment):
             session["auth_info"] = "Account created successfully!"
             session["auth_sign_up_error"] = ""
 
-            return redirect(url_for("locust.login"))
+            return redirect("https://docs.locust.cloud/")
         except requests.exceptions.HTTPError as e:
             message = e.response.json().get("Message", "An unexpected error occured. Please try again.")
             session["auth_info"] = ""
             session["auth_sign_up_error"] = message
 
-            return redirect("https://docs.locust.cloud/")
+            return redirect(url_for("locust_cloud_auth.signup"))
 
     environment.web_ui.app.register_blueprint(auth_blueprint)
