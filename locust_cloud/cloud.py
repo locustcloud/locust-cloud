@@ -172,7 +172,7 @@ logging.getLogger("requests").setLevel(logging.INFO)
 logging.getLogger("urllib3").setLevel(logging.INFO)
 
 
-api_url = f"https://api.{options.region}.locust.cloud/1"
+api_url = os.environ.get("LOCUSTCLOUD_DEPLOYER_URL", f"https://api.{options.region}.locust.cloud/1")
 
 
 def main() -> None:
