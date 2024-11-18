@@ -181,6 +181,8 @@ def main() -> None:
             "Setting a region is required to use Locust Cloud. Please ensure the AWS_DEFAULT_REGION env variable or the --region flag is set."
         )
         sys.exit(1)
+    if options.region and not os.environ.get("AWS_DEFAULT_REGION"):
+        os.environ["AWS_DEFAULT_REGION"] = options.region
 
     s3_bucket = "dmdb-default" if options.region == "us-east-1" else "locust-default"
     deployments: list[Any] = []
