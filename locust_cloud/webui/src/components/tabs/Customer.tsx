@@ -98,7 +98,7 @@ export default function Customer() {
       >
         <Typography sx={{ fontWeight: 'bold' }}>Current Month Virtual User Time</Typography>
         <Typography>Included in Plan: {maxVuh}</Typography>
-        <Typography>Used: {totalVuh}</Typography>
+        <Typography>Used: {totalVuh || '0 minutes'}</Typography>
       </Box>
     </Paper>
   );
