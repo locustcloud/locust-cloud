@@ -87,7 +87,7 @@ def register_auth(environment: locust.env.Environment):
 
             credentials = auth_response.json()
 
-            if os.getenv("CUSTOMER_ID", "") and credentials["user_sub_id"] != os.getenv("CUSTOMER_ID", ""):
+            if os.getenv("CUSTOMER_ID", "") and credentials["customer_id"] != os.getenv("CUSTOMER_ID", ""):
                 session["auth_error"] = "Invalid login for this deployment"
                 return redirect(url_for("locust.login"))
 
@@ -133,10 +133,11 @@ def register_auth(environment: locust.env.Environment):
                             "label": "Username",
                             "name": "username",
                             "is_required": True,
+                            "type": "email",
                         },
                         {
                             "label": "Full Name",
-                            "name": "full_name",
+                            "name": "customer_name",
                             "is_required": True,
                         },
                         {
@@ -181,7 +182,7 @@ def register_auth(environment: locust.env.Environment):
         session["auth_info"] = ""
 
         username = request.form.get("username", "")
-        full_name = request.form.get("full_name", "")
+        customer_name = request.form.get("customer_name", "")
         password = request.form.get("password")
         access_code = request.form.get("access_code")
 
@@ -193,9 +194,9 @@ def register_auth(environment: locust.env.Environment):
 
             auth_response.raise_for_status()
 
-            session["user_sub"] = auth_response.json().get("user_sub")
+            session["user_sub_id"] = auth_response.json().get("user_sub_id")
             session["username"] = username
-            session["full_name"] = full_name
+            session["customer_name"] = customer_name
             session["auth_info"] = (
                 "Please check your email and enter the confirmation code. If you didn't get a code after one minute, you can [request a new one](/resend-code)"
             )
@@ -242,8 +243,8 @@ def register_auth(environment: locust.env.Environment):
                 f"{environment.parsed_options.deployer_url}/auth/confirm-signup",
                 json={
                     "username": session.get("username"),
-                    "full_name": session.get("full_name"),
-                    "user_sub": session["user_sub"],
+                    "customer_name": session.get("customer_name"),
+                    "user_sub_id": session["user_sub_id"],
                     "confirmation_code": confirmation_code,
                 },
             )
