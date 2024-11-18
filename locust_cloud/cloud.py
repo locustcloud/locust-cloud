@@ -102,7 +102,7 @@ advanced.add_argument(
 advanced.add_argument(
     "--region",
     type=str,
-    default="eu-north-1",  # temp setup for pycon # os.environ.get("AWS_DEFAULT_REGION")
+    default=os.environ.get("AWS_DEFAULT_REGION"),
     help="Sets the AWS region to use for the deployed cluster, e.g. us-east-1. It defaults to use AWS_DEFAULT_REGION env var, like AWS tools.",
 )
 parser.add_argument(
@@ -181,6 +181,8 @@ def main() -> None:
             "Setting a region is required to use Locust Cloud. Please ensure the AWS_DEFAULT_REGION env variable or the --region flag is set."
         )
         sys.exit(1)
+    if options.region:
+        os.environ["AWS_DEFAULT_REGION"] = options.region
 
     s3_bucket = "dmdb-default" if options.region == "us-east-1" else "locust-default"
     deployments: list[Any] = []
