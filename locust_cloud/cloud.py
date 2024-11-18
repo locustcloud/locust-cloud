@@ -1,3 +1,5 @@
+import base64
+import gzip
 import json
 import logging
 import os
@@ -167,7 +169,6 @@ logger = logging.getLogger(__name__)
 # Restore log level for other libs. Yes, this can be done more nicely
 logging.getLogger("botocore").setLevel(logging.INFO)
 logging.getLogger("boto3").setLevel(logging.INFO)
-logging.getLogger("s3transfer").setLevel(logging.INFO)
 logging.getLogger("requests").setLevel(logging.INFO)
 logging.getLogger("urllib3").setLevel(logging.INFO)
 
@@ -184,7 +185,6 @@ def main() -> None:
     if options.region:
         os.environ["AWS_DEFAULT_REGION"] = options.region
 
-    s3_bucket = "dmdb-default" if options.region == "us-east-1" else "locust-default"
     deployments: list[Any] = []
 
     if not ((options.username and options.password) or (options.aws_access_key_id and options.aws_secret_access_key)):
@@ -214,42 +214,23 @@ def main() -> None:
             delete(credential_manager)
             return
 
-        logger.info(f"Uploading {options.locustfile}")
-        logger.debug(f"... to {s3_bucket}")
-        s3 = credential_manager.session.client("s3")
         try:
-            filename = options.username + "__" + os.path.basename(options.locustfile)
-            s3.upload_file(options.locustfile, s3_bucket, filename)
-            locustfile_url = s3.generate_presigned_url(
-                ClientMethod="get_object",
-                Params={"Bucket": s3_bucket, "Key": filename},
-                ExpiresIn=3600,
-            )
-            logger.debug(f"Uploaded {options.locustfile} successfully")
+            with open(options.locustfile, "rb") as f:
+                locustfile_data = base64.b64encode(gzip.compress(f.read())).decode()
+
         except FileNotFoundError:
             logger.error(f"File not found: {options.locustfile}")
             sys.exit(1)
-        except ClientError as e:
-            logger.error(f"Failed to upload {options.locustfile}: {e}")
-            sys.exit(1)
 
-        requirements_url = ""
+        requirements_data = None
+
         if options.requirements:
-            logger.info(f"Uploading {options.requirements}")
             try:
-                filename = options.username + "__" + "requirements.txt"
-                s3.upload_file(options.requirements, s3_bucket, filename)
-                requirements_url = s3.generate_presigned_url(
-                    ClientMethod="get_object",
-                    Params={"Bucket": s3_bucket, "Key": filename},
-                    ExpiresIn=3600,
-                )
-                logger.debug(f"Uploaded {options.requirements} successfully")
+                with open(options.requirements, "rb") as f:
+                    requirements_data = base64.b64encode(gzip.compress(f.read())).decode()
+
             except FileNotFoundError:
                 logger.error(f"File not found: {options.requirements}")
-                sys.exit(1)
-            except ClientError as e:
-                logger.error(f"Failed to upload {options.requirements}: {e}")
                 sys.exit(1)
 
         logger.info("Deploying load generators")
@@ -269,13 +250,13 @@ def main() -> None:
         deploy_endpoint = f"{api_url}/deploy"
         payload = {
             "locust_args": [
-                {"name": "LOCUST_LOCUSTFILE", "value": locustfile_url},
                 {"name": "LOCUST_USERS", "value": str(options.users)},
                 {"name": "LOCUST_FLAGS", "value": " ".join(locust_options)},
-                {"name": "LOCUSTCLOUD_REQUIREMENTS_URL", "value": requirements_url},
                 {"name": "LOCUSTCLOUD_DEPLOYER_URL", "value": api_url},
                 *locust_env_variables,
             ],
+            "locustfile_data": locustfile_data,
+            "requirements_data": requirements_data,
             "user_count": options.users,
             "image_tag": options.image_tag,
             "mock_server": options.mock_server,
@@ -420,15 +401,6 @@ def delete(credential_manager):
         logger.debug(response.json()["message"])
     except Exception as e:
         logger.error(f"Could not automatically tear down Locust Cloud: {e.__class__.__name__}:{e}")
-
-    try:
-        logger.debug("Cleaning up locustfiles")
-        # s3 = credential_manager.session.resource("s3")
-        # bucket = s3.Bucket(s3_bucket)
-        # bucket.objects.all().delete()
-    except ClientError as e:
-        logger.debug(f"Failed to clean up locust files: {e}")
-        # sys.exit(1)
 
     logger.info("Done! ✨")
 
