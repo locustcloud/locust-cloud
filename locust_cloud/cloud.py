@@ -102,7 +102,7 @@ advanced.add_argument(
 advanced.add_argument(
     "--region",
     type=str,
-    default="eu-north-1",  # temp setup for pycon # os.environ.get("AWS_DEFAULT_REGION")
+    default=os.environ.get("AWS_DEFAULT_REGION"),
     help="Sets the AWS region to use for the deployed cluster, e.g. us-east-1. It defaults to use AWS_DEFAULT_REGION env var, like AWS tools.",
 )
 parser.add_argument(
