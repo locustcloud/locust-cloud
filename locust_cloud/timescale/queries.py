@@ -274,7 +274,7 @@ SELECT
   max_users as "maxUsers",
   users_per_worker as "usersPerWorker"
 FROM customers
-WHERE customer = current_user
+WHERE id = current_user
 """
 
 queries: dict["str", LiteralString] = {
