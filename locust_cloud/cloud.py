@@ -282,7 +282,7 @@ def main() -> None:
             deployments = response.json().get("deployments", [])
         else:
             try:
-                logger.error(f"Error when deploying: {response.json()['Message']}")
+                logger.error(f"{response.json()['Message']} (HTTP {response.status_code}/{response.reason})")
             except Exception:
                 logger.error(
                     f"HTTP {response.status_code}/{response.reason} - Response: {response.text} - URL: {response.request.url}"
