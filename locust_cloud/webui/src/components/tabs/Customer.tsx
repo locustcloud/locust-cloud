@@ -10,13 +10,13 @@ const pluralize = (n: number) => (n === 1 ? '' : 's');
 
 function formatTotalVuh(totalVuhResponse: IVuhResponse[]) {
   if (!totalVuhResponse || !totalVuhResponse.length || !totalVuhResponse[0].totalVuh) {
-    return 'Unknown';
+    return '0 minutes';
   }
 
   const [{ totalVuh }] = totalVuhResponse;
 
   if (totalVuh === '0') {
-    return totalVuh;
+    return '0 minutes';
   }
 
   const [days, hourMinuteSeconds] = totalVuh.includes('days')
@@ -28,6 +28,10 @@ function formatTotalVuh(totalVuhResponse: IVuhResponse[]) {
   const [hours, minutes] = hourMinuteSeconds.split(':').map(Number);
 
   const totalHours = hours + daysInHours;
+
+  if (!totalHours && !minutes) {
+    return '0 minutes';
+  }
 
   return [
     totalHours && `${totalHours} hour${pluralize(totalHours)}`,
@@ -100,6 +104,34 @@ export default function Customer() {
         <Typography>Included in Plan: {maxVuh}</Typography>
         <Typography>Used: {totalVuh || '0 minutes'}</Typography>
       </Box>
+
+      {window.templateArgs.locustVersion && (
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            flexDirection: 'column',
+            rowGap: 1,
+          }}
+        >
+          <Typography sx={{ fontWeight: 'bold' }}>Locust Version</Typography>
+          <Typography>{window.templateArgs.locustVersion}</Typography>
+        </Box>
+      )}
+
+      {window.templateArgs.locustCloudVersion && (
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            flexDirection: 'column',
+            rowGap: 1,
+          }}
+        >
+          <Typography sx={{ fontWeight: 'bold' }}>Locust Cloud Version</Typography>
+          <Typography>{window.templateArgs.locustCloudVersion}</Typography>
+        </Box>
+      )}
     </Paper>
   );
 }

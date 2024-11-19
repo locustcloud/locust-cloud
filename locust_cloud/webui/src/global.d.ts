@@ -2,6 +2,8 @@ import { IWindow } from 'locust-ui';
 
 interface ITemplateArgs extends IWindow['templateArgs'] {
   isGraphViewer: boolean;
+  locustVersion: string;
+  locustCloudVersion: string;
   username: string;
 }
 
