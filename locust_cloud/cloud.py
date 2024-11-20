@@ -257,7 +257,7 @@ def main() -> None:
             "locust_args": [
                 {"name": "LOCUST_USERS", "value": str(options.users)},
                 {"name": "LOCUST_FLAGS", "value": " ".join(locust_options)},
-                {"name": "LOCUSTCLOUD_DEPLOYER_URL", "value": os.environ.get("LOCUSTCLOUD_DEPLOYER_URL")},
+                {"name": "LOCUSTCLOUD_DEPLOYER_URL", "value": api_url},
                 {"name": "LOCUSTCLOUD_PROFILE", "value": options.profile},
                 *locust_env_variables,
             ],
