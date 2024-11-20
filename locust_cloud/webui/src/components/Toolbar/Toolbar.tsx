@@ -91,17 +91,16 @@ export default function Toolbar({
         mb: 1,
       }}
     >
-      {shouldShowResolution && (
+      {profiles && (
         <Select
-          defaultValue={TOOLBAR_DEFAULT_RESOLUTION}
-          label='Resolution'
-          name='resolution'
-          onChange={(e: SelectChangeEvent<string>) =>
-            setToolbar({ resolution: Number(e.target.value) })
-          }
-          options={TOOLBAR_RESOLUTION_OPTIONS}
+          defaultValue={swarmState === SWARM_STATE.STOPPED && profileFromUrl}
+          displayEmpty
+          label='Profile'
+          name='profile'
+          onChange={handleSelectProfile}
+          options={profiles}
           size='small'
-          sx={{ width: '150px' }}
+          sx={{ width: '250px' }}
         />
       )}
       {!!testrunsForDisplay.length && (
@@ -115,16 +114,17 @@ export default function Toolbar({
           value={currentTestrunDisplayValue}
         />
       )}
-      {profiles && (
+      {shouldShowResolution && (
         <Select
-          defaultValue={swarmState === SWARM_STATE.STOPPED && profileFromUrl}
-          displayEmpty
-          label='Profile'
-          name='profile'
-          onChange={handleSelectProfile}
-          options={profiles}
+          defaultValue={TOOLBAR_DEFAULT_RESOLUTION}
+          label='Resolution'
+          name='resolution'
+          onChange={(e: SelectChangeEvent<string>) =>
+            setToolbar({ resolution: Number(e.target.value) })
+          }
+          options={TOOLBAR_RESOLUTION_OPTIONS}
           size='small'
-          sx={{ width: '250px' }}
+          sx={{ width: '150px' }}
         />
       )}
       {showHideAdvanced && (
