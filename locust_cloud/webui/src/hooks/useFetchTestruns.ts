@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { SWARM_STATE, useInterval } from 'locust-ui';
+import { pushQuery, SWARM_STATE, useInterval } from 'locust-ui';
 
 import { useGetTestrunsMutation } from 'redux/api/cloud-stats';
 import { useAction, useLocustSelector, useSelector } from 'redux/hooks';
@@ -50,6 +50,10 @@ export default function useFetchTestruns() {
         swarmState === SWARM_STATE.RUNNING || profile
           ? testruns[testrunsForDisplay[0]]
           : (testrunFromUrl && testruns[testrunFromUrl]) || testruns[testrunsForDisplay[0]];
+
+      if (profile) {
+        pushQuery({ testrun: testrunsForDisplay[0] });
+      }
 
       setToolbar({
         testruns,
