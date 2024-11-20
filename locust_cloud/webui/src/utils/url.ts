@@ -8,6 +8,14 @@ export const pushQuery = (query: { [key: string]: string }) => {
   window.history.pushState(null, '', url);
 };
 
+export const removeQuery = (key: string) => {
+  const url = new URL(window.location.href);
+
+  url.searchParams.delete(key);
+
+  window.history.pushState(null, '', url);
+};
+
 export const createAbsoluteUrl = (query: { [key: string]: string }) => {
   const url = new URL(window.location.href);
 

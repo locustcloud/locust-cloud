@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react';
 import { Box, Checkbox, FormControlLabel, SelectChangeEvent } from '@mui/material';
-import { Select } from 'locust-ui';
+import { Select, SWARM_STATE } from 'locust-ui';
 
 import {
   TOOLBAR_DEFAULT_RESOLUTION,
   TOOLBAR_RESOLUTION_OPTIONS,
 } from 'components/Toolbar/Toolbar.constants';
+import { useGetProfilesMutation } from 'redux/api/cloud-stats';
 import { useAction, useLocustSelector, useSelector } from 'redux/hooks';
 import { toolbarActions } from 'redux/slice/toolbar.slice';
-import { pushQuery } from 'utils/url';
+import { pushQuery, removeQuery } from 'utils/url';
 
 interface IToolbar {
   onSelectTestRun?: (runId: string) => void;
@@ -22,15 +23,20 @@ export default function Toolbar({
   shouldShowResolution = false,
 }: IToolbar) {
   const setToolbar = useAction(toolbarActions.setToolbar);
+  const swarmState = useLocustSelector(({ swarm }) => swarm.state);
   const { testruns, testrunsForDisplay, currentTestrunIndex } = useSelector(
     ({ toolbar }) => toolbar,
   );
   const shouldShowAdvancedFromUrl = useLocustSelector(
     ({ url }) => (url.query && url.query.showAdvanced === 'true') || false,
   );
+  const profileFromUrl = useLocustSelector(({ url }) => url.query && url.query.profile);
   const [currentTestrunDisplayValue, setCurrentTestrunDisplayValue] = useState(
     testrunsForDisplay[0],
   );
+  const [profiles, setProfiles] = useState<string[]>();
+
+  const [getProfiles] = useGetProfilesMutation();
 
   const handleTestrunChange = (e: SelectChangeEvent<string>) => {
     // find in test runs to get correct date format
@@ -48,6 +54,19 @@ export default function Toolbar({
     pushQuery({ showAdvanced: String(e.target.checked) });
   };
 
+  const handleSelectProfile = (e: SelectChangeEvent<string>) => {
+    const currentProfile = e.target.value;
+
+    if (currentProfile === 'None') {
+      setToolbar({ profile: undefined });
+      removeQuery('profile');
+      return;
+    }
+
+    setToolbar({ profile: currentProfile });
+    pushQuery({ profile: currentProfile });
+  };
+
   useEffect(() => {
     if (currentTestrunIndex !== undefined && currentTestrunIndex >= 0) {
       setCurrentTestrunDisplayValue(testrunsForDisplay[currentTestrunIndex]);
@@ -59,6 +78,10 @@ export default function Toolbar({
       setToolbar({ shouldShowAdvanced: shouldShowAdvancedFromUrl });
     }
   }, [shouldShowAdvancedFromUrl]);
+
+  useEffect(() => {
+    getProfiles().then(({ data = [] }) => setProfiles(['None'].concat(data)));
+  }, []);
 
   return (
     <Box
@@ -90,6 +113,18 @@ export default function Toolbar({
           size='small'
           sx={{ width: '250px' }}
           value={currentTestrunDisplayValue}
+        />
+      )}
+      {profiles && (
+        <Select
+          defaultValue={swarmState === SWARM_STATE.STOPPED && profileFromUrl}
+          displayEmpty
+          label='Profile'
+          name='profile'
+          onChange={handleSelectProfile}
+          options={profiles}
+          size='small'
+          sx={{ width: '250px' }}
         />
       )}
       {showHideAdvanced && (

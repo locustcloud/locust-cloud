@@ -71,6 +71,12 @@ def add_arguments(parser: LocustArgumentParser):
         help=configargparse.SUPPRESS,
         default=f"https://api.{REGION}.locust.cloud/1",
     )
+    locust_cloud.add_argument(
+        "--profile",
+        type=str,
+        env_var="LOCUSTCLOUD_PROFILE",
+        help=configargparse.SUPPRESS,
+    )
 
 
 def set_autocommit(conn: psycopg.Connection):

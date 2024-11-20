@@ -2,6 +2,8 @@ export interface ITestrun {
   runId: string;
   endTime: string;
   index: number;
+  profile?: string;
+  locustfile?: string;
 }
 
 export interface ITestrunsMap {
