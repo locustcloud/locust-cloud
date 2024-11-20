@@ -260,6 +260,15 @@ export const cloudStats = createApi({
       transformResponse: (scatterplot: IScatterplotData[]) =>
         adaptPerNameChartData<IScatterplotData>(scatterplot, 'responseTime'),
     }),
+
+    getProfiles: builder.mutation<string[], void>({
+      query: () => ({
+        url: 'profiles',
+        method: 'POST',
+      }),
+      transformResponse: (profiles: { profile: string }[]) =>
+        profiles && profiles.map(({ profile }) => profile),
+    }),
   }),
 });
 
@@ -283,4 +292,5 @@ export const {
   useGetCustomerDataMutation,
   useGetTestrunsMutation,
   useGetScatterplotMutation,
+  useGetProfilesMutation,
 } = cloudStats;

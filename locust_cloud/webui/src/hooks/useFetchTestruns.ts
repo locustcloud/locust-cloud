@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { SWARM_STATE, useInterval } from 'locust-ui';
+import { pushQuery, SWARM_STATE, useInterval } from 'locust-ui';
 
 import { useGetTestrunsMutation } from 'redux/api/cloud-stats';
 import { useAction, useLocustSelector, useSelector } from 'redux/hooks';
@@ -10,8 +10,10 @@ import { ITestrunsMap } from 'types/testruns.types';
 export default function useFetchTestruns() {
   const setToolbar = useAction(toolbarActions.setToolbar);
   const swarmState = useLocustSelector(({ swarm }) => swarm.state);
-  const testrunFromUrl = useLocustSelector(({ url }) => url.query && url.query.testrun);
-  const { testrunsForDisplay, previousTestrun } = useSelector(({ toolbar }) => toolbar);
+  const { testrun: testrunFromUrl, profile: profileFromUrl } = useLocustSelector(
+    ({ url }) => url.query || {},
+  );
+  const { testrunsForDisplay, previousTestrun, profile } = useSelector(({ toolbar }) => toolbar);
   const { hasDismissedSwarmForm } = useSelector(({ ui }) => ui);
   const setSnackbar = useAction(snackbarActions.setSnackbar);
 
@@ -33,16 +35,31 @@ export default function useFetchTestruns() {
         {} as ITestrunsMap,
       );
 
+      const currentProfile =
+        swarmState === SWARM_STATE.RUNNING ? profile : profile || profileFromUrl;
+
+      const testrunsForProfile = testrunIds.filter(
+        ({ profile, locustfile }) =>
+          !currentProfile || profile === currentProfile || locustfile === currentProfile,
+      );
+      const testrunsForDisplay = testrunsForProfile.map(({ runId }) =>
+        new Date(runId).toLocaleString(),
+      );
+
       const currentTestrun =
-        swarmState === SWARM_STATE.RUNNING
-          ? testrunIds[0]
-          : (testrunFromUrl && testruns[testrunFromUrl]) || testrunIds[0];
+        swarmState === SWARM_STATE.RUNNING || profile
+          ? testruns[testrunsForDisplay[0]]
+          : (testrunFromUrl && testruns[testrunFromUrl]) || testruns[testrunsForDisplay[0]];
+
+      if (profile) {
+        pushQuery({ testrun: testrunsForDisplay[0] });
+      }
 
       setToolbar({
         testruns,
         currentTestrun: currentTestrun.runId,
         currentTestrunIndex: currentTestrun.index || 0,
-        testrunsForDisplay: testrunIds.map(({ runId }) => new Date(runId).toLocaleString()),
+        testrunsForDisplay: testrunsForDisplay,
       });
     }
   };
@@ -66,4 +83,15 @@ export default function useFetchTestruns() {
       fetchTestruns();
     }
   }, [hasDismissedSwarmForm]);
+
+  useEffect(() => {
+    if (
+      (swarmState != SWARM_STATE.READY ||
+        window.templateArgs.isGraphViewer ||
+        hasDismissedSwarmForm) &&
+      profile
+    ) {
+      fetchTestruns();
+    }
+  }, [swarmState, profile]);
 }

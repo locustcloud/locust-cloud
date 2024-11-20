@@ -217,7 +217,7 @@ class Exporter:
         cmd = sys.argv[1:]
         with self.pool.connection() as conn:
             conn.execute(
-                "INSERT INTO testruns (id, num_users, worker_count, username, locustfile, arguments, customer) VALUES (%s,%s,%s,%s,%s,%s,current_user)",
+                "INSERT INTO testruns (id, num_users, worker_count, username, locustfile, profile, arguments, customer) VALUES (%s,%s,%s,%s,%s,%s,%s,current_user)",
                 (
                     self._run_id,
                     self.env.runner.target_user_count if self.env.runner else 1,
@@ -229,6 +229,7 @@ class Exporter:
                     else 0,
                     self.env.web_ui.template_args.get("username", "") if self.env.web_ui else "",
                     self.env.parsed_locustfiles[0].split("/")[-1].split("__")[-1],
+                    self.env.parsed_options.profile,
                     " ".join(cmd),
                 ),
             )

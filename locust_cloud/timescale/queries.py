@@ -183,7 +183,9 @@ ORDER BY 1,2
 testruns = """
 SELECT
   id as "runId",
-  end_time as "endTime"
+  end_time as "endTime",
+  locustfile,
+  profile
 FROM testruns
 ORDER BY id DESC
 """
@@ -277,6 +279,15 @@ FROM customers
 WHERE id = current_user
 """
 
+profiles = """
+SELECT DISTINCT
+CASE
+    WHEN profile IS NOT NULL THEN profile
+    ELSE locustfile
+END AS profile
+FROM testruns
+"""
+
 queries: dict["str", LiteralString] = {
     "request-names": request_names,
     "requests": requests_query,
@@ -297,4 +308,5 @@ queries: dict["str", LiteralString] = {
     "testruns-response-time": testruns_response_time,
     "total-vuh": total_vuh,
     "customer": customer,
+    "profiles": profiles,
 }

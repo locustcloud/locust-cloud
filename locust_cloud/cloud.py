@@ -156,6 +156,11 @@ parser.add_argument(
     default=False,
     help=configargparse.SUPPRESS,
 )
+parser.add_argument(
+    "--profile",
+    type=str,
+    help="Set a profile to group the testruns together",
+)
 
 options, locust_options = parser.parse_known_args()
 options: Namespace
@@ -253,6 +258,7 @@ def main() -> None:
                 {"name": "LOCUST_USERS", "value": str(options.users)},
                 {"name": "LOCUST_FLAGS", "value": " ".join(locust_options)},
                 {"name": "LOCUSTCLOUD_DEPLOYER_URL", "value": api_url},
+                {"name": "LOCUSTCLOUD_PROFILE", "value": options.profile},
                 *locust_env_variables,
             ],
             "locustfile_data": locustfile_data,
