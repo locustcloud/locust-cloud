@@ -47,7 +47,7 @@ export default function useFetchTestruns() {
       );
 
       const currentTestrun =
-        swarmState === SWARM_STATE.RUNNING
+        swarmState === SWARM_STATE.RUNNING || profile
           ? testruns[testrunsForDisplay[0]]
           : (testrunFromUrl && testruns[testrunFromUrl]) || testruns[testrunsForDisplay[0]];
 
@@ -81,7 +81,12 @@ export default function useFetchTestruns() {
   }, [hasDismissedSwarmForm]);
 
   useEffect(() => {
-    if (swarmState != SWARM_STATE.READY && profile) {
+    if (
+      (swarmState != SWARM_STATE.READY ||
+        window.templateArgs.isGraphViewer ||
+        hasDismissedSwarmForm) &&
+      profile
+    ) {
       fetchTestruns();
     }
   }, [swarmState, profile]);

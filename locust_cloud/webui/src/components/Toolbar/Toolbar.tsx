@@ -24,6 +24,7 @@ export default function Toolbar({
 }: IToolbar) {
   const setToolbar = useAction(toolbarActions.setToolbar);
   const swarmState = useLocustSelector(({ swarm }) => swarm.state);
+  const { hasDismissedSwarmForm } = useSelector(({ ui }) => ui);
   const { testruns, testrunsForDisplay, currentTestrunIndex } = useSelector(
     ({ toolbar }) => toolbar,
   );
@@ -93,7 +94,12 @@ export default function Toolbar({
     >
       {profiles && (
         <Select
-          defaultValue={swarmState === SWARM_STATE.STOPPED && profileFromUrl}
+          defaultValue={
+            (swarmState === SWARM_STATE.STOPPED ||
+              window.templateArgs.isGraphViewer ||
+              hasDismissedSwarmForm) &&
+            profileFromUrl
+          }
           displayEmpty
           label='Profile'
           name='profile'
