@@ -1,70 +1,9 @@
-import { useEffect, useState } from 'react';
 import { Box, Paper, Typography } from '@mui/material';
 
-import { useGetTotalVuhMutation } from 'redux/api/cloud-stats';
-import { useAction, useLocustSelector, useSelector } from 'redux/hooks';
-import { snackbarActions } from 'redux/slice/snackbar.slice';
-import { IVuhResponse } from 'types/request.types';
-
-const pluralize = (n: number) => (n === 1 ? '' : 's');
-
-function formatTotalVuh(totalVuhResponse: IVuhResponse[]) {
-  if (!totalVuhResponse || !totalVuhResponse.length || !totalVuhResponse[0].totalVuh) {
-    return '0 minutes';
-  }
-
-  const [{ totalVuh }] = totalVuhResponse;
-
-  if (totalVuh === '0') {
-    return '0 minutes';
-  }
-
-  const [days, hourMinuteSeconds] = totalVuh.includes('days')
-    ? totalVuh.split(', ')
-    : ['0 days', totalVuh];
-
-  const daysInHours = parseInt(days) * 24;
-
-  const [hours, minutes] = hourMinuteSeconds.split(':').map(Number);
-
-  const totalHours = hours + daysInHours;
-
-  if (!totalHours && !minutes) {
-    return '0 minutes';
-  }
-
-  return [
-    totalHours && `${totalHours} hour${pluralize(totalHours)}`,
-    minutes && `${minutes} minute${pluralize(minutes)}`,
-  ]
-    .filter(Boolean)
-    .join(', ');
-}
+import { useSelector } from 'redux/hooks';
 
 export default function Customer() {
-  const [totalVuh, setTotalVuh] = useState<string>();
-
-  const swarmState = useLocustSelector(({ swarm }) => swarm.state);
-  const { maxVuh } = useSelector(({ customer }) => customer);
-  const setSnackbar = useAction(snackbarActions.setSnackbar);
-
-  const [getTotalVuh] = useGetTotalVuhMutation();
-
-  const fetchTotalVuh = async () => {
-    const { data: totalVuh, error: totalVuhError } = await getTotalVuh();
-
-    const fetchError = totalVuhError;
-
-    if (fetchError && 'error' in fetchError) {
-      setSnackbar({ message: fetchError.error });
-    } else {
-      setTotalVuh(formatTotalVuh(totalVuh as IVuhResponse[]));
-    }
-  };
-
-  useEffect(() => {
-    fetchTotalVuh();
-  }, [swarmState]);
+  const { maxVuh, totalVuh } = useSelector(({ customer }) => customer);
 
   return (
     <Paper

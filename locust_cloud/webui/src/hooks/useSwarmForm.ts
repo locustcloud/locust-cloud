@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { AlertColor } from '@mui/material';
 
 import { useLocustSelector, useSelector } from 'redux/hooks';
@@ -8,9 +8,12 @@ interface IAlert {
   message: string;
 }
 
+const getTotalVuhHours = (totalVuh: string) =>
+  totalVuh.includes('hours') ? parseInt(totalVuh.split(',')[0]) : 0;
+
 export default function useSwarmForm() {
   const { numUsers, workerCount } = useLocustSelector(({ swarm }) => swarm);
-  const { maxUsers, usersPerWorker } = useSelector(({ customer }) => customer);
+  const { maxUsers, usersPerWorker, maxVuh, totalVuh } = useSelector(({ customer }) => customer);
 
   const [alert, setAlert] = useState<IAlert>();
   const [shouldDisableForm, setShouldDisableForm] = useState(false);
@@ -40,6 +43,26 @@ export default function useSwarmForm() {
     },
     [numUsers, workerCount, maxUsers, usersPerWorker],
   );
+
+  useEffect(() => {
+    if (maxVuh && totalVuh) {
+      const totalVuhHours = getTotalVuhHours(totalVuh);
+      if (totalVuhHours >= maxVuh) {
+        setAlert({
+          level: 'error',
+          message: `The maximum virtual user hours for this account (${maxVuh}) has been exceeded. Please reach out to us at support@locust.cloud if you would like to extend your hours for this month.`,
+        });
+        setShouldDisableForm(true);
+      }
+
+      if (totalVuhHours >= maxVuh - 4) {
+        setAlert({
+          level: 'warning',
+          message: `The maximum virtual user hours (${maxVuh}) for this account will be reached in 4 hours or less.`,
+        });
+      }
+    }
+  }, [maxVuh, totalVuh]);
 
   return {
     alert,

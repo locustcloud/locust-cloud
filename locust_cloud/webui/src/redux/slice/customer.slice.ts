@@ -5,6 +5,11 @@ import { ICustomer } from 'types/customer.types';
 
 export interface ICustomerState extends Partial<ICustomer> {
   username: string;
+  maxUsers?: number;
+  maxVuh?: number;
+  maxWorkers?: number;
+  usersPerWorker?: number;
+  totalVuh?: string;
 }
 
 export type CustomerAction = PayloadAction<Partial<ICustomerState>>;
