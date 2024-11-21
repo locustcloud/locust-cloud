@@ -73,6 +73,12 @@ parser.add_argument(
     help=configargparse.SUPPRESS,
 )
 parser.add_argument(
+    "-V",
+    "--version",
+    action="store_true",
+    help=configargparse.SUPPRESS,
+)
+parser.add_argument(
     "-f",
     "--locustfile",
     metavar="<filename>",
@@ -182,6 +188,10 @@ api_url = os.environ.get("LOCUSTCLOUD_DEPLOYER_URL", f"https://api.{options.regi
 
 
 def main() -> None:
+    if options.version:
+        print(f"locust-cloud version {__version__}")
+        sys.exit(0)
+
     if not options.region:
         logger.error(
             "Setting a region is required to use Locust Cloud. Please ensure the AWS_DEFAULT_REGION env variable or the --region flag is set."
