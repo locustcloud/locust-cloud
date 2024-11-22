@@ -66,10 +66,15 @@ def register_auth(environment: locust.env.Environment):
         },
     )
 
+    environment.web_ui.auth_args["auth_providers"] = []
     if environment.parsed_options.allow_signup:
-        environment.web_ui.auth_args["auth_providers"] = [
+        environment.web_ui.auth_args["auth_providers"].append(
             {"label": "Sign Up", "callback_url": f"{web_base_path}/signup"}
-        ]
+        )
+    if environment.parsed_options.allow_forgot_password:
+        environment.web_ui.auth_args["auth_providers"].append(
+            {"label": "Forgot Password?", "callback_url": f"{web_base_path}/forgot-password"}
+        )
 
     @auth_blueprint.route("/authenticate", methods=["POST"])
     def login_submit():
@@ -86,6 +91,11 @@ def register_auth(environment: locust.env.Environment):
             auth_response.raise_for_status()
 
             credentials = auth_response.json()
+
+            if credentials.get("challenge_session"):
+                session["challenge_session"] = credentials.get("challenge_session")
+                session["username"] = username
+                return redirect(url_for("locust_cloud_auth.password_reset"))
 
             if os.getenv("CUSTOMER_ID", "") and credentials["customer_id"] != os.getenv("CUSTOMER_ID", ""):
                 session["auth_error"] = "Invalid login for this deployment"
@@ -262,5 +272,138 @@ def register_auth(environment: locust.env.Environment):
             session["auth_sign_up_error"] = message
 
             return redirect(url_for("locust_cloud_auth.signup"))
+
+    @auth_blueprint.route("/forgot-password")
+    def forgot_password():
+        if not environment.parsed_options.allow_forgot_password:
+            return redirect(url_for("locust.login"))
+
+        forgot_password_args = {
+            "custom_form": {
+                "inputs": [
+                    {
+                        "label": "Username",
+                        "name": "username",
+                        "is_required": True,
+                        "type": "email",
+                    },
+                ],
+                "callback_url": f"{web_base_path}/send-forgot-password",
+                "submit_button_text": "Reset Password",
+            },
+            "info": "Enter your email and we will send a code to reset your password",
+        }
+
+        if session.get("auth_error"):
+            forgot_password_args["error"] = session["auth_error"]
+
+        return render_template_from("auth.html", auth_args=forgot_password_args)
+
+    @auth_blueprint.route("/send-forgot-password", methods=["POST"])
+    def send_forgot_password():
+        if not environment.parsed_options.allow_forgot_password:
+            return redirect(url_for("locust.login"))
+
+        try:
+            username = request.form.get("username", "")
+
+            auth_response = requests.post(
+                f"{environment.parsed_options.deployer_url}/auth/forgot-password",
+                json={"username": username},
+            )
+
+            auth_response.raise_for_status()
+
+            session["username"] = username
+
+            return redirect(url_for("locust_cloud_auth.password_reset"))
+        except requests.exceptions.HTTPError as e:
+            message = e.response.json().get("Message", "An unexpected error occured. Please try again.")
+            session["auth_info"] = ""
+            session["auth_error"] = message
+
+            return redirect(url_for("locust_cloud_auth.forgot_password"))
+
+    @auth_blueprint.route("/password-reset")
+    def password_reset():
+        if not environment.parsed_options.allow_forgot_password and not session.get("challenge_session"):
+            return redirect(url_for("locust.login"))
+
+        if session.get("challenge_session"):
+            reset_password_args = {
+                "custom_form": {
+                    "inputs": [
+                        {
+                            "label": "New Password",
+                            "name": "new_password",
+                            "is_required": True,
+                            "is_secret": True,
+                        },
+                    ],
+                    "callback_url": f"{web_base_path}/confirm-reset-password",
+                    "submit_button_text": "Reset Password",
+                },
+                "info": "You must set a new password",
+            }
+        else:
+            reset_password_args = {
+                "custom_form": {
+                    "inputs": [
+                        {
+                            "label": "Confirmation Code",
+                            "name": "confirmation_code",
+                            "is_required": True,
+                        },
+                        {
+                            "label": "New Password",
+                            "name": "new_password",
+                            "is_required": True,
+                            "is_secret": True,
+                        },
+                    ],
+                    "callback_url": f"{web_base_path}/confirm-reset-password",
+                    "submit_button_text": "Reset Password",
+                },
+                "info": "Enter your the confirmation code that was sent to your email",
+            }
+
+        if session.get("auth_error"):
+            reset_password_args["error"] = session["auth_error"]
+
+        return render_template_from("auth.html", auth_args=reset_password_args)
+
+    @auth_blueprint.route("/confirm-reset-password", methods=["POST"])
+    def confirm_reset_password():
+        if not environment.parsed_options.allow_forgot_password and not session.get("challenge_session"):
+            return redirect(url_for("locust.login"))
+
+        try:
+            username = session["username"]
+            confirmation_code = request.form.get("confirmation_code")
+            new_password = request.form.get("new_password")
+
+            auth_response = requests.post(
+                f"{environment.parsed_options.deployer_url}/auth/password-reset",
+                json={
+                    "username": username,
+                    "confirmation_code": confirmation_code,
+                    "new_password": new_password,
+                    "challenge_session": session.get("challenge_session"),
+                },
+            )
+
+            auth_response.raise_for_status()
+
+            session["username"] = ""
+            session["auth_info"] = "Password reset successfully! Please login"
+            session["auth_error"] = ""
+
+            return redirect(url_for("locust.login"))
+        except requests.exceptions.HTTPError as e:
+            message = e.response.json().get("Message", "An unexpected error occured. Please try again.")
+            session["auth_info"] = ""
+            session["auth_error"] = message
+
+            return redirect(url_for("locust_cloud_auth.password_reset"))
 
     environment.web_ui.app.register_blueprint(auth_blueprint)
