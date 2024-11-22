@@ -204,7 +204,7 @@ def main() -> None:
 
     if not ((options.username and options.password) or (options.aws_access_key_id and options.aws_secret_access_key)):
         logger.error(
-            "Authentication is required to use Locust Cloud. Please ensure the LOCUST_CLOUD_USERNAME and LOCUST_CLOUD_PASSWORD environment variables are set."
+            "Authentication is required to use Locust Cloud. Please ensure the LOCUSTCLOUD_USERNAME and LOCUSTCLOUD_PASSWORD environment variables are set."
         )
         sys.exit(1)
     if not options.locustfile:
