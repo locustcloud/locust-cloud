@@ -78,7 +78,7 @@ jobs:
           skip-existing: true
 
   publish_docker:
-    if: github.ref == 'refs/heads/master' || startsWith(github.event.ref, 'refs/tags')
+    if: github.ref == 'refs/heads/master' || startsWith(github.event.ref, 'refs/tags') || github.event_name == 'workflow_dispatch'
     needs: [build, lint_typecheck_webui]
     runs-on: ubuntu-latest
 
@@ -110,6 +110,8 @@ jobs:
           elif [[ $GITHUB_REF == refs/tags/* ]]; then
             VERSION=${GITHUB_REF#refs/tags/}
             TAGS="$VERSION latest"
+          elif [[ $GITHUB_EVENT_NAME == workflow_dispatch ]]; then
+            TAGS="manual-$GITHUB_RUN_ID"
           else
             echo "No matching branch or tag found. Exiting."
             exit 1
