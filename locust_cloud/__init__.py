@@ -58,6 +58,13 @@ def add_arguments(parser: LocustArgumentParser):
         action="store_true",
     )
     locust_cloud.add_argument(
+        "--allow-forgot-password",
+        env_var="LOCUSTCLOUD_FORGOT_PASSWORD",
+        help=configargparse.SUPPRESS,
+        default=False,
+        action="store_true",
+    )
+    locust_cloud.add_argument(
         "--graph-viewer",
         env_var="LOCUSTCLOUD_GRAPH_VIEWER",
         help=configargparse.SUPPRESS,
