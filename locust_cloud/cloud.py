@@ -264,7 +264,6 @@ def main() -> None:
             and os.environ[env_variable]
         ]
         deploy_endpoint = f"{api_url}/deploy"
-        print(deploy_endpoint)
         payload = {
             "locust_args": [
                 {"name": "LOCUST_USERS", "value": str(options.users)},
@@ -293,20 +292,16 @@ def main() -> None:
         try:
             # logger.info(payload) # might be useful when debugging sometimes
             response = requests.post(deploy_endpoint, json=payload, headers=headers)
-            print(response)
         except requests.exceptions.RequestException as e:
             logger.error(f"Failed to deploy the load generators: {e}")
             sys.exit(1)
-        except Exception as e:
-            print(e)
 
         if response.status_code == 200:
             deployments = response.json().get("deployments", [])
         else:
             try:
                 logger.error(f"{response.json()['Message']} (HTTP {response.status_code}/{response.reason})")
-            except Exception as e:
-                print(e)
+            except Exception:
                 logger.error(
                     f"HTTP {response.status_code}/{response.reason} - Response: {response.text} - URL: {response.request.url}"
                 )
@@ -340,7 +335,6 @@ def main() -> None:
                     logGroupName=log_group_name,
                     logStreamNamePrefix=f"from-fluent-bit-kube.var.log.containers.{master_pod_name}",
                 )
-                print(response)
                 all_streams = response.get("logStreams", [])
                 if all_streams:
                     log_stream = all_streams[0].get("logStreamName")
@@ -349,8 +343,6 @@ def main() -> None:
             except ClientError as e:
                 logger.error(f"Error describing log streams: {e}")
                 time.sleep(5)
-            except Exception as e:
-                print(e)
         logger.debug("Pods are ready, switching to Locust logs")
 
         timestamp = int((datetime.now(UTC) - timedelta(minutes=5)).timestamp() * 1000)
