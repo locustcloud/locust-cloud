@@ -207,6 +207,9 @@ def main() -> None:
             "Authentication is required to use Locust Cloud. Please ensure the LOCUST_CLOUD_USERNAME and LOCUST_CLOUD_PASSWORD environment variables are set."
         )
         sys.exit(1)
+    if not options.locustfile:
+        logger.error("A locustfile is required to run a test.")
+        sys.exit(1)
 
     try:
         logger.info(f"Authenticating ({options.region}, v{__version__})")
@@ -232,7 +235,6 @@ def main() -> None:
         try:
             with open(options.locustfile, "rb") as f:
                 locustfile_data = base64.b64encode(gzip.compress(f.read())).decode()
-
         except FileNotFoundError:
             logger.error(f"File not found: {options.locustfile}")
             sys.exit(1)
@@ -243,7 +245,6 @@ def main() -> None:
             try:
                 with open(options.requirements, "rb") as f:
                     requirements_data = base64.b64encode(gzip.compress(f.read())).decode()
-
             except FileNotFoundError:
                 logger.error(f"File not found: {options.requirements}")
                 sys.exit(1)
@@ -271,14 +272,15 @@ def main() -> None:
                 {"name": "LOCUSTCLOUD_PROFILE", "value": options.profile},
                 *locust_env_variables,
             ],
-            "locustfile_data": locustfile_data,
-            "requirements_data": requirements_data,
+            "locustfile": {"filename": options.locustfile, "data": locustfile_data},
             "user_count": options.users,
             "image_tag": options.image_tag,
             "mock_server": options.mock_server,
         }
         if options.workers is not None:
             payload["worker_count"] = options.workers
+        if options.requirements:
+            payload["requirements"] = {"filename": options.requirements, "data": requirements_data}
         headers = {
             "Authorization": f"Bearer {cognito_client_id_token}",
             "Content-Type": "application/json",
