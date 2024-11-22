@@ -160,7 +160,7 @@ parser.add_argument(
     "--mock-server",
     action="store_true",
     default=False,
-    help=configargparse.SUPPRESS,
+    help="Start a demo mock service and set --host parameter to point Locust towards it",
 )
 parser.add_argument(
     "--profile",
