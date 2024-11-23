@@ -96,9 +96,12 @@ def register_auth(environment: locust.env.Environment):
                 session["challenge_session"] = credentials.get("challenge_session")
                 session["username"] = username
                 return redirect(url_for("locust_cloud_auth.password_reset"))
-
-            if os.getenv("CUSTOMER_ID", "") and credentials["customer_id"] != os.getenv("CUSTOMER_ID", ""):
+            if os.getenv("CUSTOMER_ID", "") and credentials.get("customer_id") != os.getenv("CUSTOMER_ID", ""):
                 session["auth_error"] = "Invalid login for this deployment"
+                return redirect(url_for("locust.login"))
+
+            if not credentials.get("user_sub_id"):
+                session["auth_error"] = "Unknown error during authentication, check logs and/or contact support"
                 return redirect(url_for("locust.login"))
 
             response = redirect(url_for("locust.index"))
@@ -221,10 +224,14 @@ def register_auth(environment: locust.env.Environment):
 
     @auth_blueprint.route("/resend-code")
     def resend_code():
+        if not session.get("username"):
+            session["auth_sign_up_error"] = "An unexpected error occured. Please try again."
+            return redirect(url_for("locust_cloud_auth.signup"))
+
         try:
             auth_response = requests.post(
                 f"{environment.parsed_options.deployer_url}/auth/resend-confirmation",
-                json={"username": session["username"]},
+                json={"username": session.get("username")},
             )
 
             auth_response.raise_for_status()
@@ -244,6 +251,9 @@ def register_auth(environment: locust.env.Environment):
     def confirm_signup():
         if not environment.parsed_options.allow_signup:
             return redirect(url_for("locust.login"))
+        if not session.get("user_sub_id"):
+            session["auth_sign_up_error"] = "An unexpected error occured. Please try again."
+            return redirect(url_for("locust_cloud_auth.signup"))
 
         session["auth_sign_up_error"] = ""
         confirmation_code = request.form.get("confirmation_code")
