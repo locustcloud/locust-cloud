@@ -83,6 +83,7 @@ def add_arguments(parser: LocustArgumentParser):
         type=str,
         env_var="LOCUSTCLOUD_PROFILE",
         help=configargparse.SUPPRESS,
+        default=None,
     )
 
 
