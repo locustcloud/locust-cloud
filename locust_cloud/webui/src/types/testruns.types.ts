@@ -48,3 +48,7 @@ export interface ITestrunsResponseTime {
   avgResponseTimeFailed: [string, string][];
   time: string[];
 }
+
+export interface ITestrunsPayload {
+  profile: string | null;
+}

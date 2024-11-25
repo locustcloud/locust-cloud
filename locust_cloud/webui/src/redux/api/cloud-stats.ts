@@ -21,6 +21,7 @@ import {
 } from 'types/request.types';
 import {
   ITestrun,
+  ITestrunsPayload,
   ITestrunsResponseTime,
   ITestrunsResponseTimeResponse,
   ITestrunsRps,
@@ -127,10 +128,11 @@ export const cloudStats = createApi({
         ),
     }),
 
-    getTestrunsTable: builder.mutation<ITestrunsTable[], void>({
-      query: () => ({
+    getTestrunsTable: builder.mutation<ITestrunsTable[], ITestrunsPayload>({
+      query: body => ({
         url: 'testruns-table',
         method: 'POST',
+        body,
       }),
       transformResponse: (testruns: ITestrunsTable[]) =>
         testruns.map(({ runId, ...testrunData }) => {
@@ -143,10 +145,11 @@ export const cloudStats = createApi({
           };
         }),
     }),
-    getTestrunsRps: builder.mutation<ITestrunsRps, void>({
-      query: () => ({
+    getTestrunsRps: builder.mutation<ITestrunsRps, ITestrunsPayload>({
+      query: body => ({
         url: 'testruns-rps',
         method: 'POST',
+        body,
       }),
       transformResponse: (response: ITestrunsRpsResponse[]) =>
         response.reduce(
@@ -159,10 +162,11 @@ export const cloudStats = createApi({
           {} as ITestrunsRps,
         ),
     }),
-    getTestrunsResponseTime: builder.mutation<ITestrunsResponseTime, void>({
-      query: () => ({
+    getTestrunsResponseTime: builder.mutation<ITestrunsResponseTime, ITestrunsPayload>({
+      query: body => ({
         url: 'testruns-response-time',
         method: 'POST',
+        body,
       }),
       transformResponse: (response: ITestrunsResponseTimeResponse[]) =>
         response.reduce(
