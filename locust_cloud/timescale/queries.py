@@ -193,6 +193,7 @@ ORDER BY id DESC
 testruns_table = """
 SELECT
  id as "runId",
+ profile,
  num_users as "numUsers",
  round(rps_avg, 1) as "rpsAvg",
  round(resp_time_avg, 1) as "respTime",
@@ -205,6 +206,8 @@ SELECT
  worker_count as "workerCount",
  locustfile
 FROM testruns
+WHERE %(profile)s::text IS NULL or profile = %(profile)s
+OR locustfile = %(profile)s
 ORDER BY id DESC
 """
 
@@ -214,6 +217,8 @@ WITH avg_rps AS (
     id AS time,
     rps_avg AS avg_rps
   FROM testruns
+  WHERE %(profile)s::text IS NULL or profile = %(profile)s
+  OR locustfile = %(profile)s
   ORDER BY id
 ),
 avg_rps_failed AS (
@@ -224,6 +229,8 @@ avg_rps_failed AS (
         ELSE 0
     END AS avg_rps_failed
   FROM testruns
+  WHERE %(profile)s::text IS NULL or profile = %(profile)s
+  OR locustfile = %(profile)s
   ORDER BY id
 )
 SELECT
@@ -241,6 +248,8 @@ WITH avg_response_time AS (
     id AS time,
     resp_time_avg AS avg_response_time
   FROM testruns
+  WHERE %(profile)s::text IS NULL or profile = %(profile)s
+  OR locustfile = %(profile)s
   ORDER BY id
 ),
 avg_response_time_failed AS (
@@ -251,6 +260,8 @@ avg_response_time_failed AS (
         ELSE 0
     END AS avg_response_time_failed
   FROM testruns
+  WHERE %(profile)s::text IS NULL or profile = %(profile)s
+  OR locustfile = %(profile)s
   ORDER BY id
 )
 SELECT
@@ -286,6 +297,7 @@ CASE
     ELSE locustfile
 END AS profile
 FROM testruns
+WHERE locustfile IS NOT NULL
 """
 
 queries: dict["str", LiteralString] = {

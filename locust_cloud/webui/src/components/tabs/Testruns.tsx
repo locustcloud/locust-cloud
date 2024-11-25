@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Box } from '@mui/material';
 import { LineChart, Table } from 'locust-ui';
 
+import Toolbar from 'components/Toolbar/Toolbar';
 import {
   useGetTestrunsResponseTimeMutation,
   useGetTestrunsRpsMutation,
@@ -14,6 +15,7 @@ import { chartValueFormatter } from 'utils/chart';
 
 const testrunsTableStructure = [
   { key: 'runId', title: 'Run Id', markdown: true },
+  { key: 'profile', title: 'Profile' },
   { key: 'locustfile', title: 'Locustfile' },
   { key: 'username', title: 'Username' },
   { key: 'numUsers', title: '# Users' },
@@ -44,7 +46,7 @@ const testrunsChartColors = ['#00ca5a', '#ff6d6d'];
 
 export default function Testruns() {
   const swarmState = useLocustSelector(({ swarm }) => swarm.state);
-  const { testrunsForDisplay } = useSelector(({ toolbar }) => toolbar);
+  const { testrunsForDisplay, profile } = useSelector(({ toolbar }) => toolbar);
   const setSnackbar = useAction(snackbarActions.setSnackbar);
 
   const [getTestrunsTable] = useGetTestrunsTableMutation();
@@ -60,11 +62,17 @@ export default function Testruns() {
   } as ITestrunsResponseTime);
 
   const fetchTestruns = async () => {
+    const payload = { profile: profile || null };
+
     const [
       { data: testrunsTableData, error: testrunsTableError },
       { data: testrunsRps, error: testrunsRpsError },
       { data: testrunsResponseTime, error: testrunsResponseTimeError },
-    ] = await Promise.all([getTestrunsTable(), getTestrunsRps(), getTestrunsResponseTime()]);
+    ] = await Promise.all([
+      getTestrunsTable(payload),
+      getTestrunsRps(payload),
+      getTestrunsResponseTime(payload),
+    ]);
 
     const fetchError = testrunsTableError || testrunsRpsError || testrunsResponseTimeError;
 
@@ -83,6 +91,7 @@ export default function Testruns() {
 
   return (
     <Box>
+      <Toolbar shouldShowTestruns={false} />
       <Box sx={{ height: '500px', overflowY: 'auto', mb: 8 }}>
         <Table rows={testrunsTableData} structure={testrunsTableStructure} />
       </Box>

@@ -15,12 +15,14 @@ interface IToolbar {
   onSelectTestRun?: (runId: string) => void;
   showHideAdvanced?: boolean;
   shouldShowResolution?: boolean;
+  shouldShowTestruns?: boolean;
 }
 
 export default function Toolbar({
   onSelectTestRun,
   showHideAdvanced,
   shouldShowResolution = false,
+  shouldShowTestruns = true,
 }: IToolbar) {
   const setToolbar = useAction(toolbarActions.setToolbar);
   const swarmState = useLocustSelector(({ swarm }) => swarm.state);
@@ -109,7 +111,7 @@ export default function Toolbar({
           sx={{ width: '250px' }}
         />
       )}
-      {!!testrunsForDisplay.length && (
+      {shouldShowTestruns && !!testrunsForDisplay.length && (
         <Select
           label='Test Run'
           name='testrun'
