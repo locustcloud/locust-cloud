@@ -89,7 +89,7 @@ export default function useFetchTestruns() {
       (swarmState != SWARM_STATE.READY ||
         window.templateArgs.isGraphViewer ||
         hasDismissedSwarmForm) &&
-      profile
+      (profile || profile === null)
     ) {
       fetchTestruns();
     }
