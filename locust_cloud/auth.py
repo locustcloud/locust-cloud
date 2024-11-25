@@ -351,7 +351,7 @@ def register_auth(environment: locust.env.Environment):
                         },
                     ],
                     "callback_url": f"{web_base_path}/confirm-reset-password",
-                    "submit_button_text": "Reset Password",
+                    "submit_button_text": "Set Password",
                 },
                 "info": "You must set a new password",
             }
@@ -407,6 +407,10 @@ def register_auth(environment: locust.env.Environment):
             session["username"] = ""
             session["auth_info"] = "Password reset successfully! Please login"
             session["auth_error"] = ""
+
+            if session.get("challenge_session"):
+                session["challenge_session"] = ""
+                return redirect(url_for("https://docs.locust.cloud/"))
 
             return redirect(url_for("locust.login"))
         except requests.exceptions.HTTPError as e:
