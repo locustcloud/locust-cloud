@@ -410,7 +410,7 @@ def register_auth(environment: locust.env.Environment):
 
             if session.get("challenge_session"):
                 session["challenge_session"] = ""
-                return redirect(url_for("https://docs.locust.cloud/"))
+                return redirect("https://docs.locust.cloud/")
 
             return redirect(url_for("locust.login"))
         except requests.exceptions.HTTPError as e:
