@@ -61,7 +61,7 @@ export default function Toolbar({
     const currentProfile = e.target.value;
 
     if (currentProfile === 'None') {
-      setToolbar({ profile: undefined });
+      setToolbar({ profile: null });
       removeQuery('profile');
       return;
     }
