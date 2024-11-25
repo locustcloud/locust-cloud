@@ -11,7 +11,7 @@ export interface IToolbarState {
   testruns: ITestrunsMap;
   testrunsForDisplay: string[];
   shouldShowAdvanced?: boolean;
-  profile?: string;
+  profile?: string | null;
 }
 
 export type ToolbarAction = PayloadAction<Partial<IToolbarState>>;
