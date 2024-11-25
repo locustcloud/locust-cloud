@@ -293,7 +293,7 @@ WHERE id = current_user
 profiles = """
 SELECT DISTINCT
 CASE
-    WHEN profile IS NOT NULL THEN profile
+    WHEN profile IS NOT NULL AND profile != '' THEN profile
     ELSE locustfile
 END AS profile
 FROM testruns
