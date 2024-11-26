@@ -119,6 +119,7 @@ def on_locust_init(environment: locust.env.Environment, **_args):
     if environment.web_ui:
         environment.web_ui.template_args["locustVersion"] = locust.__version__
         environment.web_ui.template_args["locustCloudVersion"] = __version__
+        environment.web_ui.template_args["webBasePath"] = environment.parsed_options.web_base_path
 
         if environment.parsed_options.graph_viewer:
             environment.web_ui.template_args["isGraphViewer"] = True

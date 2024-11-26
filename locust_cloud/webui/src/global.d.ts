@@ -4,6 +4,7 @@ interface ITemplateArgs extends IWindow['templateArgs'] {
   isGraphViewer: boolean;
   locustVersion: string;
   locustCloudVersion: string;
+  webBasePath: string;
   username: string;
 }
 
