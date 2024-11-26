@@ -7,7 +7,7 @@ import locust.env
 import requests
 import werkzeug
 from flask import Blueprint, redirect, request, session, url_for
-from flask_login import UserMixin, login_user
+from flask_login import UserMixin, login_required, login_user, logout_user
 from locust.html import render_template_from
 from locust_cloud import __version__
 
@@ -419,5 +419,11 @@ def register_auth(environment: locust.env.Environment):
             session["auth_error"] = message
 
             return redirect(url_for("locust_cloud_auth.password_reset"))
+
+    @auth_blueprint.route("/logout", methods=["POST"])
+    @login_required
+    def logout():
+        logout_user()
+        return redirect(url_for("locust.login"))
 
     environment.web_ui.app.register_blueprint(auth_blueprint)
