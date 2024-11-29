@@ -408,12 +408,17 @@ def register_auth(environment: locust.env.Environment):
             auth_response.raise_for_status()
 
             session["username"] = ""
-            session["auth_info"] = "Password reset successfully! Please login"
             session["auth_error"] = ""
 
             if session.get("challenge_session"):
                 session["challenge_session"] = ""
-                return redirect("https://docs.locust.cloud/")
+                session["auth_info"] = (
+                    "Password successfully set! Please review the [documentation](https://docs.locust.cloud/) and start your first testrun!"
+                )
+
+                return redirect(url_for("locust.login"))
+
+            session["auth_info"] = "Password reset successfully! Please login"
 
             return redirect(url_for("locust.login"))
         except requests.exceptions.HTTPError as e:
