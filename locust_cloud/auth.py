@@ -412,11 +412,8 @@ def register_auth(environment: locust.env.Environment):
 
             if session.get("challenge_session"):
                 session["challenge_session"] = ""
-                session["auth_info"] = (
-                    "Password successfully set! Please review the [documentation](https://docs.locust.cloud/) and start your first testrun!"
-                )
 
-                return redirect(url_for("locust.login"))
+                return redirect(url_for("locust_cloud_auth.password_reset_success"))
 
             session["auth_info"] = "Password reset successfully! Please login"
 
@@ -427,6 +424,15 @@ def register_auth(environment: locust.env.Environment):
             session["auth_error"] = message
 
             return redirect(url_for("locust_cloud_auth.password_reset"))
+
+    @auth_blueprint.route("/password-reset-success")
+    def password_reset_success():
+        return render_template_from(
+            "auth.html",
+            auth_args={
+                "info": "Password successfully set! Please review the [documentation](https://docs.locust.cloud/) and start your first testrun! If you have already ran some tests, you may also [login](/login)"
+            },
+        )
 
     @auth_blueprint.route("/logout", methods=["POST"])
     @login_required
