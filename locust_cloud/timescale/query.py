@@ -1,4 +1,5 @@
 import logging
+from datetime import UTC
 
 from flask import Blueprint, make_response, request
 from flask_login import login_required
@@ -22,6 +23,7 @@ def register_query(environment, pool):
         results = []
         try:
             if query and queries[query]:
+                sql = queries[query]
                 # start_time = time.perf_counter()
                 with pool.connection() as conn:
                     # get_conn_time = (time.perf_counter() - start_time) * 1000
@@ -38,8 +40,11 @@ def register_query(environment, pool):
                                 f"UI asked for too long time interval. Start was {sql_params['start']}, end was {sql_params['end']}"
                             )
                             return []
+                        if start_time >= datetime(2024, 10, 30, 11, tzinfo=UTC):
+                            # when runs before this go out of scope, we can just update the query
+                            sql = sql.replace("FROM requests_summary_view", "FROM requests_summary_view_v1")
 
-                    cursor = conn.execute(queries[query], sql_params)
+                    cursor = conn.execute(sql, sql_params)
                     # exec_time = (time.perf_counter() - start_time) * 1000
                     assert cursor
                     # start_time = time.perf_counter()
