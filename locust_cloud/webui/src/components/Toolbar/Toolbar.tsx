@@ -43,7 +43,10 @@ export default function Toolbar({
 
   const handleTestrunChange = (e: SelectChangeEvent<string>) => {
     // find in test runs to get correct date format
-    onSelectTestRun && onSelectTestRun(e.target.value);
+    if (onSelectTestRun) {
+      onSelectTestRun(e.target.value);
+    }
+
     const currentTestrun = testruns[e.target.value];
     setToolbar({
       currentTestrun: currentTestrun.runId,
