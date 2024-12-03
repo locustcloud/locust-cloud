@@ -62,7 +62,7 @@ function MockHook() {
   return <div />;
 }
 
-describe('useFetchStats', () => {
+describe('useFetchTestruns', () => {
   beforeAll(() => {
     server.listen();
     vi.useFakeTimers();

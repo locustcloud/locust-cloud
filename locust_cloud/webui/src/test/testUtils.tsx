@@ -35,20 +35,3 @@ export const renderWithProvider = (
     locustStore,
   };
 };
-
-export const rerenderWithProvider = (Component, rerender) => {
-  const store = createStore({});
-  const locustStore = createLocustStore({});
-
-  const renderResult = rerender(
-    <Provider<Action | UnknownAction, IRootState> context={ReduxContext} store={store}>
-      <Provider store={locustStore}>{Component}</Provider>
-    </Provider>,
-  );
-
-  return {
-    ...renderResult,
-    store,
-    locustStore,
-  };
-};
