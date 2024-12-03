@@ -9,6 +9,8 @@ dependencies = [
     "boto3==1.34.125",
     "psycopg[binary,pool]>=3.2.1",
     "PyJWT>=2.0",
+    "python-socketio==5.11.4",
+    "gevent-websocket==0.10.1",
 ]
 [project.urls]
 Homepage = "https://locust.cloud"

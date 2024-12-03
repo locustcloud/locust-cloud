@@ -1,19 +1,19 @@
 import base64
 import gzip
-import json
 import logging
 import os
 import sys
 import time
 import tomllib
+import urllib.parse
 from argparse import Namespace
 from collections import OrderedDict
-from datetime import UTC, datetime, timedelta
 from typing import IO, Any
 
 import configargparse
 import requests
-from botocore.exceptions import ClientError
+import socketio
+import socketio.exceptions
 from locust_cloud import __version__
 from locust_cloud.credential_manager import CredentialError, CredentialManager
 
@@ -200,8 +200,6 @@ def main() -> None:
     if options.region:
         os.environ["AWS_DEFAULT_REGION"] = options.region
 
-    deployments: list[Any] = []
-
     if not ((options.username and options.password) or (options.aws_access_key_id and options.aws_secret_access_key)):
         logger.error(
             "Authentication is required to use Locust Cloud. Please ensure the LOCUSTCLOUD_USERNAME and LOCUSTCLOUD_PASSWORD environment variables are set."
@@ -297,7 +295,7 @@ def main() -> None:
             sys.exit(1)
 
         if response.status_code == 200:
-            deployments = response.json().get("deployments", [])
+            log_ws_url = response.json()["log_ws_url"]
         else:
             try:
                 logger.error(f"{response.json()['Message']} (HTTP {response.status_code}/{response.reason})")
@@ -313,80 +311,71 @@ def main() -> None:
         logger.debug("Interrupted by user")
         sys.exit(0)
 
-    log_group_name = "/eks/dmdb-default" if options.region == "us-east-1" else "/eks/locust-default"
-    master_pod_name = next((deployment for deployment in deployments if "master" in deployment), None)
-
-    if not master_pod_name:
-        logger.error(
-            "Master pod not found among deployed pods. Something went wrong during the load generator deployment, please try again or contact an administrator for assistance"
-        )
-        sys.exit(1)
-
     logger.debug("Load generators deployed successfully!")
+    logger.info("Waiting for pods to be ready...")
 
     try:
-        logger.info("Waiting for pods to be ready...")
+        ws_connection_info = urllib.parse.urlparse(log_ws_url)
+        sio = socketio.Client(handle_sigint=False)
 
-        log_stream: str | None = None
-        while log_stream is None:
+        run = True
+
+        def wait():
+            logger.debug("Waiting for shutdown event")
+            while run:
+                time.sleep(0.1)
+
+            logger.debug("Shutting down websocket connection")
+            sio.shutdown()
+
+        @sio.event
+        def connect():
+            logger.debug("Websocket connection established, switching to Locust logs")
+
+        @sio.event
+        def disconnect():
+            logger.debug("Websocket disconnected")
+
+        @sio.event
+        def stderr(message):
+            sys.stderr.write(message)
+
+        @sio.event
+        def stdout(message):
+            sys.stdout.write(message)
+
+        @sio.event
+        def shutdown(message):
+            logger.debug("Got shutdown from locust master")
+            if message:
+                print(message)
+
+            nonlocal run
+            run = False
+
+        for _ in range(5 * 60):  # try for 5 minutes
             try:
-                client = credential_manager.session.client("logs")
-                response = client.describe_log_streams(
-                    logGroupName=log_group_name,
-                    logStreamNamePrefix=f"from-fluent-bit-kube.var.log.containers.{master_pod_name}",
+                sio.connect(
+                    f"{ws_connection_info.scheme}://{ws_connection_info.netloc}", socketio_path=ws_connection_info.path
                 )
-                all_streams = response.get("logStreams", [])
-                if all_streams:
-                    log_stream = all_streams[0].get("logStreamName")
-                else:
-                    time.sleep(1)
-            except ClientError as e:
-                logger.error(f"Error describing log streams: {e}")
-                time.sleep(5)
-        logger.debug("Pods are ready, switching to Locust logs")
+                break
+            except socketio.exceptions.ConnectionError:
+                time.sleep(1)
 
-        timestamp = int((datetime.now(UTC) - timedelta(minutes=5)).timestamp() * 1000)
+        else:  # no break
+            raise Exception("Failed to obtain socket connection")
 
-        while True:
-            try:
-                client = credential_manager.session.client("logs")
-                response = client.get_log_events(
-                    logGroupName=log_group_name,
-                    logStreamName=log_stream,
-                    startTime=timestamp,
-                    startFromHead=True,
-                )
-                locust_shutdown = False
-                for event in response.get("events", []):
-                    message = event.get("message", "")
-                    event_timestamp = event.get("timestamp", timestamp) + 1
-                    try:
-                        message_json = json.loads(message)
-                        if "log" in message_json:
-                            print(message_json["log"])
+        wait()
 
-                            if "Shutting down (exit code" in message_json["log"]:
-                                locust_shutdown = True
-
-                    except json.JSONDecodeError:
-                        print(message)
-                    timestamp = event_timestamp
-
-                if locust_shutdown:
-                    break
-
-                time.sleep(5)
-            except ClientError as e:
-                error_code = e.response.get("Error", {}).get("Code", "")
-                if error_code == "ExpiredTokenException":
-                    logger.debug("AWS session token expired during log streaming. Refreshing credentials.")
-                    time.sleep(5)
     except KeyboardInterrupt:
         logger.debug("Interrupted by user")
+        delete(credential_manager)
+        wait()
     except Exception as e:
         logger.exception(e)
+        delete(credential_manager)
         sys.exit(1)
-    finally:
+    else:
         delete(credential_manager)
 
 

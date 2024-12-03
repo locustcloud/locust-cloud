@@ -147,7 +147,7 @@ class Exporter:
 
     def on_quit(self, exit_code, **kwargs):
         self._finished = True
-        atexit._clear()  # make sure we dont capture additional ctrl-c:s
+        atexit.unregister(self.log_stop_test_run)  # make sure we dont capture additional ctrl-c:s
         self._background.join(timeout=10)
         if getattr(self, "_update_end_time_task", False):
             self._update_end_time_task.kill()

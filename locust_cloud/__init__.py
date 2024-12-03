@@ -3,6 +3,15 @@ import os
 import sys
 
 os.environ["LOCUST_SKIP_MONKEY_PATCH"] = "1"
+
+from locust_cloud.socket_logging import setup_socket_logging
+
+if os.environ.get("LOCUST_MODE_MASTER") == "1":
+    major, minor, *rest = os.environ["LOCUSTCLOUD_CLIENT_VERSION"].split(".")
+
+    if int(major) > 1 or int(major) == 1 and int(minor) >= 12:
+        setup_socket_logging()
+
 __version__ = importlib.metadata.version("locust-cloud")
 
 import logging
