@@ -1,4 +1,4 @@
-import { describe, expect, test, vi } from 'vitest';
+import { describe, expect, test } from 'vitest';
 
 import Snackbar from 'components/Snackbar/Snackbar';
 import { renderWithProvider } from 'test/testUtils';
