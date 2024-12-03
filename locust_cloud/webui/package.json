@@ -17,7 +17,7 @@
     "@emotion/styled": "^11.11.5",
     "@mui/icons-material": "^5.16.4",
     "@mui/material": "^5.16.4",
-    "locust-ui": "^2.32.4",
+    "locust-ui": "../../../locust/locust/webui/locust-ui-v0.0.0.tgz",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-redux": "^9.1.2",
@@ -29,6 +29,7 @@
     "@eslint/js": "^9.16.0",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/react": "^16.0.1",
+    "@types/node": "^22.10.1",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
     "@typescript-eslint/eslint-plugin": "^8.16.0",
@@ -45,6 +46,6 @@
     "prettier": "^3.4.1",
     "typescript": "^5.7.2",
     "vite": "^6.0.1",
-    "vitest": "^2.1.8"
+    "vitest": "^2.1.6"
   }
 }

@@ -1,6 +1,14 @@
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import {
+  buildCreateApi,
+  coreModule,
+  reactHooksModule,
+  fetchBaseQuery,
+} from '@reduxjs/toolkit/query/react';
 import { roundToDecimalPlaces } from 'locust-ui';
+import { createStoreHook } from 'react-redux';
 
+import { ReduxContext } from 'redux/context';
+import { useDispatch, useSelector } from 'redux/hooks';
 import { ICustomer } from 'types/customer.types';
 import {
   IAvgResponseTimesResponse,
@@ -42,6 +50,17 @@ const carryLastValue = (values?: [string, string][]) => {
 
   return values[values.length - 1][1];
 };
+
+const createApi = buildCreateApi(
+  coreModule(),
+  reactHooksModule({
+    hooks: {
+      useDispatch: useDispatch,
+      useSelector: useSelector as any,
+      useStore: createStoreHook(ReduxContext),
+    },
+  }),
+);
 
 export const cloudStats = createApi({
   baseQuery: fetchBaseQuery({

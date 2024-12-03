@@ -7,11 +7,13 @@ import { snackbarActions } from 'redux/slice/snackbar.slice';
 import { toolbarActions } from 'redux/slice/toolbar.slice';
 import { ITestrunsMap } from 'types/testruns.types';
 
+const emptyUrlQuery: { [key: string]: string } = {};
+
 export default function useFetchTestruns() {
   const setToolbar = useAction(toolbarActions.setToolbar);
   const swarmState = useLocustSelector(({ swarm }) => swarm.state);
   const { testrun: testrunFromUrl, profile: profileFromUrl } = useLocustSelector(
-    ({ url }) => url.query || {},
+    ({ url }) => url.query || emptyUrlQuery,
   );
   const { testrunsForDisplay, previousTestrun, profile } = useSelector(({ toolbar }) => toolbar);
   const { hasDismissedSwarmForm } = useSelector(({ ui }) => ui);
