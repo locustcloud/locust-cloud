@@ -401,11 +401,12 @@ def delete(credential_manager):
             headers=headers,
         )
 
-        if response.status_code != 200:
+        if response.status_code == 200:
+            logger.debug(response.json()["message"])
+        else:
             logger.info(
                 f"Could not automatically tear down Locust Cloud: HTTP {response.status_code}/{response.reason} - Response: {response.text} - URL: {response.request.url}"
             )
-        logger.debug(response.json()["message"])
     except Exception as e:
         logger.error(f"Could not automatically tear down Locust Cloud: {e.__class__.__name__}:{e}")
 
