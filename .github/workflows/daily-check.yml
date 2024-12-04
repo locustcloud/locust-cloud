@@ -19,14 +19,21 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
       - uses: actions/setup-python@v5
         with:
             python-version: '3.11'
       - uses: astral-sh/setup-uv@v2
       - uses: actions/setup-node@v4
-      - run: uv tool install .
-      - run: uv tool run locust-cloud --help
-      - run: uv tool run locust-cloud --image-tag master --profile status-checker --mock-server --autostart --autoquit 0 --run-time 1m |& tee output.txt
+        with:
+          node-version: 22.x
+      - run: uv venv --python 3.11
+      # any local changes would make hatch-vcs set a "local version" (+dev0...), so we ignore any uv.lock updates:
+      - run: git update-index --assume-unchanged uv.lock
+      - run: uv run locust-cloud --help
+      - run: uv run locust-cloud --image-tag master --profile status-checker --mock-server --autostart --autoquit 0 --run-time 1m |& tee output.txt
       # check ok exit
       - run: grep -m 1 '(exit code 0)' output.txt
       # check for errors
