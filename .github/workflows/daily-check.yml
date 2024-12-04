@@ -1,0 +1,39 @@
+name: Daily locust-cloud test run
+
+on:
+  schedule: # 12 AM daily
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+env:
+  LOCUSTCLOUD_USERNAME: ${{ secrets.LOCUSTCLOUD_USERNAME }}
+  LOCUSTCLOUD_PASSWORD: ${{ secrets.LOCUSTCLOUD_PASSWORD }}
+  LOCUSTCLOUD_DEPLOYER_URL: https://api-dev.eu-north-1.locust.cloud/1
+  SLACK_NOTIFICATIONS_WEBHOOK: ${{ secrets.SLACK_NOTIFICATIONS_WEBHOOK }}
+  AWS_DEFAULT_REGION: eu-north-1
+  PYTHONUNBUFFERED: 1 # ensure we see logs output right away
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+            python-version: '3.11'
+      - uses: astral-sh/setup-uv@v2
+      - run: uv tool install .
+      - run: uv tool run locust-cloud --help
+      - run: uv tool run locust-cloud --image-tag master --profile status-checker --mock-server --autostart --autoquit 0 --run-time 1m |& tee output.txt
+      # check ok exit
+      - run: grep -m 1 '(exit code 0)' output.txt
+      # check for errors
+      - run: bash -ec "! grep Traceback output.txt"
+      - run: bash -ec "! grep ERROR output.txt"
+      # Disabled the following test for now, because of incorrect warning about:
+      # You can't start a distributed test before at least one worker processes has connected
+      # - run: bash -ec "! grep WARNING output.txt"
+      - name: On failure, notify slack
+        if: failure()
+        run: curl -d "{\"text\":\"$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID\"}" $SLACK_NOTIFICATIONS_WEBHOOK
