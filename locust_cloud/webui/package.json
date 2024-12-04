@@ -46,6 +46,7 @@
     "prettier": "^3.4.1",
     "typescript": "^5.7.2",
     "vite": "^6.0.1",
-    "vitest": "^2.1.6"
+    "vitest": "^2.1.6",
+    "vitest-webgl-canvas-mock": "^1.1.0"
   }
 }

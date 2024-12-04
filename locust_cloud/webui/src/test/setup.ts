@@ -1,5 +1,6 @@
 import { cleanup } from '@testing-library/react';
 import { afterAll, afterEach, vi } from 'vitest';
+import 'vitest-webgl-canvas-mock';
 
 import { TEST_BASE_API } from 'test/constants';
 import { swarmStateMock } from 'test/mocks/swarmState.mock';

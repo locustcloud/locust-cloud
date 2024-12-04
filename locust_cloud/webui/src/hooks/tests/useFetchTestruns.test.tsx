@@ -6,51 +6,13 @@ import { beforeAll, afterEach, afterAll, describe, expect, test, vi } from 'vite
 
 import useFetchTestruns from 'hooks/useFetchTestruns';
 import { TEST_BASE_API } from 'test/constants';
+import {
+  mockTestrunsForDisplay,
+  mockRunIds,
+  mockTestruns,
+  mockTestrunsResponse,
+} from 'test/mocks/testruns.mock';
 import { renderWithProvider } from 'test/testUtils';
-
-const mockRunIds = [
-  '2024-11-30 10:09:10.771147+00:00',
-  '2024-10-30 05:58:31.234505+00:00',
-  '2024-10-30 06:00:44.325405+00:00',
-];
-const mockTestrunsForDisplay = mockRunIds.map(runId => new Date(runId).toLocaleString());
-const mockTestrunsResponse = [
-  {
-    endTime: '2024-11-30 11:00:37.653931+00:00',
-    locustfile: 'locustfile.py',
-    profile: null,
-    runId: mockRunIds[0],
-  },
-  {
-    endTime: '2024-10-30 08:39:22.358997+00:00',
-    locustfile: 'locustfile.py',
-    profile: null,
-    runId: mockRunIds[1],
-  },
-  {
-    endTime: '2024-10-30 08:39:22.358997+00:00',
-    locustfile: 'different_locustfile.py',
-    profile: 'myprofile',
-    runId: mockRunIds[2],
-  },
-];
-const mockTestruns = {
-  [mockTestrunsForDisplay[0]]: {
-    runId: mockRunIds[0],
-    endTime: mockTestrunsResponse[0].endTime,
-    index: 0,
-  },
-  [mockTestrunsForDisplay[1]]: {
-    runId: mockRunIds[1],
-    endTime: mockTestrunsResponse[1].endTime,
-    index: 1,
-  },
-  [mockTestrunsForDisplay[2]]: {
-    runId: mockRunIds[2],
-    endTime: mockTestrunsResponse[2].endTime,
-    index: 2,
-  },
-};
 
 const server = setupServer(
   http.post(`${TEST_BASE_API}/testruns`, () => HttpResponse.json(mockTestrunsResponse)),

@@ -29,13 +29,9 @@ function MockHook() {
 }
 
 describe('useFetchCustomer', () => {
-  beforeAll(() => {
-    server.listen();
-  });
+  beforeAll(() => server.listen());
   afterEach(() => server.resetHandlers());
-  afterAll(() => {
-    server.close();
-  });
+  afterAll(() => server.close());
 
   test('should fetch and format totalVuh', async () => {
     const { store } = renderWithProvider(<MockHook />);
