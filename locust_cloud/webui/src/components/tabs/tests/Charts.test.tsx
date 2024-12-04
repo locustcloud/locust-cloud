@@ -6,10 +6,9 @@ import { setupServer } from 'msw/node';
 import { afterAll, afterEach, beforeAll, describe, expect, test, vi } from 'vitest';
 
 import Charts from 'components/tabs/Charts';
-import useFetchTestruns from 'hooks/useFetchTestruns';
 import { TEST_BASE_API } from 'test/constants';
 import { mockTestrunsResponse } from 'test/mocks/testruns.mock';
-import { renderWithProvider } from 'test/testUtils';
+import { MockFetchTestrunsHook, renderWithProvider } from 'test/testUtils';
 
 const mockRequestName = '/';
 const mockRequestTime = '2024-12-04 19:01:00+00:00';
@@ -38,12 +37,6 @@ const server = setupServer(
   http.post(`${TEST_BASE_API}/profiles`, () => HttpResponse.json([])),
   http.post(`${TEST_BASE_API}/testruns`, () => HttpResponse.json(mockTestrunsResponse)),
 );
-
-function MockFetchTestrunsHook({ children }: { children: React.ReactNode }) {
-  useFetchTestruns();
-
-  return children;
-}
 
 describe('Charts Tab', () => {
   beforeAll(() => server.listen());

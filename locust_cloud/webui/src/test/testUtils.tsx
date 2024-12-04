@@ -3,6 +3,7 @@ import { render } from '@testing-library/react';
 import { createLocustStore } from 'locust-ui';
 import { Provider } from 'react-redux';
 
+import useFetchTestruns from 'hooks/useFetchTestruns';
 import { cloudStats } from 'redux/api/cloud-stats';
 import { ReduxContext } from 'redux/context';
 import { IRootState } from 'redux/slice/root.slice';
@@ -35,3 +36,9 @@ export const renderWithProvider = (
     locustStore,
   };
 };
+
+export function MockFetchTestrunsHook({ children }: { children: React.ReactNode }) {
+  useFetchTestruns();
+
+  return children;
+}
