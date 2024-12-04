@@ -23,6 +23,7 @@ jobs:
         with:
             python-version: '3.11'
       - uses: astral-sh/setup-uv@v2
+      - uses: actions/setup-node@v4
       - run: uv tool install .
       - run: uv tool run locust-cloud --help
       - run: uv tool run locust-cloud --image-tag master --profile status-checker --mock-server --autostart --autoquit 0 --run-time 1m |& tee output.txt
