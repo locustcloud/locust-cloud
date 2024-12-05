@@ -4,10 +4,8 @@ requests_query = """
 SELECT
 	name,
   request_type as method,
-	SUM(average * count) / SUM(count) as average,
 	SUM(count) as requests,
 	SUM(failed_count) as failed,
-	MIN(min),
 	MAX(max),
 	SUM(failed_count) / SUM(count) * 100 as "errorPercentage"
 FROM requests_summary_view
