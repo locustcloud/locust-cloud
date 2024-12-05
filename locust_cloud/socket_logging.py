@@ -3,16 +3,12 @@ import logging
 import os
 import sys
 from collections import deque
-from contextlib import suppress
 
 import flask
 import gevent
 import gevent.pywsgi
 import geventwebsocket.handler
 import socketio
-from gevent.lock import Semaphore
-
-lock = Semaphore()
 
 
 def setup_socket_logging():
@@ -26,13 +22,13 @@ def setup_socket_logging():
     server in addition to the websocket stuff.
     """
 
-    logger = logging.getLogger(__name__)
-    logger.propagate = False
-    logger.addHandler(logging.NullHandler())
+    quiet_logger = logging.getLogger("be_quiet")
+    quiet_logger.propagate = False
+    quiet_logger.addHandler(logging.NullHandler())
 
     # This app will use a logger with the same name as the application
     # which means it will pick up the one set up above.
-    healthcheck_app = flask.Flask(__name__)
+    healthcheck_app = flask.Flask("be_quiet")
 
     # /login is the health check endpoint currently configured for the
     # ALB controller in kubernetes.
@@ -41,9 +37,19 @@ def setup_socket_logging():
     def healthcheck():
         return ""
 
+    logger = logging.getLogger(__name__)
+    socketio_path = f"/{os.environ['CUSTOMER_ID']}/socket-logs"
     sio = socketio.Server(async_handlers=True, always_connect=True, async_mode="gevent", cors_allowed_origins="*")
-    sio_app = socketio.WSGIApp(sio, healthcheck_app, socketio_path=f"/{os.environ['CUSTOMER_ID']}/socket-logs")
+    sio_app = socketio.WSGIApp(sio, healthcheck_app, socketio_path=socketio_path)
     message_queue = deque(maxlen=500)
+
+    @sio.event
+    def connect(sid, environ, auth):  # noqa: ARG001
+        logger.debug("Client connected to socketio server")
+
+    @sio.event
+    def disconnect(sid):  # noqa: ARG001
+        logger.debug("Client disconnected from socketio server")
 
     class QueueCopyStream:
         def __init__(self, name, original):
@@ -51,9 +57,13 @@ def setup_socket_logging():
             self.original = original
 
         def write(self, message):
-            with lock:
-                self.original.write(message)
-                message_queue.append((self.name, message))
+            """
+            Writes to the queue first since when running in gevent the write to
+            stdout/stderr can yield and we want to ensure the same ordering in
+            the queue as for the written messages.
+            """
+            message_queue.append((self.name, message))
+            self.original.write(message)
 
         def flush(self):
             self.original.flush()
@@ -69,12 +79,19 @@ def setup_socket_logging():
             while message_queue and (sid := connected_sid()):
                 name, message = message_queue[0]
 
-                with suppress(TimeoutError):
+                try:
+                    if name == "shutdown":
+                        logger.debug("Sending websocket shutdown event")
+
                     sio.call(name, message, to=sid, timeout=5)
                     message_queue.popleft()
 
                     if name == "shutdown":
+                        logger.debug("Websocket shutdown event acknowledged by client")
                         return
+
+                except TimeoutError:
+                    logger.debug("Timed out waiting for client to aknowledge websocket message")
 
             gevent.sleep(1)
 
@@ -85,6 +102,7 @@ def setup_socket_logging():
 
     @atexit.register
     def notify_shutdown(*args, **kwargs):
+        logger.debug("Adding shutdown event to websocket queue")
         message_queue.append(("shutdown", ""))
         emitter_greenlet.join(timeout=30)
 
@@ -96,10 +114,11 @@ def setup_socket_logging():
 
         @property
         def logger(self):
-            return logger
+            return quiet_logger
 
     @gevent.spawn
     def start_websocket_server():
+        logger.debug(f"Starting socketio server on port 1095 with path {socketio_path}")
         server = gevent.pywsgi.WSGIServer(
             ("", 1095), sio_app, log=None, error_log=None, handler_class=WebSocketHandlerWithoutLogging
         )
