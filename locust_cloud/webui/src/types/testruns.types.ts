@@ -12,17 +12,17 @@ export interface ITestrunsMap {
 
 export interface ITestrunsTable {
   runId: string;
-  arguments: string;
-  startTimeEpoch: string;
+  profile: string;
   numUsers: string;
-  requests: string;
-  respTime: string;
   rpsAvg: string;
+  respTime: string;
   failRatio: string;
-  endTime: string;
-  endTimeEpoch: string;
-  exitCode: string;
+  requests: string;
   runTime: string;
+  exitCode: string;
+  username: string;
+  workerCount: string;
+  locustfile: string;
 }
 
 export interface ITestrunsRpsResponse {

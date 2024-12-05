@@ -198,7 +198,6 @@ SELECT
  fail_ratio as "failRatio",
  requests,
  date_trunc('second', end_time - id) AS "runTime",
- description,
  exit_code as "exitCode",
  username,
  worker_count as "workerCount",
