@@ -48,22 +48,25 @@ jobs:
         with:
           cmd: install
           dir: locust_cloud/webui
-      - uses: borales/actions-yarn@v5
-        with:
-          cmd: test
-          dir: locust_cloud/webui
-      - uses: borales/actions-yarn@v5
+      - name: Lint
+        uses: borales/actions-yarn@v5
         with:
           cmd: lint
           dir: locust_cloud/webui
-      - uses: borales/actions-yarn@v5
+      - name: Typecheck
+        uses: borales/actions-yarn@v5
         with:
           cmd: type-check
+          dir: locust_cloud/webui
+      - name: Tests
+        uses: borales/actions-yarn@v5
+        with:
+          cmd: test
           dir: locust_cloud/webui
 
   publish_pypi:
     name: Publish to PyPI
-    needs: [build, lint_typecheck_webui]
+    needs: [build, lint_typecheck_test_webui]
     if: startsWith(github.event.ref, 'refs/tags')
     runs-on: ubuntu-latest
     permissions:
@@ -83,7 +86,7 @@ jobs:
 
   publish_docker:
     if: github.ref == 'refs/heads/master' || startsWith(github.event.ref, 'refs/tags') || github.event_name == 'workflow_dispatch'
-    needs: [build, lint_typecheck_webui]
+    needs: [build, lint_typecheck_test_webui]
     runs-on: ubuntu-latest
 
     steps:
