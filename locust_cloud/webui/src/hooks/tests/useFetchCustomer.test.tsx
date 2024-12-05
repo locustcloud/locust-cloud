@@ -5,21 +5,12 @@ import { beforeAll, afterEach, afterAll, describe, expect, test } from 'vitest';
 
 import useFetchCustomer from 'hooks/useFetchCustomer';
 import { TEST_BASE_API } from 'test/constants';
+import { mockCustomer, mockTotalVuh, totalVuhFormatted } from 'test/mocks/customer.mock';
 import { renderWithProvider } from 'test/testUtils';
 
-const mockCustomer = [
-  {
-    maxUsers: 1000,
-    maxVuh: 10000,
-    maxWorkers: 2,
-    usersPerWorker: 500,
-  },
-];
-const totalVuhFormatted = '74 hours, 30 minutes';
-
 const server = setupServer(
-  http.post(`${TEST_BASE_API}/total-vuh`, () => HttpResponse.json([{ totalVuh: '3 days, 2:30' }])),
-  http.post(`${TEST_BASE_API}/customer`, () => HttpResponse.json(mockCustomer)),
+  http.post(`${TEST_BASE_API}/total-vuh`, () => HttpResponse.json(mockTotalVuh)),
+  http.post(`${TEST_BASE_API}/customer`, () => HttpResponse.json([mockCustomer])),
 );
 
 function MockHook() {
@@ -46,7 +37,7 @@ describe('useFetchCustomer', () => {
 
     await waitFor(() => {
       expect(store.getState().customer).toEqual({
-        ...mockCustomer[0],
+        ...mockCustomer,
         totalVuh: totalVuhFormatted,
         username: '',
       });
