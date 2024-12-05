@@ -1,16 +1,10 @@
 import { IWindow } from 'locust-ui';
 
-interface ITemplateArgs extends IWindow['templateArgs'] {
-  isGraphViewer: boolean;
-  locustVersion: string;
-  locustCloudVersion: string;
-  webBasePath: string;
-  username: string;
-}
+import { ITemplateArgs } from 'types/window.types';
 
 declare global {
   interface Window extends IWindow {
-    templateArgs: ITemplateArgs;
+    templateArgs: IWindow['templateArgs'] & ITemplateArgs;
   }
 }
 

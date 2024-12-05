@@ -4,17 +4,12 @@ import { updateStateWithPayload } from 'redux/utils';
 import { ICustomer } from 'types/customer.types';
 
 export interface ICustomerState extends Partial<ICustomer> {
-  username: string;
-  maxUsers?: number;
-  maxVuh?: number;
-  maxWorkers?: number;
-  usersPerWorker?: number;
   totalVuh?: string;
 }
 
 export type CustomerAction = PayloadAction<Partial<ICustomerState>>;
 
-const initialState = {
+const initialState: ICustomerState = {
   username: window.templateArgs.username,
 };
 

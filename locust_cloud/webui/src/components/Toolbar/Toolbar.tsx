@@ -20,7 +20,7 @@ interface IToolbar {
 
 export default function Toolbar({
   onSelectTestRun,
-  showHideAdvanced,
+  showHideAdvanced = false,
   shouldShowResolution = false,
   shouldShowTestruns = true,
 }: IToolbar) {

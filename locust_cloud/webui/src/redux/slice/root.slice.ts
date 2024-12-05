@@ -1,6 +1,4 @@
-import { createContext } from 'react';
 import { combineReducers } from '@reduxjs/toolkit';
-import { ReactReduxContextValue } from 'react-redux';
 
 import { cloudStats } from 'redux/api/cloud-stats';
 import customer, { CustomerAction, ICustomerState } from 'redux/slice/customer.slice';
@@ -17,7 +15,6 @@ export interface IRootState {
 }
 
 export type Action = CustomerAction | SnackbarAction | ToolbarAction | UiAction;
-export const ReduxContext = createContext<ReactReduxContextValue<IRootState, any> | null>(null);
 
 const rootReducer = combineReducers({
   [cloudStats.reducerPath]: cloudStats.reducer,

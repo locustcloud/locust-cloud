@@ -4,10 +4,8 @@ requests_query = """
 SELECT
 	name,
   request_type as method,
-	SUM(average * count) / SUM(count) as average,
 	SUM(count) as requests,
 	SUM(failed_count) as failed,
-	MIN(min),
 	MAX(max),
 	SUM(failed_count) / SUM(count) * 100 as "errorPercentage"
 FROM requests_summary_view
@@ -200,7 +198,6 @@ SELECT
  fail_ratio as "failRatio",
  requests,
  date_trunc('second', end_time - id) AS "runTime",
- description,
  exit_code as "exitCode",
  username,
  worker_count as "workerCount",

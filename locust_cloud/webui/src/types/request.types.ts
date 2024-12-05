@@ -60,10 +60,8 @@ export interface IRpsData {
 export interface IStatsData {
   method: string;
   name: string;
-  average: number;
   requests: number;
   failed: number;
-  min: number;
   max: number;
   errorPercentage: number;
 }

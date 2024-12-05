@@ -110,6 +110,7 @@ export default function App() {
         swarmState === SWARM_STATE.READY ? (
           <Container maxWidth='md' sx={{ position: 'relative' }}>
             <IconButton
+              aria-label='dismiss form'
               onClick={() => setUi({ hasDismissedSwarmForm: true })}
               size='small'
               sx={{
