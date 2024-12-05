@@ -9,6 +9,7 @@ import gevent
 import gevent.pywsgi
 import geventwebsocket.handler
 import socketio
+import socketio.exceptions
 
 
 def setup_socket_logging():
@@ -90,7 +91,7 @@ def setup_socket_logging():
                         logger.debug("Websocket shutdown event acknowledged by client")
                         return
 
-                except TimeoutError:
+                except socketio.exceptions.TimeoutError:
                     logger.debug("Timed out waiting for client to aknowledge websocket message")
 
             gevent.sleep(1)
