@@ -10,6 +10,9 @@ import gevent
 import gevent.pywsgi
 import geventwebsocket.handler
 import socketio
+from gevent.lock import Semaphore
+
+lock = Semaphore()
 
 
 def setup_socket_logging():
@@ -48,8 +51,9 @@ def setup_socket_logging():
             self.original = original
 
         def write(self, message):
-            self.original.write(message)
-            message_queue.append((self.name, message))
+            with lock:
+                self.original.write(message)
+                message_queue.append((self.name, message))
 
         def flush(self):
             self.original.flush()
