@@ -56,7 +56,7 @@ describe('Charts Tab', () => {
     expect(getByRole('checkbox', { name: 'Advanced' })).toBeTruthy();
   });
 
-  test.only('should hide the loading state after data has loaded', async () => {
+  test('should hide the loading state after data has loaded', async () => {
     vi.useFakeTimers();
 
     const { getByRole, queryByRole } = renderWithProvider(
