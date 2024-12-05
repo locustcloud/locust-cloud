@@ -37,7 +37,7 @@ jobs:
           name: dist-artifact
           path: dist/*
 
-  lint_typecheck_webui:
+  lint_typecheck_test_webui:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -47,6 +47,10 @@ jobs:
       - uses: borales/actions-yarn@v5
         with:
           cmd: install
+          dir: locust_cloud/webui
+      - uses: borales/actions-yarn@v5
+        with:
+          cmd: test
           dir: locust_cloud/webui
       - uses: borales/actions-yarn@v5
         with:
