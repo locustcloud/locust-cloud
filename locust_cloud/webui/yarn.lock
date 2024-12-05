@@ -3567,9 +3567,10 @@ locate-path@^6.0.0:
   dependencies:
     p-locate "^5.0.0"
 
-locust-ui@../../../locust/locust/webui/locust-ui-v0.0.0.tgz:
-  version "0.0.0"
-  resolved "../../../locust/locust/webui/locust-ui-v0.0.0.tgz#3ecc6e7c2678b55a45089cf0d05edcd62e840144"
+locust-ui@^2.32.5-next-12126406497:
+  version "2.32.5-next-12126406497"
+  resolved "https://registry.yarnpkg.com/locust-ui/-/locust-ui-2.32.5-next-12126406497.tgz#cba63d54a83de283a85b58dfdb2657ac17dde430"
+  integrity sha512-fttDqwGO5SnhDmsxreN6Pw2L1m2bDIoNJGP5wzvuNdoMXk6ErsP3Wm6GB7PHRl+udQkCMAWquZBiQOxZgCQoxA==
   dependencies:
     "@emotion/react" "^11.11.1"
     "@emotion/styled" "^11.11.0"

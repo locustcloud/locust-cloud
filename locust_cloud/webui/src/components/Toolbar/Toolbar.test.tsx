@@ -2,7 +2,7 @@ import { waitFor } from '@testing-library/dom';
 import { SWARM_STATE } from 'locust-ui';
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
-import { afterAll, afterEach, beforeAll, describe, expect, test, vi } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, test } from 'vitest';
 
 import Toolbar from 'components/Toolbar/Toolbar';
 import { TEST_BASE_API } from 'test/constants';

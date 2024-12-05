@@ -8,16 +8,17 @@ describe('Customer Tab', () => {
   test('should render the customer tab', () => {
     const customer = { maxVuh: 1001, totalVuh: '30 hours' };
     const mockTemplateArgs = {
+      ...swarmStateMock,
       username: 'John',
       locustVersion: '123',
       locustCloudVersion: '456',
     };
 
-    global.window.templateArgs = mockTemplateArgs;
+    window.templateArgs = mockTemplateArgs;
     const { getByRole, getByText } = renderWithProvider(<Customer />, {
       customer,
     });
-    global.window.templateArgs = swarmStateMock;
+    window.templateArgs = swarmStateMock;
 
     expect(getByRole('button', { name: 'Logout' })).toBeTruthy();
     expect(getByText(t => t.includes(String(customer.maxVuh)))).toBeTruthy();
