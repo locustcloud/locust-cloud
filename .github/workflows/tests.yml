@@ -64,6 +64,25 @@ jobs:
           cmd: test
           dir: locust_cloud/webui
 
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+      - uses: astral-sh/setup-uv@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+      - run: uv venv --python 3.11
+      - env:
+          LOCUSTCLOUD_USERNAME: ${{ secrets.LOCUSTCLOUD_USERNAME }}
+          LOCUSTCLOUD_PASSWORD: ${{ secrets.LOCUSTCLOUD_PASSWORD }}
+          PGUSER: ${{ secrets.PGUSER }}
+          PGPASSWORD: ${{ secrets.PGPASSWORD }}
+        run: uv run pytest
+
   publish_pypi:
     name: Publish to PyPI
     needs: [build, lint_typecheck_test_webui]
