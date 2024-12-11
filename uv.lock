@@ -608,7 +608,7 @@ wheels = [
 
 [[package]]
 name = "locust"
-version = "2.32.4"
+version = "2.32.5.dev7"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "configargparse" },
@@ -626,14 +626,14 @@ dependencies = [
     { name = "setuptools" },
     { name = "werkzeug" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/25/2e/482d251c300ad9acb2476ab26a2d7956302e4cd58c663f91fa04a37c71f2/locust-2.32.4.tar.gz", hash = "sha256:fd650cbc40842e721668a8d0f7f8224775432b40c63d0a378546b9a9f54b7559", size = 1196827 }
+sdist = { url = "https://files.pythonhosted.org/packages/d0/3e/547a45d3b128e21760f6f094e01a146383d93a0808553a70a2efa9b15586/locust-2.32.5.dev7.tar.gz", hash = "sha256:cbdfa7bf924bd2ab902a83fa8dc66f5b90682a8fa4ce7d252d9b555cfca55c4f", size = 1196912 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b2/6e/09d99fd6d153d90440f11d3bed3abd07dcfd9eed44b2aae7db355ecdd711/locust-2.32.4-py3-none-any.whl", hash = "sha256:7c5b8767c0d771b5167d5d6b82878622faead74f394eb9cafe8891d89eb36b97", size = 1214885 },
+    { url = "https://files.pythonhosted.org/packages/45/68/e6a3afdfec5c06d677a8e1ff0b13cb118cb014dc06d504d22fb2529fde4b/locust-2.32.5.dev7-py3-none-any.whl", hash = "sha256:1a5a7c553e4ba497a4636bade797dc3545ab508a50c00ed8360b4d5d93cffd8f", size = 1215007 },
 ]
 
 [[package]]
 name = "locust-cloud"
-version = "1.12.3.dev0"
+version = "1.12.3.dev2"
 source = { editable = "." }
 dependencies = [
     { name = "boto3" },
@@ -655,7 +655,7 @@ dev = [
 requires-dist = [
     { name = "boto3", specifier = "==1.34.125" },
     { name = "gevent-websocket", specifier = "==0.10.1" },
-    { name = "locust", specifier = ">=2.32.4" },
+    { name = "locust", specifier = ">=2.32.5.dev7" },
     { name = "psycopg", extras = ["binary", "pool"], specifier = ">=3.2.1" },
     { name = "pyjwt", specifier = ">=2.0" },
     { name = "python-socketio", extras = ["client"], specifier = "==5.11.4" },
