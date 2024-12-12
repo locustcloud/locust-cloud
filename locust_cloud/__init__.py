@@ -105,21 +105,17 @@ def on_locust_init(environment: locust.env.Environment, **_args):
     if not (os.environ.get("PGHOST")):
         return
 
-    try:
-        conninfo = make_conninfo(
-            sslmode="require",
-        )
-        pool = ConnectionPool(
-            conninfo,
-            min_size=1,
-            max_size=20,
-            configure=set_autocommit,
-            check=ConnectionPool.check_connection,
-        )
-        pool.wait()
-    except Exception as e:
-        logger.exception(e)
-        raise
+    conninfo = make_conninfo(
+        sslmode="require",
+    )
+    pool = ConnectionPool(
+        conninfo,
+        min_size=1,
+        max_size=20,
+        configure=set_autocommit,
+        check=ConnectionPool.check_connection,
+    )
+    pool.wait(timeout=10)
 
     if not environment.parsed_options.graph_viewer:
         IdleExit(environment)
