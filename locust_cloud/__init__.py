@@ -1,6 +1,7 @@
 import importlib.metadata
 import os
 import sys
+from contextlib import contextmanager
 
 os.environ["LOCUST_SKIP_MONKEY_PATCH"] = "1"
 
@@ -16,17 +17,15 @@ __version__ = importlib.metadata.version("locust-cloud")
 
 import logging
 
+import clickhouse_connect
 import configargparse
 import locust.env
-import psycopg
 from locust import events
 from locust.argument_parser import LocustArgumentParser
 from locust_cloud.auth import register_auth
 from locust_cloud.idle_exit import IdleExit
 from locust_cloud.timescale.exporter import Exporter
 from locust_cloud.timescale.query import register_query
-from psycopg.conninfo import make_conninfo
-from psycopg_pool import ConnectionPool
 
 logger = logging.getLogger(__name__)
 
@@ -96,26 +95,27 @@ def add_arguments(parser: LocustArgumentParser):
     )
 
 
-def set_autocommit(conn: psycopg.Connection):
-    conn.autocommit = True
+class ClickhousePool:
+    def __init__(self) -> None:
+        self.host = os.environ["CHHOST"]
+        self.user = os.environ["CHUSER"]
+        self.password = os.environ["CHPASSWORD"]
+
+    @contextmanager
+    def get_client(self):
+        client = clickhouse_connect.get_client(
+            host=self.host,
+            username=self.user,
+            password=self.password,
+            secure=True,
+        )
+        yield client
 
 
 @events.init.add_listener
 def on_locust_init(environment: locust.env.Environment, **_args):
     if not (os.environ.get("PGHOST")):
         return
-
-    conninfo = make_conninfo(
-        sslmode="require",
-    )
-    pool = ConnectionPool(
-        conninfo,
-        min_size=1,
-        max_size=20,
-        configure=set_autocommit,
-        check=ConnectionPool.check_connection,
-    )
-    pool.wait(timeout=10)
 
     if not environment.parsed_options.graph_viewer:
         IdleExit(environment)

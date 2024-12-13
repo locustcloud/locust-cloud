@@ -138,10 +138,15 @@ export const cloudStats = createApi({
       transformResponse: (rps: IRpsResponse[]) =>
         rps.reduce(
           (rpsChart, { users, rps, errorRate, time }) => ({
-            users: [...(rpsChart.users || []), [time, users || carryLastValue(rpsChart.users)]],
-            rps: [...(rpsChart.rps || []), [time, rps || '0']],
-            errorRate: [...(rpsChart.errorRate || []), [time, errorRate || '0']],
-            time: [...(rpsChart.time || []), time],
+            users: [
+              ...(rpsChart.users || []),
+              [new Date(time).toISOString(), users || carryLastValue(rpsChart.users)],
+            ],
+            rps: [...(rpsChart.rps || []), [new Date(time).toISOString(), rps || '0']],
+            errorRate: [
+              ...(rpsChart.errorRate || []),
+              [new Date(time).toISOString(), errorRate || '0'],
+            ],
           }),
           {} as IRpsData,
         ),
@@ -258,12 +263,8 @@ export const cloudStats = createApi({
         url: 'customer',
         method: 'POST',
       }),
-      transformResponse: ([customerData]) => ({
-        ...customerData,
-        maxUsers: Number(customerData.maxUsers),
-        maxVuh: Number(customerData.maxVuh),
-        maxWorkers: Number(customerData.maxWorkers),
-        usersPerWorker: Number(customerData.usersPerWorker),
+      transformResponse: () => ({
+        blah: 'hello',
       }),
     }),
 

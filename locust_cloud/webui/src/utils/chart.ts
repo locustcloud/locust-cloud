@@ -10,22 +10,18 @@ export const adaptPerNameChartData = <ChartType extends IPerRequestResponse>(
   chartData.reduce((chart, data) => {
     const { name, time } = data;
     const value = (data[key] as string) || fallbackValue;
-    const timeAxis = chart.time || [];
-    timeAxis.push(time);
 
     if (!chart[name]) {
       return {
         ...chart,
-        [name]: [[time, value]],
-        time: timeAxis,
+        [name]: [[new Date(time).toISOString(), value]],
       } as IPerRequestData;
     }
 
-    chart[name].push([time, value]);
+    chart[name].push([new Date(time).toISOString(), value]);
 
     return {
       ...chart,
-      time: timeAxis,
     } as IPerRequestData;
   }, {} as IPerRequestData);
 

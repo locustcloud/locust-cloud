@@ -29,45 +29,40 @@ GROUP BY "name",exception
 
 
 requests_per_second = """
-WITH request_count_agg AS (
-  SELECT
-    time_bucket_gapfill(%(resolution)s * interval '1 second', bucket) AS time,
-    COALESCE(SUM(count)/%(resolution)s, 0) as rps
-  FROM requests_summary_view
-  WHERE bucket BETWEEN %(start)s AND %(end)s
-  AND run_id = %(testrun)s
-  GROUP BY 1
-  ORDER BY 1
+WITH
+request_count_agg AS (
+    SELECT
+        toStartOfInterval(bucket, INTERVAL 5 SECOND) AS time,
+        ifNull(countMerge(count), 0) AS rps
+    FROM requests_summary
+    GROUP BY time
+    ORDER BY time
 ),
 user_count_agg AS (
-  SELECT
-    time_bucket_gapfill(%(resolution)s * interval '1 second', time) AS time,
-    COALESCE(avg(user_count), 0) as users
-  FROM number_of_users
-  WHERE time BETWEEN %(start)s AND %(end)s
-  AND run_id = %(testrun)s
-  GROUP BY 1
-  ORDER BY 1
+    SELECT
+        toStartOfInterval(time, INTERVAL 5 SECOND) AS time,
+        ifNull(avg(user_count), 0) AS users
+    FROM number_of_users
+    GROUP BY time
+    ORDER BY time
 ),
 errors_per_s_agg AS (
-  SELECT
-    time_bucket_gapfill(%(resolution)s * interval '1 second', bucket) AS time,
-    COALESCE(SUM(failed_count)/%(resolution)s, 0) as error_rate
-  FROM requests_summary_view
-  WHERE bucket BETWEEN %(start)s AND %(end)s
-  AND run_id = %(testrun)s
-  GROUP BY 1
-  ORDER BY 1
+    SELECT
+        toStartOfInterval(bucket, INTERVAL 5 SECOND) AS time,
+        ifNull(countMerge(failed_count), 0) AS error_rate
+    FROM requests_summary
+    GROUP BY time
+    ORDER BY time
 )
 SELECT
-  r.time,
-  u.users,
-  r.rps,
-  e.error_rate as "errorRate"
+    r.time as time,
+    u.users,
+    r.rps,
+    e.error_rate AS errorRate
 FROM request_count_agg r
 LEFT JOIN user_count_agg u ON r.time = u.time
-LEFT JOIN errors_per_s_agg e on r.time = e.time
-ORDER BY r.time;
+LEFT JOIN errors_per_s_agg e ON r.time = e.time
+ORDER BY r.time
 """
 
 
@@ -112,13 +107,11 @@ ORDER BY 1,2
 
 avg_response_times = """
 SELECT
-    time_bucket_gapfill(%(resolution)s * interval '1 second', bucket) as time,
-    name,
-    avg(average) as "responseTime"
-FROM requests_summary_view
-WHERE bucket BETWEEN %(start)s AND %(end)s
-AND run_id = %(testrun)s
-GROUP BY 1, name
+    toStartOfInterval(bucket, INTERVAL 5 SECOND) AS time,
+    avgMerge(response_time_state) as responseTime,
+    name
+FROM requests_summary
+GROUP BY time, name
 ORDER BY 1, 2
 """
 
@@ -162,9 +155,7 @@ ORDER BY 1
 
 request_names = """
 SELECT DISTINCT name
-FROM requests_summary_view
-WHERE bucket BETWEEN %(start)s AND %(end)s
-AND run_id = %(testrun)s
+FROM requests_summary
 """
 
 scatterplot = """
@@ -284,7 +275,6 @@ SELECT
   max_users as "maxUsers",
   users_per_worker as "usersPerWorker"
 FROM customers
-WHERE id = current_user
 """
 
 profiles = """
