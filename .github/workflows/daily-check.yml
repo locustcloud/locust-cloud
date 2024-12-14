@@ -46,3 +46,6 @@ jobs:
       - name: On failure, notify slack
         if: failure()
         run: curl -d "{\"text\":\"$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID\"}" $SLACK_NOTIFICATIONS_WEBHOOK
+      - name: Make sure to delete (only really needed for mock)
+        if: always()
+        run: uv tool run locust-cloud --delete
