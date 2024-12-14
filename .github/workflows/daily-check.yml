@@ -15,7 +15,7 @@ env:
   PYTHONUNBUFFERED: 1 # ensure we see logs output right away
 
 jobs:
-  build:
+  locust_cloud_full_run:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
