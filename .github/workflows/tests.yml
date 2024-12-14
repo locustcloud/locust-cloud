@@ -82,6 +82,9 @@ jobs:
           PGUSER: ${{ secrets.PGUSER }}
           PGPASSWORD: ${{ secrets.PGPASSWORD }}
         run: uv run pytest
+      - name: Make sure to delete (only really needed for mock)
+        if: always()
+        run: uv tool run locust-cloud --delete
 
   publish_pypi:
     name: Publish to PyPI
