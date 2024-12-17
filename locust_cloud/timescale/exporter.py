@@ -62,6 +62,7 @@ class Exporter:
             [(timestamp, message, self._run_id, "testcustomer")],
             column_names=["time", "text", "run_id", "customer"],
         )
+        client.close()
 
     def on_test_start(self, environment: locust.env.Environment):
         if not self.env.parsed_options or not self.env.parsed_options.worker:
@@ -159,6 +160,7 @@ class Exporter:
                 [(datetime.now(UTC), self._run_id, 0, "testcustomer")],
                 column_names=["time", "run_id", "user_count", "customer"],
             )
+            client.close()
         self.log_stop_test_run()
         self._has_logged_test_stop = True
 
@@ -269,6 +271,7 @@ class Exporter:
             [(datetime.now(UTC), "Test run started", self._run_id, "testcustomer")],
             column_names=["time", "text", "run_id", "customer"],
         )
+        client.close()
 
     def spawning_complete(self, user_count):
         if not self.env.parsed_options.worker:  # only log for master/standalone
@@ -280,6 +283,7 @@ class Exporter:
                     [(end_time, f"Rampup complete, {user_count} users spawned", self._run_id, "testcustomer")],
                     column_names=["time", "text", "run_id", "customer"],
                 )
+                client.close()
 
             except Exception as error:
                 logging.error(
@@ -329,6 +333,7 @@ class Exporter:
                 """,
                 {"run_id": self._run_id, "end_time": end_time},
             )
+            client.close()
         except Exception as error:
             logging.error("Failed to update testruns record (or events) with end time to database: " + repr(error))
 
@@ -354,5 +359,6 @@ class Exporter:
                 ],
                 column_names=["time", "text", "run_id", "customer"],
             )
+            client.close()
         except Exception as error:
             logging.error("Failed to update testruns record (or events) with end time to database: " + repr(error))

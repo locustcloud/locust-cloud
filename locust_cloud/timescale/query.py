@@ -36,6 +36,8 @@ def register_query(environment):
 
                 results = [adapt_timestamp(dict(zip(results.column_names, row))) for row in results.result_set]
 
+                client.close()
+
                 # fetch_time = (time.perf_counter() - start_time) * 1000
                 # logger.info(
                 #     f"Executed query '{query}' with params {sql_params}. It took {round(get_conn_time)}+{round(exec_time)}+{round(fetch_time)}ms"
