@@ -1,6 +1,9 @@
 import os
 
 import clickhouse_connect
+from clickhouse_connect.driver import httputil
+
+pool_mgr = httputil.get_pool_manager(maxsize=16, num_pools=12)
 
 
 def get_client():
@@ -9,4 +12,5 @@ def get_client():
         username=os.environ["CHUSER"],
         password=os.environ["CHPASSWORD"],
         secure=True,
+        pool_mgr=pool_mgr,
     )
