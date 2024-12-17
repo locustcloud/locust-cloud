@@ -7,6 +7,7 @@ import { useAction, useLocustSelector, useSelector } from 'redux/hooks';
 import { snackbarActions } from 'redux/slice/snackbar.slice';
 import { IPerRequestData } from 'types/request.types';
 import { chartValueFormatter } from 'utils/chart';
+import { utcNow } from 'utils/date';
 
 interface IRequestLines {
   name: string;
@@ -20,7 +21,7 @@ export default function Scatterplot() {
   const { currentTestrun } = useSelector(({ toolbar }) => toolbar);
   const setSnackbar = useAction(snackbarActions.setSnackbar);
 
-  const [timestamp, setTimestamp] = useState(new Date().toISOString());
+  const [timestamp, setTimestamp] = useState(utcNow());
   const [scatterplot, setScatterplot] = useState<IPerRequestData>({ time: [] });
   const [requestLines, setRequestLines] = useState<IRequestLines[]>([]);
 
@@ -29,7 +30,7 @@ export default function Scatterplot() {
 
   const fetchScatterplot = async () => {
     if (currentTestrun) {
-      const currentTimestamp = new Date().toISOString();
+      const currentTimestamp = utcNow();
       const payload = {
         start: currentTestrun,
         end: timestamp,

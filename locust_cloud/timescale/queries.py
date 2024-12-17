@@ -4,11 +4,11 @@ requests_query = """
 SELECT
 	name,
   request_type as method,
-	SUM(count) as requests,
-	SUM(failed_count) as failed,
-	MAX(max),
-	SUM(failed_count) / SUM(count) * 100 as "errorPercentage"
-FROM requests_summary_view
+	countMerge(count) as requests,
+	countMerge(failed_count) as failed,
+	maxMerge(max_state),
+	countMerge(failed_count) / countMerge(count) * 100 as "errorPercentage"
+FROM requests_summary
 WHERE bucket BETWEEN %(start)s AND %(end)s
 AND run_id = %(testrun)s
 GROUP BY name, method
@@ -19,12 +19,11 @@ failures_query = """
 SELECT
   name as name,
   exception,
-  count(*)
-FROM requests_view
-WHERE time BETWEEN %(start)s AND %(end)s AND
- success = 0
+  count()
+FROM requests
+WHERE time BETWEEN %(start)s AND %(end)s AND success = 0
 AND run_id = %(testrun)s
-GROUP BY "name",exception
+GROUP BY name, exception
 """
 
 
@@ -35,6 +34,8 @@ request_count_agg AS (
         toStartOfInterval(bucket, INTERVAL 5 SECOND) AS time,
         ifNull(countMerge(count), 0) AS rps
     FROM requests_summary
+    WHERE bucket BETWEEN %(start)s AND toDateTime(%(end)s)
+    AND run_id = %(testrun)s
     GROUP BY time
     ORDER BY time
 ),
@@ -43,6 +44,8 @@ user_count_agg AS (
         toStartOfInterval(time, INTERVAL 5 SECOND) AS time,
         ifNull(avg(user_count), 0) AS users
     FROM number_of_users
+    WHERE time BETWEEN %(start)s AND toDateTime(%(end)s)
+    AND run_id = %(testrun)s
     GROUP BY time
     ORDER BY time
 ),
@@ -51,6 +54,8 @@ errors_per_s_agg AS (
         toStartOfInterval(bucket, INTERVAL 5 SECOND) AS time,
         ifNull(countMerge(failed_count), 0) AS error_rate
     FROM requests_summary
+    WHERE bucket BETWEEN %(start)s AND toDateTime(%(end)s)
+    AND run_id = %(testrun)s
     GROUP BY time
     ORDER BY time
 )
@@ -68,8 +73,8 @@ ORDER BY r.time
 
 total_requests = """
 SELECT
- SUM(count) as "totalRequests"
-FROM requests_summary_view
+ countMerge(count) as "totalRequests"
+FROM requests_summary
 WHERE bucket BETWEEN %(start)s AND %(end)s
 AND run_id = %(testrun)s
 """
@@ -77,8 +82,8 @@ AND run_id = %(testrun)s
 
 total_failed = """
 SELECT
- SUM(failed_count) as "totalFailures"
-FROM requests_summary_view
+ countMerge(failed_count) as "totalFailures"
+FROM requests_summary
 WHERE bucket BETWEEN %(start)s AND %(end)s
 AND run_id = %(testrun)s
 """
@@ -86,18 +91,18 @@ AND run_id = %(testrun)s
 
 error_percentage = """
 SELECT
-	SUM(failed_count) / SUM(count) * 100 "errorPercentage"
-FROM requests_summary_view
+	ifNull(countMerge(failed_count) / nullif(countMerge(count), 0), 0) * 100 as "errorPercentage"
+FROM requests_summary
 WHERE bucket BETWEEN %(start)s AND %(end)s
 AND run_id = %(testrun)s
 """
 
 rps_per_request = """
 SELECT
-    time_bucket_gapfill(%(resolution)s * interval '1 second', bucket) AS time,
+    toStartOfInterval(bucket, INTERVAL %(resolution)s SECOND) AS time,
     name,
-    COALESCE(SUM(count)/%(resolution)s, 0) as throughput
-FROM requests_summary_view
+    ifNull(countMerge(count)/%(resolution)s, 0) as throughput
+FROM requests_summary
 WHERE bucket BETWEEN %(start)s AND %(end)s
 AND run_id = %(testrun)s
 GROUP BY 1, name
@@ -107,7 +112,7 @@ ORDER BY 1,2
 
 avg_response_times = """
 SELECT
-    toStartOfInterval(bucket, INTERVAL 5 SECOND) AS time,
+    toStartOfInterval(bucket, INTERVAL %(resolution)s SECOND) AS time,
     avgMerge(response_time_state) as responseTime,
     name
 FROM requests_summary
@@ -117,10 +122,10 @@ ORDER BY 1, 2
 
 errors_per_request = """
 SELECT
-    time_bucket_gapfill(%(resolution)s * interval '1 second', bucket) AS time,
+    toStartOfInterval(bucket, INTERVAL %(resolution)s SECOND) AS time,
     name,
-    SUM(failed_count)/%(resolution)s as "errorRate"
-FROM requests_summary_view
+    countMerge(failed_count)/%(resolution)s as "errorRate"
+FROM requests_summary
 WHERE bucket BETWEEN %(start)s AND %(end)s
 AND run_id = %(testrun)s
 GROUP BY 1, name
@@ -129,10 +134,11 @@ ORDER BY 1
 
 
 perc99_response_times = """
-SELECT time_bucket_gapfill(%(resolution)s * interval '1 second', bucket) AS time,
+SELECT
+  toStartOfInterval(bucket, INTERVAL %(resolution)s SECOND) AS time,
   name,
-  MAX(perc99) as perc99
-FROM requests_summary_view
+  quantileMerge(perc99_state) as perc99
+FROM requests_summary
 WHERE bucket BETWEEN %(start)s AND %(end)s
 AND run_id = %(testrun)s
 GROUP BY 1, name
@@ -142,10 +148,10 @@ ORDER BY 1
 
 response_length = """
 SELECT
-    time_bucket_gapfill(%(resolution)s * interval '1 second', bucket) as time,
-    AVG(response_length) as "responseLength",
+    toStartOfInterval(bucket, INTERVAL %(resolution)s SECOND) AS time,
+    avgMerge(response_length_state) as "responseLength",
     name
-FROM requests_summary_view
+FROM requests_summary
 WHERE bucket BETWEEN %(start)s AND %(end)s
 AND run_id = %(testrun)s
 GROUP BY 1, name
@@ -163,7 +169,7 @@ SELECT
  time,
  name,
  response_time as "responseTime"
-FROM requests_view
+FROM requests
 WHERE time BETWEEN %(start)s AND %(end)s
 AND run_id = %(testrun)s
 ORDER BY 1,2
@@ -263,7 +269,7 @@ ORDER BY a.time
 
 total_vuh = """
 SELECT
-  COALESCE(SUM((end_time - id) * num_users), '0') AS "totalVuh"
+  ifNull(sum((end_time - id) * num_users), '0') AS "totalVuh"
 FROM testruns
 WHERE id >= date_trunc('month', NOW()) AND NOT refund
 """

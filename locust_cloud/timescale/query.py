@@ -1,3 +1,4 @@
+import datetime
 import logging
 
 from flask import Blueprint, make_response, request
@@ -8,7 +9,10 @@ logger = logging.getLogger(__name__)
 
 
 def adapt_timestamp(result):
-    return {key: str(value) if value else None for key, value in result.items()}
+    if "totalVuh" in result:
+        result["totalVuh"] = str(datetime.timedelta(seconds=result["totalVuh"]))
+
+    return {key: str(value) if isinstance(value, datetime.datetime) else value for key, value in result.items()}
 
 
 def register_query(environment, pool):
@@ -31,7 +35,8 @@ def register_query(environment, pool):
                 # exec_time = (time.perf_counter() - start_time) * 1000
                 with pool.get_client() as client:
                     results = client.query(sql, sql_params)
-                results = [dict(zip(results.column_names, row)) for row in results.result_set]
+
+                results = [adapt_timestamp(dict(zip(results.column_names, row))) for row in results.result_set]
 
                 # fetch_time = (time.perf_counter() - start_time) * 1000
                 # logger.info(

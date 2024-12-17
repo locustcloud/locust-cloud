@@ -17,6 +17,7 @@ import { useAction, useLocustSelector, useSelector } from 'redux/hooks';
 import { snackbarActions } from 'redux/slice/snackbar.slice';
 import { IPerRequestData, IRequestLines, IRpsData } from 'types/request.types';
 import { chartValueFormatter } from 'utils/chart';
+import { utcNow } from 'utils/date';
 
 const defaultPerRequestState = { time: [] } as IPerRequestData;
 const defaultRpsDataState = { time: [] as string[] } as IRpsData;
@@ -76,7 +77,7 @@ export default function Charts() {
 
   const [isLoading, setIsLoading] = useState(true);
   const [isError, setIsError] = useState(false);
-  const [timestamp, setTimestamp] = useState(new Date().toISOString());
+  const [timestamp, setTimestamp] = useState(utcNow());
   const [charts, setCharts] = useState<ICharts>(defaultChartData);
   const [shouldReplaceMergeLines, setShouldReplaceMergeLines] = useState(false);
 
@@ -90,7 +91,7 @@ export default function Charts() {
 
   const fetchCharts = async () => {
     if (currentTestrun) {
-      const currentTimestamp = new Date().toISOString();
+      const currentTimestamp = utcNow();
       const { endTime } = testruns[new Date(currentTestrun).toLocaleString()];
       const payload = {
         start: currentTestrun,

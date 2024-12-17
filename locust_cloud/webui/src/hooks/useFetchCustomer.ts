@@ -11,6 +11,7 @@ import { IVuhResponse } from 'types/request.types';
 const pluralize = (n: number) => (n === 1 ? '' : 's');
 
 function formatTotalVuh(totalVuhResponse: IVuhResponse[]) {
+  console.log({ totalVuhResponse });
   if (!totalVuhResponse || !totalVuhResponse.length || !totalVuhResponse[0].totalVuh) {
     return '0 minutes';
   }

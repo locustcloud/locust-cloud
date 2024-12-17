@@ -9,8 +9,6 @@ from datetime import UTC, datetime
 import gevent
 import greenlet
 import locust.env
-import psycopg
-import psycopg.types.json
 from locust.exception import CatchResponseError
 from locust.runners import MasterRunner
 
@@ -87,22 +85,23 @@ class Exporter:
                         [(datetime.now(UTC), self._run_id, self.env.runner.user_count, "testcustomer")],
                         column_names=["time", "run_id", "user_count", "customer"],
                     )
-            except psycopg.Error as error:
-                logging.error("Failed to write user count to Postgresql: " + repr(error))
+            except Exception as error:
+                logging.error("Failed to write user count: " + repr(error))
             gevent.sleep(2.0)
 
     def _run(self):
-        while True:
-            if self._samples:
-                # Buffer samples, so that a locust greenlet will write to the new list
-                # instead of the one that has been sent into postgres client
-                samples_buffer = self._samples
-                self._samples = []
-                self.write_samples_to_db(samples_buffer)
-            else:
-                if self._finished:
-                    break
-            gevent.sleep(0.5)
+        with self.pool.get_client() as client:
+            while True:
+                if self._samples:
+                    # Buffer samples, so that a locust greenlet will write to the new list
+                    # instead of the one that has been sent into postgres client
+                    samples_buffer = self._samples
+                    self._samples = []
+                    self.write_samples_to_db(samples_buffer, client)
+                else:
+                    if self._finished:
+                        break
+                gevent.sleep(0.5)
 
     def _update_end_time(self):
         # delay setting first end time
@@ -124,29 +123,28 @@ class Exporter:
                 logging.error("Failed to update testruns table with end time: " + repr(error))
                 gevent.sleep(1)
 
-    def write_samples_to_db(self, samples):
+    def write_samples_to_db(self, samples, client):
         try:
-            with self.pool.get_client() as client:
-                client.insert(
-                    "requests",
-                    samples,
-                    column_names=[
-                        "time",
-                        "run_id",
-                        "greenlet_id",
-                        "loadgen",
-                        "name",
-                        "request_type",
-                        "response_time",
-                        "success",
-                        "response_length",
-                        "exception",
-                        "pid",
-                        "url",
-                    ],
-                )
-        except psycopg.Error as error:
-            logging.error("Failed to write samples to Postgresql timescale database: " + repr(error))
+            client.insert(
+                "requests",
+                samples,
+                column_names=[
+                    "time",
+                    "run_id",
+                    "greenlet_id",
+                    "loadgen",
+                    "name",
+                    "request_type",
+                    "response_time",
+                    "success",
+                    "response_length",
+                    "exception",
+                    "pid",
+                    "url",
+                ],
+            )
+        except Exception as error:
+            logging.error("Failed to write samples to database: " + repr(error))
 
     def on_test_stop(self, environment):
         if getattr(self, "_update_end_time_task", False):
