@@ -14,11 +14,11 @@ export const adaptPerNameChartData = <ChartType extends IPerRequestResponse>(
     if (!chart[name]) {
       return {
         ...chart,
-        [name]: [[new Date(time).toISOString(), value]],
+        [name]: [[time, value]],
       } as IPerRequestData;
     }
 
-    chart[name].push([new Date(time).toISOString(), value]);
+    chart[name].push([time, value]);
 
     return {
       ...chart,
