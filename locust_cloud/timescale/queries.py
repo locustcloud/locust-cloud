@@ -21,49 +21,49 @@ SELECT
   exception,
   count()
 FROM requests
-WHERE time BETWEEN %(start)s AND %(end)s AND success = 0
+WHERE time BETWEEN %(start)s AND %(end)s AND
+  success = 0
 AND run_id = %(testrun)s
 GROUP BY name, exception
 """
 
 
 requests_per_second = """
-WITH
-request_count_agg AS (
-    SELECT
-        toStartOfInterval(bucket, INTERVAL 5 SECOND) AS time,
-        ifNull(countMerge(count), 0) AS rps
-    FROM requests_summary
-    WHERE bucket BETWEEN %(start)s AND toDateTime(%(end)s)
-    AND run_id = %(testrun)s
-    GROUP BY time
-    ORDER BY time
+WITH request_count_agg AS (
+  SELECT
+    toStartOfInterval(bucket, INTERVAL 5 SECOND) AS time,
+    ifNull(countMerge(count), 0) AS rps
+  FROM requests_summary
+  WHERE bucket BETWEEN %(start)s AND toDateTime(%(end)s)
+  AND run_id = %(testrun)s
+  GROUP BY time
+  ORDER BY time
 ),
 user_count_agg AS (
-    SELECT
-        toStartOfInterval(time, INTERVAL 5 SECOND) AS time,
-        ifNull(avg(user_count), 0) AS users
-    FROM number_of_users
-    WHERE time BETWEEN %(start)s AND toDateTime(%(end)s)
-    AND run_id = %(testrun)s
-    GROUP BY time
-    ORDER BY time
+  SELECT
+    toStartOfInterval(time, INTERVAL 5 SECOND) AS time,
+    ifNull(avg(user_count), 0) AS users
+  FROM number_of_users
+  WHERE time BETWEEN %(start)s AND toDateTime(%(end)s)
+  AND run_id = %(testrun)s
+  GROUP BY time
+  ORDER BY time
 ),
 errors_per_s_agg AS (
-    SELECT
-        toStartOfInterval(bucket, INTERVAL 5 SECOND) AS time,
-        ifNull(countMerge(failed_count), 0) AS error_rate
-    FROM requests_summary
-    WHERE bucket BETWEEN %(start)s AND toDateTime(%(end)s)
-    AND run_id = %(testrun)s
-    GROUP BY time
-    ORDER BY time
+  SELECT
+    toStartOfInterval(bucket, INTERVAL 5 SECOND) AS time,
+    ifNull(countMerge(failed_count), 0) AS error_rate
+  FROM requests_summary
+  WHERE bucket BETWEEN %(start)s AND toDateTime(%(end)s)
+  AND run_id = %(testrun)s
+  GROUP BY time
+  ORDER BY time
 )
 SELECT
-    r.time as time,
-    u.users,
-    r.rps,
-    e.error_rate AS errorRate
+  r.time AS time,
+  u.users,
+  r.rps,
+  e.error_rate AS "errorRate"
 FROM request_count_agg r
 LEFT JOIN user_count_agg u ON r.time = u.time
 LEFT JOIN errors_per_s_agg e ON r.time = e.time
@@ -99,9 +99,9 @@ AND run_id = %(testrun)s
 
 rps_per_request = """
 SELECT
-    toStartOfInterval(bucket, INTERVAL %(resolution)s SECOND) AS time,
-    name,
-    ifNull(countMerge(count)/%(resolution)s, 0) as throughput
+  toStartOfInterval(bucket, INTERVAL %(resolution)s SECOND) AS time,
+  name,
+  ifNull(countMerge(count)/%(resolution)s, 0) as throughput
 FROM requests_summary
 WHERE bucket BETWEEN %(start)s AND %(end)s
 AND run_id = %(testrun)s
@@ -112,9 +112,9 @@ ORDER BY 1,2
 
 avg_response_times = """
 SELECT
-    toStartOfInterval(bucket, INTERVAL %(resolution)s SECOND) AS time,
-    avgMerge(response_time_state) as responseTime,
-    name
+  toStartOfInterval(bucket, INTERVAL %(resolution)s SECOND) AS time,
+  avgMerge(response_time_state) as responseTime,
+  name
 FROM requests_summary
 GROUP BY time, name
 ORDER BY 1, 2
@@ -122,9 +122,9 @@ ORDER BY 1, 2
 
 errors_per_request = """
 SELECT
-    toStartOfInterval(bucket, INTERVAL %(resolution)s SECOND) AS time,
-    name,
-    countMerge(failed_count)/%(resolution)s as "errorRate"
+  toStartOfInterval(bucket, INTERVAL %(resolution)s SECOND) AS time,
+  name,
+  countMerge(failed_count)/%(resolution)s as "errorRate"
 FROM requests_summary
 WHERE bucket BETWEEN %(start)s AND %(end)s
 AND run_id = %(testrun)s
@@ -148,9 +148,9 @@ ORDER BY 1
 
 response_length = """
 SELECT
-    toStartOfInterval(bucket, INTERVAL %(resolution)s SECOND) AS time,
-    avgMerge(response_length_state) as "responseLength",
-    name
+  toStartOfInterval(bucket, INTERVAL %(resolution)s SECOND) AS time,
+  avgMerge(response_length_state) as "responseLength",
+  name
 FROM requests_summary
 WHERE bucket BETWEEN %(start)s AND %(end)s
 AND run_id = %(testrun)s
@@ -219,8 +219,8 @@ avg_rps_failed AS (
   SELECT
     id AS time,
     CASE
-        WHEN exit_code > 0 THEN rps_avg
-        ELSE 0
+      WHEN exit_code > 0 THEN rps_avg
+      ELSE 0
     END AS avg_rps_failed
   FROM testruns
   WHERE %(profile)s IS NULL or profile = %(profile)s
@@ -250,8 +250,8 @@ avg_response_time_failed AS (
   SELECT
     id AS time,
     CASE
-        WHEN exit_code > 0 THEN resp_time_avg
-        ELSE 0
+      WHEN exit_code > 0 THEN resp_time_avg
+      ELSE 0
     END AS avg_response_time_failed
   FROM testruns
   WHERE %(profile)s IS NULL or profile = %(profile)s
@@ -286,8 +286,8 @@ FROM customers
 profiles = """
 SELECT DISTINCT
 CASE
-    WHEN profile IS NOT NULL AND profile != '' THEN profile
-    ELSE locustfile
+  WHEN profile IS NOT NULL AND profile != '' THEN profile
+  ELSE locustfile
 END AS profile
 FROM testruns
 WHERE locustfile IS NOT NULL
