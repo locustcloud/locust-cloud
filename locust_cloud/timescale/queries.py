@@ -271,7 +271,7 @@ ORDER BY a.time
 
 total_vuh = """
 SELECT
-  ifNull(sum((end_time - id) * num_users), '0') AS "totalVuh"
+  sum((ifNull(end_time, now()) - id) * num_users) AS "totalVuh"
 FROM testruns
 WHERE id >= date_trunc('month', NOW()) AND NOT refund
 """
