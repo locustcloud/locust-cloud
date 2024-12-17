@@ -116,6 +116,8 @@ SELECT
   avgMerge(response_time_state) as responseTime,
   name
 FROM requests_summary
+WHERE bucket BETWEEN %(start)s AND %(end)s
+AND run_id = %(testrun)s
 GROUP BY time, name
 ORDER BY 1, 2
 """
