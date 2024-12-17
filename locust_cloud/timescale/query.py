@@ -9,9 +9,6 @@ logger = logging.getLogger(__name__)
 
 
 def adapt_timestamp(result):
-    if "totalVuh" in result:
-        result["totalVuh"] = str(datetime.timedelta(seconds=result["totalVuh"]))
-
     return {key: str(value) if isinstance(value, datetime.datetime) else value for key, value in result.items()}
 
 

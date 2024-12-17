@@ -77,7 +77,7 @@ export interface ITotalRequestsResponse {
 }
 
 export interface IVuhResponse {
-  totalVuh: string;
+  totalVuh: number;
 }
 
 export interface IScatterplotData {

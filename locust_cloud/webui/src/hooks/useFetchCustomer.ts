@@ -11,33 +11,17 @@ import { IVuhResponse } from 'types/request.types';
 const pluralize = (n: number) => (n === 1 ? '' : 's');
 
 function formatTotalVuh(totalVuhResponse: IVuhResponse[]) {
-  console.log({ totalVuhResponse });
   if (!totalVuhResponse || !totalVuhResponse.length || !totalVuhResponse[0].totalVuh) {
     return '0 minutes';
   }
 
-  const [{ totalVuh }] = totalVuhResponse;
+  const [{ totalVuh: seconds }] = totalVuhResponse;
 
-  if (totalVuh === '0') {
-    return '0 minutes';
-  }
-
-  const [days, hourMinuteSeconds] = totalVuh.includes('days')
-    ? totalVuh.split(', ')
-    : ['0 days', totalVuh];
-
-  const daysInHours = parseInt(days) * 24;
-
-  const [hours, minutes] = hourMinuteSeconds.split(':').map(Number);
-
-  const totalHours = hours + daysInHours;
-
-  if (!totalHours && !minutes) {
-    return '0 minutes';
-  }
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
 
   return [
-    totalHours && `${totalHours} hour${pluralize(totalHours)}`,
+    hours && `${hours} hour${pluralize(hours)}`,
     minutes && `${minutes} minute${pluralize(minutes)}`,
   ]
     .filter(Boolean)

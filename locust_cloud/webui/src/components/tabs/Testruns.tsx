@@ -25,7 +25,7 @@ const testrunsTableStructure = [
   { key: 'rpsAvg', title: 'Average RPS' },
   { key: 'failRatio', title: 'Fail Ratio (%)', round: 2 },
   { key: 'exitCode', title: 'Exit Code' },
-  { key: 'runTime', title: 'Run Time' },
+  { key: 'runTime', title: 'Run Time (s)' },
 ];
 
 const testrunsRpsChartLines = [
