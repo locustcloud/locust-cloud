@@ -79,8 +79,8 @@ jobs:
       - env:
           LOCUSTCLOUD_USERNAME: ${{ secrets.LOCUSTCLOUD_USERNAME }}
           LOCUSTCLOUD_PASSWORD: ${{ secrets.LOCUSTCLOUD_PASSWORD }}
-          PGUSER: ${{ secrets.PGUSER }}
-          PGPASSWORD: ${{ secrets.PGPASSWORD }}
+          CHUSER: ${{ secrets.CHUSER }}
+          CHPASSWORD: ${{ secrets.CHPASSWORD }}
         run: uv run pytest
 
   publish_pypi:

@@ -27,11 +27,9 @@ SHARED_ENV = {
     # For flask
     "SECRET_KEY": "1234",  # Specific value doesn't matter
     # For db connection
-    "PGHOST": "im9d8lzzdy.s9705o86ja.tsdb.cloud.timescale.com",
-    "PGDATABASE": "tsdb_transaction",
-    "PGPORT": "30355",
-    "PGUSER": os.environ["PGUSER"],
-    "PGPASSWORD": os.environ["PGPASSWORD"],
+    "CHHOST": "ugzgl7bpxt.us-east-1.aws.clickhouse.cloud",
+    "CHUSER": os.environ["CHUSER"],
+    "CHPASSWORD": os.environ["CHPASSWORD"],
 }
 MASTER_ENV = {
     **SHARED_ENV,
