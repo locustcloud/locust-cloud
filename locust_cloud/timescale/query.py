@@ -3,6 +3,7 @@ import logging
 
 from flask import Blueprint, make_response, request
 from flask_login import login_required
+from locust_cloud.client import get_client
 from locust_cloud.timescale.queries import queries
 
 logger = logging.getLogger(__name__)
@@ -12,7 +13,7 @@ def adapt_timestamp(result):
     return {key: str(value) if isinstance(value, datetime.datetime) else value for key, value in result.items()}
 
 
-def register_query(environment, pool):
+def register_query(environment):
     cloud_stats_blueprint = Blueprint(
         "locust_cloud_stats", __name__, url_prefix=environment.parsed_options.web_base_path
     )
@@ -30,8 +31,8 @@ def register_query(environment, pool):
                 # start_time = time.perf_counter()
 
                 # exec_time = (time.perf_counter() - start_time) * 1000
-                with pool.get_client() as client:
-                    results = client.query(sql, sql_params)
+                client = get_client()
+                results = client.query(sql, sql_params)
 
                 results = [adapt_timestamp(dict(zip(results.column_names, row))) for row in results.result_set]
 

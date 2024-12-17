@@ -1,7 +1,6 @@
 import importlib.metadata
 import os
 import sys
-from contextlib import contextmanager
 
 os.environ["LOCUST_SKIP_MONKEY_PATCH"] = "1"
 
@@ -17,7 +16,6 @@ __version__ = importlib.metadata.version("locust-cloud")
 
 import logging
 
-import clickhouse_connect
 import configargparse
 import locust.env
 from locust import events
@@ -95,23 +93,6 @@ def add_arguments(parser: LocustArgumentParser):
     )
 
 
-class ClickhousePool:
-    def __init__(self) -> None:
-        self.host = os.environ["CHHOST"]
-        self.user = os.environ["CHUSER"]
-        self.password = os.environ["CHPASSWORD"]
-
-    @contextmanager
-    def get_client(self):
-        client = clickhouse_connect.get_client(
-            host=self.host,
-            username=self.user,
-            password=self.password,
-            secure=True,
-        )
-        yield client
-
-
 @events.init.add_listener
 def on_locust_init(environment: locust.env.Environment, **_args):
     if not (os.environ.get("PGHOST")):
@@ -119,7 +100,7 @@ def on_locust_init(environment: locust.env.Environment, **_args):
 
     if not environment.parsed_options.graph_viewer:
         IdleExit(environment)
-        Exporter(environment, pool)
+        Exporter(environment)
 
     if environment.web_ui:
         environment.web_ui.template_args["locustVersion"] = locust.__version__
@@ -130,4 +111,4 @@ def on_locust_init(environment: locust.env.Environment, **_args):
             environment.web_ui.template_args["isGraphViewer"] = True
 
         register_auth(environment)
-        register_query(environment, pool)
+        register_query(environment)

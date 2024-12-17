@@ -11,6 +11,7 @@ import greenlet
 import locust.env
 from locust.exception import CatchResponseError
 from locust.runners import MasterRunner
+from locust_cloud.client import get_client
 
 
 def safe_serialize(obj):
@@ -29,7 +30,7 @@ def parse_datetime(s: str):
 
 
 class Exporter:
-    def __init__(self, environment: locust.env.Environment, pool):
+    def __init__(self, environment: locust.env.Environment):
         self.env = environment
         self._run_id = None
         self._samples: list[tuple] = []
@@ -38,7 +39,6 @@ class Exporter:
         self._finished = False
         self._has_logged_test_stop = False
         self._pid = os.getpid()
-        self.pool = pool
 
         events = self.env.events
         events.test_start.add_listener(self.on_test_start)
@@ -56,12 +56,12 @@ class Exporter:
         if not message:
             message = f"High CPU usage ({cpu_usage}%)"
 
-        with self.pool.get_client() as client:
-            client.insert(
-                "events",
-                [(timestamp, message, self._run_id, "testcustomer")],
-                column_names=["time", "text", "run_id", "customer"],
-            )
+        client = get_client()
+        client.insert(
+            "events",
+            [(timestamp, message, self._run_id, "testcustomer")],
+            column_names=["time", "text", "run_id", "customer"],
+        )
 
     def on_test_start(self, environment: locust.env.Environment):
         if not self.env.parsed_options or not self.env.parsed_options.worker:
@@ -75,33 +75,35 @@ class Exporter:
             self._run_id = parse_datetime(self.env.parsed_options.run_id)
 
     def _log_user_count(self):
+        client = get_client()
+
         while True:
             if self.env.runner is None:
                 return  # there is no runner, so nothing to log...
             try:
-                with self.pool.get_client() as client:
-                    client.insert(
-                        "number_of_users",
-                        [(datetime.now(UTC), self._run_id, self.env.runner.user_count, "testcustomer")],
-                        column_names=["time", "run_id", "user_count", "customer"],
-                    )
+                client.insert(
+                    "number_of_users",
+                    [(datetime.now(UTC), self._run_id, self.env.runner.user_count, "testcustomer")],
+                    column_names=["time", "run_id", "user_count", "customer"],
+                )
             except Exception as error:
                 logging.error("Failed to write user count: " + repr(error))
             gevent.sleep(2.0)
 
     def _run(self):
-        with self.pool.get_client() as client:
-            while True:
-                if self._samples:
-                    # Buffer samples, so that a locust greenlet will write to the new list
-                    # instead of the one that has been sent into postgres client
-                    samples_buffer = self._samples
-                    self._samples = []
-                    self.write_samples_to_db(samples_buffer, client)
-                else:
-                    if self._finished:
-                        break
-                gevent.sleep(0.5)
+        client = get_client()
+
+        while True:
+            if self._samples:
+                # Buffer samples, so that a locust greenlet will write to the new list
+                # instead of the one that has been sent into postgres client
+                samples_buffer = self._samples
+                self._samples = []
+                self.write_samples_to_db(samples_buffer, client)
+            else:
+                if self._finished:
+                    break
+            gevent.sleep(0.5)
 
     def _update_end_time(self):
         # delay setting first end time
@@ -109,15 +111,15 @@ class Exporter:
         gevent.sleep(5)
 
         # Regularly update endtime to prevent missing endtimes when a test crashes
+        client = get_client()
 
         while True:
             current_end_time = datetime.now(UTC)
             try:
-                with self.pool.get_client() as client:
-                    client.command(
-                        "ALTER TABLE testruns UPDATE end_time = %(end_time)s WHERE id = %(run_id)s",
-                        {"end_time": current_end_time, "run_id": self._run_id},
-                    )
+                client.command(
+                    "ALTER TABLE testruns UPDATE end_time = %(end_time)s WHERE id = %(run_id)s",
+                    {"end_time": current_end_time, "run_id": self._run_id},
+                )
                 gevent.sleep(60)
             except Exception as error:
                 logging.error("Failed to update testruns table with end time: " + repr(error))
@@ -151,12 +153,12 @@ class Exporter:
             self._update_end_time_task.kill()
         if getattr(self, "_user_count_logger", False):
             self._user_count_logger.kill()
-            with self.pool.get_client() as client:
-                client.insert(
-                    "number_of_users",
-                    [(datetime.now(UTC), self._run_id, 0, "testcustomer")],
-                    column_names=["time", "run_id", "user_count", "customer"],
-                )
+            client = get_client()
+            client.insert(
+                "number_of_users",
+                [(datetime.now(UTC), self._run_id, 0, "testcustomer")],
+                column_names=["time", "run_id", "user_count", "customer"],
+            )
         self.log_stop_test_run()
         self._has_logged_test_stop = True
 
@@ -231,53 +233,53 @@ class Exporter:
     def log_start_testrun(self):
         cmd = sys.argv[1:]
 
-        with self.pool.get_client() as client:
-            client.insert(
-                "testruns",
+        client = get_client()
+        client.insert(
+            "testruns",
+            [
                 [
-                    [
-                        self._run_id,
-                        self.env.runner.target_user_count if self.env.runner else 1,
-                        len(self.env.runner.clients)
-                        if isinstance(
-                            self.env.runner,
-                            MasterRunner,
-                        )
-                        else 0,
-                        self.env.web_ui.template_args.get("username", "") if self.env.web_ui else "",
-                        self.env.parsed_locustfiles[0].split("/")[-1].split("__")[-1],
-                        self.env.parsed_options.profile or "",
-                        " ".join(cmd),
-                        "testcustomer",
-                    ]
-                ],
-                column_names=[
-                    "id",
-                    "num_users",
-                    "worker_count",
-                    "username",
-                    "locustfile",
-                    "profile",
-                    "arguments",
-                    "customer",
-                ],
-            )
-            client.insert(
-                "events",
-                [(datetime.now(UTC), "Test run started", self._run_id, "testcustomer")],
-                column_names=["time", "text", "run_id", "customer"],
-            )
+                    self._run_id,
+                    self.env.runner.target_user_count if self.env.runner else 1,
+                    len(self.env.runner.clients)
+                    if isinstance(
+                        self.env.runner,
+                        MasterRunner,
+                    )
+                    else 0,
+                    self.env.web_ui.template_args.get("username", "") if self.env.web_ui else "",
+                    self.env.parsed_locustfiles[0].split("/")[-1].split("__")[-1],
+                    self.env.parsed_options.profile or "",
+                    " ".join(cmd),
+                    "testcustomer",
+                ]
+            ],
+            column_names=[
+                "id",
+                "num_users",
+                "worker_count",
+                "username",
+                "locustfile",
+                "profile",
+                "arguments",
+                "customer",
+            ],
+        )
+        client.insert(
+            "events",
+            [(datetime.now(UTC), "Test run started", self._run_id, "testcustomer")],
+            column_names=["time", "text", "run_id", "customer"],
+        )
 
     def spawning_complete(self, user_count):
         if not self.env.parsed_options.worker:  # only log for master/standalone
             end_time = datetime.now(UTC)
             try:
-                with self.pool.get_client() as client:
-                    client.insert(
-                        "events",
-                        [(end_time, f"Rampup complete, {user_count} users spawned", self._run_id, "testcustomer")],
-                        column_names=["time", "text", "run_id", "customer"],
-                    )
+                client = get_client()
+                client.insert(
+                    "events",
+                    [(end_time, f"Rampup complete, {user_count} users spawned", self._run_id, "testcustomer")],
+                    column_names=["time", "text", "run_id", "customer"],
+                )
 
             except Exception as error:
                 logging.error(
@@ -290,43 +292,43 @@ class Exporter:
             return  # only run on master or standalone
         end_time = datetime.now(UTC)
         try:
-            with self.pool.get_client() as client:
-                # The AND time > run_id clause in the following statements are there to help performance
-                # We dont use start_time / end_time to calculate RPS, instead we use the time between the actual first and last request
-                # (as this is a more accurate measurement of the actual test)
-                client.command(
-                    """
-                    CREATE TEMPORARY TABLE testrun_update AS SELECT reqs, resp_time, GREATEST(duration, 1) as rps_avg, fails / GREATEST(reqs, 1) as fail_ratio FROM
-                    (SELECT
-                        countMerge(count)::numeric AS reqs,
-                        avgMerge(response_time_state)::numeric as resp_time
-                    FROM requests_summary WHERE run_id = %(run_id)s AND bucket > %(run_id)s) AS _,
-                    (SELECT
-                        (max_time - min_time) AS duration
-                    FROM
-                    (SELECT
-                        max(time) AS max_time,
-                        min(time) AS min_time
-                    FROM requests WHERE run_id = %(run_id)s AND time > %(run_id)s)) AS __,
-                    (SELECT
-                        countMerge(failed_count)::numeric AS fails
-                    FROM requests_summary WHERE run_id = %(run_id)s AND bucket > %(run_id)s) AS ___;
-                    """,
-                    {"run_id": self._run_id},
-                )
-                client.command(
-                    """
-                    ALTER TABLE testruns
-                    UPDATE
-                        requests = (SELECT reqs FROM testrun_update),
-                        resp_time_avg = (SELECT resp_time FROM testrun_update),
-                        rps_avg = (SELECT rps_avg FROM testrun_update),
-                        fail_ratio = (SELECT fail_ratio FROM testrun_update),
-                        end_time = %(end_time)s
-                    WHERE id = %(run_id)s;
-                    """,
-                    {"run_id": self._run_id, "end_time": end_time},
-                )
+            client = get_client()
+            # The AND time > run_id clause in the following statements are there to help performance
+            # We dont use start_time / end_time to calculate RPS, instead we use the time between the actual first and last request
+            # (as this is a more accurate measurement of the actual test)
+            client.command(
+                """
+                CREATE TEMPORARY TABLE testrun_update AS SELECT reqs, resp_time, GREATEST(duration, 1) as rps_avg, fails / GREATEST(reqs, 1) as fail_ratio FROM
+                (SELECT
+                    countMerge(count)::numeric AS reqs,
+                    avgMerge(response_time_state)::numeric as resp_time
+                FROM requests_summary WHERE run_id = %(run_id)s AND bucket > %(run_id)s) AS _,
+                (SELECT
+                    (max_time - min_time) AS duration
+                FROM
+                (SELECT
+                    max(time) AS max_time,
+                    min(time) AS min_time
+                FROM requests WHERE run_id = %(run_id)s AND time > %(run_id)s)) AS __,
+                (SELECT
+                    countMerge(failed_count)::numeric AS fails
+                FROM requests_summary WHERE run_id = %(run_id)s AND bucket > %(run_id)s) AS ___;
+                """,
+                {"run_id": self._run_id},
+            )
+            client.command(
+                """
+                ALTER TABLE testruns
+                UPDATE
+                    requests = (SELECT reqs FROM testrun_update),
+                    resp_time_avg = (SELECT resp_time FROM testrun_update),
+                    rps_avg = (SELECT rps_avg FROM testrun_update),
+                    fail_ratio = (SELECT fail_ratio FROM testrun_update),
+                    end_time = %(end_time)s
+                WHERE id = %(run_id)s;
+                """,
+                {"run_id": self._run_id, "end_time": end_time},
+            )
         except Exception as error:
             logging.error("Failed to update testruns record (or events) with end time to database: " + repr(error))
 
@@ -335,22 +337,22 @@ class Exporter:
             return
 
         try:
-            with self.pool.get_client() as client:
-                client.command(
-                    "ALTER TABLE testruns UPDATE exit_code = %(exit_code)s WHERE id = %(run_id)s",
-                    {"exit_code": exit_code, "run_id": self._run_id},
-                )
-                client.insert(
-                    "events",
-                    [
-                        (
-                            datetime.now(UTC),
-                            f"Finished with exit code: {exit_code}",
-                            self._run_id,
-                            "testcustomer",
-                        )
-                    ],
-                    column_names=["time", "text", "run_id", "customer"],
-                )
+            client = get_client()
+            client.command(
+                "ALTER TABLE testruns UPDATE exit_code = %(exit_code)s WHERE id = %(run_id)s",
+                {"exit_code": exit_code, "run_id": self._run_id},
+            )
+            client.insert(
+                "events",
+                [
+                    (
+                        datetime.now(UTC),
+                        f"Finished with exit code: {exit_code}",
+                        self._run_id,
+                        "testcustomer",
+                    )
+                ],
+                column_names=["time", "text", "run_id", "customer"],
+            )
         except Exception as error:
             logging.error("Failed to update testruns record (or events) with end time to database: " + repr(error))
