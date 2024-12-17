@@ -81,22 +81,6 @@ CREATE TABLE number_of_users (
 ORDER BY time
 
 CREATE TABLE customers (
-    id text UNIQUE NOT NULL,
-    email text UNIQUE NOT NULL,
-    name text,
-    ts_username text NOT NULL,
-    ts_password text NOT NULL,
-    cluster_name text NOT NULL,
-    namespace text NOT NULL DEFAULT 'default',
-    users_per_worker integer NOT NULL DEFAULT 500,
-    max_workers integer NOT NULL DEFAULT 20,
-    max_users integer NOT NULL DEFAULT 10000,
-    max_vuh integer NOT NULL DEFAULT 10000
-    tier customer_tiers NOT NULL DEFAULT 'FREE'
-)
-ORDER BY id
-
-CREATE TABLE customers (
     id text NOT NULL,
     email text NOT NULL,
     name text,
