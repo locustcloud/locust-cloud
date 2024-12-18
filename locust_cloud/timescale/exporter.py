@@ -193,7 +193,7 @@ class Exporter:
         # handle if a worker connects after test_start
         if not self._run_id:
             self._run_id = parse_datetime(self.env.parsed_options.run_id)
-        success = 0 if exception else 1
+        success = not exception
         if start_time:
             time = datetime.fromtimestamp(start_time, tz=UTC)
         else:
