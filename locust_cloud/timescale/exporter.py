@@ -59,8 +59,8 @@ class Exporter:
         client = get_client()
         client.insert(
             "events",
-            [(timestamp, message, self._run_id, "testcustomer")],
-            column_names=["time", "text", "run_id", "customer"],
+            [(timestamp, message, self._run_id)],
+            column_names=["time", "text", "run_id"],
         )
         client.close()
 
@@ -84,8 +84,8 @@ class Exporter:
             try:
                 client.insert(
                     "number_of_users",
-                    [(datetime.now(UTC), self._run_id, self.env.runner.user_count, "testcustomer")],
-                    column_names=["time", "run_id", "user_count", "customer"],
+                    [(datetime.now(UTC), self._run_id, self.env.runner.user_count)],
+                    column_names=["time", "run_id", "user_count"],
                 )
             except Exception as error:
                 logging.error("Failed to write user count: " + repr(error))
@@ -144,6 +144,7 @@ class Exporter:
                     "exception",
                     "pid",
                     "url",
+                    "context",
                 ],
             )
         except Exception as error:
@@ -157,8 +158,8 @@ class Exporter:
             client = get_client()
             client.insert(
                 "number_of_users",
-                [(datetime.now(UTC), self._run_id, 0, "testcustomer")],
-                column_names=["time", "run_id", "user_count", "customer"],
+                [(datetime.now(UTC), self._run_id, 0)],
+                column_names=["time", "run_id", "user_count"],
             )
             client.close()
         self.log_stop_test_run()
@@ -227,7 +228,7 @@ class Exporter:
             exception or None,
             self._pid,
             url[0:255] if url else None,
-            # psycopg.types.json.Json(context, safe_serialize),
+            json.dumps(context),
         )
 
         self._samples.append(sample)
@@ -252,7 +253,6 @@ class Exporter:
                     self.env.parsed_locustfiles[0].split("/")[-1].split("__")[-1],
                     self.env.parsed_options.profile or "",
                     " ".join(cmd),
-                    "testcustomer",
                 ]
             ],
             column_names=[
@@ -263,13 +263,12 @@ class Exporter:
                 "locustfile",
                 "profile",
                 "arguments",
-                "customer",
             ],
         )
         client.insert(
             "events",
-            [(datetime.now(UTC), "Test run started", self._run_id, "testcustomer")],
-            column_names=["time", "text", "run_id", "customer"],
+            [(datetime.now(UTC), "Test run started", self._run_id)],
+            column_names=["time", "text", "run_id"],
         )
         client.close()
 
@@ -280,8 +279,8 @@ class Exporter:
                 client = get_client()
                 client.insert(
                     "events",
-                    [(end_time, f"Rampup complete, {user_count} users spawned", self._run_id, "testcustomer")],
-                    column_names=["time", "text", "run_id", "customer"],
+                    [(end_time, f"Rampup complete, {user_count} users spawned", self._run_id)],
+                    column_names=["time", "text", "run_id"],
                 )
                 client.close()
 
@@ -354,10 +353,9 @@ class Exporter:
                         datetime.now(UTC),
                         f"Finished with exit code: {exit_code}",
                         self._run_id,
-                        "testcustomer",
                     )
                 ],
-                column_names=["time", "text", "run_id", "customer"],
+                column_names=["time", "text", "run_id"],
             )
             client.close()
         except Exception as error:
