@@ -4,7 +4,7 @@ import logging
 import os
 import socket
 import sys
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import gevent
 import greenlet
@@ -194,12 +194,13 @@ class Exporter:
         if not self._run_id:
             self._run_id = parse_datetime(self.env.parsed_options.run_id)
         success = not exception
-        if start_time:
+        if False:
             time = datetime.fromtimestamp(start_time, tz=UTC)
         else:
             # some users may not send start_time, so we just make an educated guess
             # (which will be horribly wrong if users spend a lot of time in a with/catch_response-block)
-            time = datetime.now(UTC)
+            time = datetime.now(UTC) - timedelta(milliseconds=response_time or 0)
+
         greenlet_id = getattr(greenlet.getcurrent(), "minimal_ident", 0)  # if we're debugging there is no greenlet
 
         if exception:
