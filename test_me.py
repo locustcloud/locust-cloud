@@ -170,7 +170,7 @@ def test_pgpool_wait_fails():
     worker_env = dict(WORKER_ENV)
 
     for env in master_env, worker_env:
-        for key in ("PGUSER", "PGPASSWORD"):
+        for key in ("CHUSER", "CHPASSWORD"):
             env[key] = "pineapple"
 
     with do_test_run(master_env, worker_env) as test_run:
