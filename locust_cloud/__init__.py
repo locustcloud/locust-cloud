@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 @events.init_command_line_parser.add_listener
 def add_arguments(parser: LocustArgumentParser):
-    if not (os.environ.get("PGHOST")):
+    if not (os.environ.get("CHHOST")):
         parser.add_argument_group(
             "locust-cloud",
             "locust-cloud disabled, because PGHOST was not set - this is normal for local runs",
@@ -95,7 +95,7 @@ def add_arguments(parser: LocustArgumentParser):
 
 @events.init.add_listener
 def on_locust_init(environment: locust.env.Environment, **_args):
-    if not (os.environ.get("PGHOST")):
+    if not (os.environ.get("CHHOST")):
         return
 
     if not environment.parsed_options.graph_viewer:
