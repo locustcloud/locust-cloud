@@ -3,7 +3,7 @@ import gzip
 import logging
 import os
 import sys
-import time
+import threading
 import tomllib
 import urllib.parse
 from argparse import Namespace
@@ -314,22 +314,19 @@ def main() -> None:
     logger.debug("Load generators deployed successfully!")
     logger.info("Waiting for pods to be ready...")
 
+    shutdown_allowed = threading.Event()
+    shutdown_allowed.set()
+    reconnect_aborted = threading.Event()
+    connect_timeout = threading.Timer(2 * 60, reconnect_aborted.set)
+
     try:
         ws_connection_info = urllib.parse.urlparse(log_ws_url)
         sio = socketio.Client(handle_sigint=False)
 
-        run = True
-
-        def wait():
-            logger.debug("Waiting for shutdown event")
-            while run:
-                time.sleep(0.1)
-
-            logger.debug("Shutting down websocket connection")
-            sio.shutdown()
-
         @sio.event
         def connect():
+            shutdown_allowed.clear()
+            connect_timeout.cancel()
             logger.debug("Websocket connection established, switching to Locust logs")
 
         @sio.event
@@ -350,33 +347,33 @@ def main() -> None:
             if message:
                 print(message)
 
-            nonlocal run
-            run = False
+            shutdown_allowed.set()
 
-        for _ in range(5 * 60):  # try for 5 minutes
-            try:
-                sio.connect(
-                    f"{ws_connection_info.scheme}://{ws_connection_info.netloc}", socketio_path=ws_connection_info.path
-                )
-                break
-            except socketio.exceptions.ConnectionError:
-                time.sleep(1)
-
-        else:  # no break
-            raise Exception("Failed to obtain socket connection")
-
-        wait()
+        # The _reconnect_abort value on the socketio client will be populated with a newly created threading.Event if it's not already set.
+        # There is no way to set this by passing it in the constructor.
+        # This event is the only way to interupt the retry logic when the connection is attempted.
+        sio._reconnect_abort = reconnect_aborted
+        connect_timeout.start()
+        sio.connect(
+            f"{ws_connection_info.scheme}://{ws_connection_info.netloc}",
+            socketio_path=ws_connection_info.path,
+            retry=True,
+        )
+        logger.debug("Waiting for shutdown")
+        shutdown_allowed.wait()
 
     except KeyboardInterrupt:
         logger.debug("Interrupted by user")
         delete(credential_manager)
-        wait()
+        shutdown_allowed.wait(timeout=90)
     except Exception as e:
         logger.exception(e)
         delete(credential_manager)
         sys.exit(1)
     else:
         delete(credential_manager)
+    finally:
+        sio.shutdown()
 
 
 def delete(credential_manager):
