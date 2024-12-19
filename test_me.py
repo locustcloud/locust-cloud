@@ -69,6 +69,7 @@ def do_test_run(master_env, worker_env, **kwargs):
 
     try:
         yield master
+        print("YIELD")
 
     finally:
         master.terminate()
@@ -164,8 +165,7 @@ def webui_session():
     return WebUiSession(base_url=f"http://127.0.0.1:8089/{CUSTOMER}")
 
 
-@pytest.mark.skip("gonna switch to CH anyway")
-def test_pgpool_wait_fails():
+def test_ch_wait_fails():
     master_env = dict(MASTER_ENV)
     worker_env = dict(WORKER_ENV)
 
@@ -176,12 +176,13 @@ def test_pgpool_wait_fails():
     with do_test_run(master_env, worker_env) as test_run:
         test_run.wait(timeout=15)
         assert check_for_output(
-            test_run.stderr, re.compile(r"psycopg_pool\.PoolTimeout: pool initialization incomplete after 10 sec")
+            test_run.stderr, re.compile(r".*AUTHENTICATION_FAILED.*")
         ), "Failed to find database timeout in locust output"
         assert test_run.returncode == 1
 
 
 def test_fetching_request_data_from_the_webui(webui_session):
+    print(MASTER_ENV)
     with do_test_run(MASTER_ENV, WORKER_ENV) as test_run:
         # Wait for the webui to be started
         assert check_for_output(test_run.stderr, re.compile(r".* Starting web interface"), timeout=5), "No webui log"
@@ -219,7 +220,7 @@ def test_fetching_request_data_from_the_webui(webui_session):
         assert webui_session.get("/stop").json()["success"], "Failed to stop test run"
 
         # Wait for the test to finish
-        m = check_for_output(test_run.stderr, re.compile(r".* Test run id (.*) stopping"), timeout=20)
+        m = check_for_output(test_run.stderr, re.compile(r".*Test run id (.*) stopping.*"), timeout=20)
         assert m, "Didn't get a test run id in the locust output before timeout"
         test_run_id = m.groups()[0]
 
