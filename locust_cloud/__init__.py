@@ -4,6 +4,7 @@ import sys
 
 os.environ["LOCUST_SKIP_MONKEY_PATCH"] = "1"
 
+from locust_cloud.client import get_client
 from locust_cloud.socket_logging import setup_socket_logging
 
 if os.environ.get("LOCUST_MODE_MASTER") == "1":
@@ -97,6 +98,10 @@ def add_arguments(parser: LocustArgumentParser):
 def on_locust_init(environment: locust.env.Environment, **_args):
     if not (os.environ.get("CHHOST")):
         return
+
+    with get_client():
+        # verify credentials and exit early if invalid
+        pass
 
     if not environment.parsed_options.graph_viewer:
         IdleExit(environment)

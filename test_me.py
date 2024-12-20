@@ -69,7 +69,6 @@ def do_test_run(master_env, worker_env, **kwargs):
 
     try:
         yield master
-        print("YIELD")
 
     finally:
         master.terminate()
