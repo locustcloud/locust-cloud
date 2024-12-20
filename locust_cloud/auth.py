@@ -43,6 +43,7 @@ def set_credentials(username: str, credentials: Credentials, response: werkzeug.
 
 def register_auth(environment: locust.env.Environment):
     environment.web_ui.app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "") + os.getenv("CUSTOMER_ID", "")
+    assert environment.web_ui.app.config["SECRET_KEY"]
     environment.web_ui.app.debug = False
 
     web_base_path = environment.parsed_options.web_base_path
