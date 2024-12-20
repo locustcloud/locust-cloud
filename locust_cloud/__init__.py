@@ -100,7 +100,8 @@ def on_locust_init(environment: locust.env.Environment, **_args):
         return
 
     # verify credentials and exit early if invalid
-    get_client()
+    client = get_client()
+    client.close()
 
     if not environment.parsed_options.graph_viewer:
         IdleExit(environment)
