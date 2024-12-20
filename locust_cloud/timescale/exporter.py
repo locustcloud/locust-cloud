@@ -79,13 +79,13 @@ class Exporter:
             self._run_id = parse_datetime(self.env.parsed_options.run_id)
 
     def _log_user_count(self):
-        client = get_client()
+        log_user_client = get_client()
 
         while True:
             if self.env.runner is None:
                 return  # there is no runner, so nothing to log...
             try:
-                client.insert(
+                log_user_client.insert(
                     "number_of_users",
                     [(datetime.now(UTC), self._run_id, self.env.runner.user_count)],
                     column_names=["time", "run_id", "user_count"],
@@ -95,14 +95,15 @@ class Exporter:
             gevent.sleep(2.0)
 
     def _run(self):
-        client = get_client()
+        samples_client = get_client()
+
         while True:
             if self._samples:
                 # Buffer samples, so that a locust greenlet will write to the new list
                 # instead of the one that has been sent into postgres client
                 samples_buffer = self._samples
                 self._samples = []
-                self.write_samples_to_db(samples_buffer, client)
+                self.write_samples_to_db(samples_buffer, samples_client)
             else:
                 if self._finished:
                     break
