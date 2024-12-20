@@ -99,9 +99,8 @@ def on_locust_init(environment: locust.env.Environment, **_args):
     if not (os.environ.get("CHHOST")):
         return
 
-    with get_client():
-        # verify credentials and exit early if invalid
-        pass
+    # verify credentials and exit early if invalid
+    get_client()
 
     if not environment.parsed_options.graph_viewer:
         IdleExit(environment)

@@ -31,15 +31,18 @@ def register_query(environment):
                 # start_time = time.perf_counter()
 
                 # exec_time = (time.perf_counter() - start_time) * 1000
-                with get_client() as client:
-                    results = client.query(sql, sql_params)
-                    results = [adapt_timestamp(dict(zip(results.column_names, row))) for row in results.result_set]
+                client = get_client()
 
-                    # fetch_time = (time.perf_counter() - start_time) * 1000
-                    # logger.info(
-                    #     f"Executed query '{query}' with params {sql_params}. It took {round(get_conn_time)}+{round(exec_time)}+{round(fetch_time)}ms"
-                    # )
-                    return results
+                results = client.query(sql, sql_params)
+                results = [adapt_timestamp(dict(zip(results.column_names, row))) for row in results.result_set]
+
+                client.close()
+
+                # fetch_time = (time.perf_counter() - start_time) * 1000
+                # logger.info(
+                #     f"Executed query '{query}' with params {sql_params}. It took {round(get_conn_time)}+{round(exec_time)}+{round(fetch_time)}ms"
+                # )
+                return results
             else:
                 logger.warning(f"Received invalid query key: '{query}'")
                 return make_response({"error": "Invalid query key"}, 401)
