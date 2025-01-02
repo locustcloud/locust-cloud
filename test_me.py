@@ -67,13 +67,24 @@ def do_test_run(master_env, worker_env, **kwargs):
     print("Running", " ".join(command))
 
     master = subprocess.Popen(command, env=master_env, stdout=sys.stdout, stderr=subprocess.PIPE, text=True)
-    worker = subprocess.Popen(command, env=worker_env, stdout=sys.stdout, stderr=subprocess.PIPE, text=True)  # noqa: F841
+    worker = subprocess.Popen(command, env=worker_env, stdout=sys.stdout, stderr=subprocess.PIPE, text=True)
 
     try:
         yield master
 
     finally:
+        print("Terminating master process")
         master.terminate()
+
+        try:
+            master.wait(timeout=10)
+        except subprocess.TimeoutExpired:
+            print("Timed out waiting for master process to die")
+            pass
+
+        master.kill()
+        worker.kill()
+
         sys.stderr.writelines(master.stderr.readlines())
 
 
