@@ -67,13 +67,24 @@ def do_test_run(master_env, worker_env, **kwargs):
     print("Running", " ".join(command))
 
     master = subprocess.Popen(command, env=master_env, stdout=sys.stdout, stderr=subprocess.PIPE, text=True)
-    worker = subprocess.Popen(command, env=worker_env, stdout=sys.stdout, stderr=subprocess.PIPE, text=True)  # noqa: F841
+    worker = subprocess.Popen(command, env=worker_env, stdout=sys.stdout, stderr=subprocess.PIPE, text=True)
 
     try:
         yield master
 
     finally:
+        print("Terminating master process")
         master.terminate()
+
+        try:
+            master.wait(timeout=10)
+        except subprocess.TimeoutExpired:
+            print("Timed out waiting for master process to die")
+            pass
+
+        master.kill()
+        worker.kill()
+
         sys.stderr.writelines(master.stderr.readlines())
 
 
@@ -149,6 +160,11 @@ def socket_death():
     yield
     thread.join(timeout=10)
 
+    if thread.is_alive():
+        print("Timed out waiting for websocket thread to shut down. Triggering shutdown event.")
+        thread_shutdown.set()
+        thread.join()
+
 
 @pytest.fixture
 def webui_session():
@@ -158,6 +174,7 @@ def webui_session():
             self.__base_url = base_url
 
         def request(self, method, url, *args, **kwargs):
+            kwargs.setdefault("timeout", 5)
             response = super().request(method, f"{self.__base_url}{url}", *args, **kwargs)
             print(f"{method} {self.__base_url}{url}")
             print(textwrap.indent(response.text, "  "))
@@ -187,7 +204,7 @@ def test_fetching_request_data_from_the_webui(webui_session):
     with do_test_run(MASTER_ENV, WORKER_ENV) as test_run:
         # Wait for the webui to be started
         assert check_for_output(test_run.stderr, re.compile(r".* Starting web interface"), timeout=5), "No webui log"
-        time.sleep(1)  # The log message comes before the server is started
+        time.sleep(2)  # The log message comes before the server is started
 
         # Authenticate towards the webui
         response = webui_session.post(
