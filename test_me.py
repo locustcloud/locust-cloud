@@ -149,6 +149,10 @@ def socket_death():
     yield
     thread.join(timeout=10)
 
+    if thread.is_alive():
+        thread_shutdown.set()
+        thread.join()
+
 
 @pytest.fixture
 def webui_session():
