@@ -158,6 +158,7 @@ def webui_session():
             self.__base_url = base_url
 
         def request(self, method, url, *args, **kwargs):
+            kwargs.setdefault("timeout", 5)
             response = super().request(method, f"{self.__base_url}{url}", *args, **kwargs)
             print(f"{method} {self.__base_url}{url}")
             print(textwrap.indent(response.text, "  "))
