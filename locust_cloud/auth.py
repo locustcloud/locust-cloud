@@ -99,8 +99,10 @@ def register_auth(environment: locust.env.Environment):
                 session["auth_error"] = ""
 
                 return redirect(url_for("locust_cloud_auth.password_reset"))
-            if os.getenv("CUSTOMER_ID", "") and credentials.get("customer_id") != os.getenv("CUSTOMER_ID", ""):
-                session["auth_error"] = "Invalid login for this deployment"
+            if os.getenv("CUSTOMER_ID") and credentials.get("customer_id") != os.getenv("CUSTOMER_ID"):
+                session["auth_error"] = (
+                    f"Invalid login for this deployment (login attempted for {credentials.get('customer_id')}, but this deployment is for {os.getenv('CUSTOMER_ID')})"
+                )
                 return redirect(url_for("locust.login"))
 
             if not credentials.get("user_sub_id"):
