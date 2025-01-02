@@ -161,6 +161,7 @@ def socket_death():
     thread.join(timeout=10)
 
     if thread.is_alive():
+        print("Timed out waiting for websocket thread to shut down. Triggering shutdown event.")
         thread_shutdown.set()
         thread.join()
 
