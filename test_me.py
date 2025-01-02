@@ -203,7 +203,7 @@ def test_fetching_request_data_from_the_webui(webui_session):
     with do_test_run(MASTER_ENV, WORKER_ENV) as test_run:
         # Wait for the webui to be started
         assert check_for_output(test_run.stderr, re.compile(r".* Starting web interface"), timeout=5), "No webui log"
-        time.sleep(1)  # The log message comes before the server is started
+        time.sleep(2)  # The log message comes before the server is started
 
         # Authenticate towards the webui
         response = webui_session.post(
