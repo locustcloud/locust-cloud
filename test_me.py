@@ -11,7 +11,7 @@ from datetime import UTC, datetime
 import pytest
 import requests
 
-CUSTOMER = "c09c09cc-00b1-7063-41ea-080c55f25d67"
+CUSTOMER = "lars"
 
 SHARED_ENV = {
     "PATH": os.environ["PATH"],
