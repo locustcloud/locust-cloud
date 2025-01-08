@@ -38,7 +38,6 @@ MASTER_ENV = {
     "LOCUST_EXIT_CODE_ON_ERROR": "0",
     "LOCUST_WEB_BASE_PATH": f"/{CUSTOMER}",
     "LOCUST_EXPECT_WORKERS": "1",
-    # "LOCUST_WEB_HOST_DISPLAY_NAME": f"https://eu-north-1.webui.locust.cloud/{CUSTOMER}",
 }
 WORKER_ENV = {
     **SHARED_ENV,
@@ -184,7 +183,7 @@ def test_fetching_request_data_from_the_webui(webui_session):
     with do_test_run(MASTER_ENV, WORKER_ENV) as test_run:
         # Wait for the webui to be started
         assert check_for_output(test_run.stderr, re.compile(r".* Starting web interface"), timeout=5), "No webui log"
-        time.sleep(1)  # The log message comes before the server is started
+        time.sleep(4)  # The log message comes before the server is started
 
         # Authenticate towards the webui
         response = webui_session.post(

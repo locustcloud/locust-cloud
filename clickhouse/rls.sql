@@ -35,6 +35,7 @@ USING (customer = currentUser() OR currentUser() LIKE 'sql-console%')
 TO ALL;
 
 CREATE ROLE PUBLIC_ROLE
+GRANT SELECT ON requests TO PUBLIC_ROLE;
 GRANT SELECT ON requests_summary TO PUBLIC_ROLE;
 GRANT SELECT ON customers TO PUBLIC_ROLE;
 GRANT SELECT ON testruns TO PUBLIC_ROLE;
@@ -45,3 +46,7 @@ GRANT INSERT (time, run_id, user_count) ON number_of_users TO PUBLIC_ROLE;
 GRANT SELECT ON events TO PUBLIC_ROLE;
 GRANT INSERT (time, text, run_id) ON events TO PUBLIC_ROLE;
 GRANT INSERT (time,run_id,greenlet_id,loadgen,name,request_type,response_time,success,response_length,exception,pid,url,context) ON requests TO PUBLIC_ROLE;
+
+-- this is necessary for the exporter to write stats to the testrun
+-- but is this safe? should possibly investigate alternatives
+GRANT CREATE TEMPORARY TABLE ON *.* TO PUBLIC_ROLE
