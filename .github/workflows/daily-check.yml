@@ -1,8 +1,9 @@
 name: Daily locust-cloud test run
 
 on:
-  schedule: # 12 AM daily
-    - cron: '0 0 * * *'
+# disable until we fix wake-up issue for CH (https://github.com/orgs/locustcloud/projects/2/views/1?pane=issue&itemId=91792515)
+#   schedule: # 12 AM daily
+#     - cron: '0 0 * * *'
   workflow_dispatch:
 
 env:
