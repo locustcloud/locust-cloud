@@ -186,8 +186,6 @@ def test_fetching_request_data_from_the_webui(webui_session):
         time.sleep(5)  # The log message comes before the server is started
 
         # Authenticate towards the webui
-        print("LOCUSTCLOUD_USERNAME:")
-        print(os.environ["LOCUSTCLOUD_USERNAME"])
         response = webui_session.post(
             "/authenticate",
             data={"username": os.environ["LOCUSTCLOUD_USERNAME"], "password": os.environ["LOCUSTCLOUD_PASSWORD"]},
