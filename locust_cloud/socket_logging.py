@@ -39,7 +39,7 @@ def setup_socket_logging():
         return ""
 
     logger = logging.getLogger(__name__)
-    socketio_path = f"/{os.environ['CUSTOMER_ID']}/socket-logs"
+    socketio_path = f"{os.environ.get('LOCUST_WEB_BASE_PATH', '')}/socket-logs"
     sio = socketio.Server(async_handlers=True, always_connect=True, async_mode="gevent", cors_allowed_origins="*")
     sio_app = socketio.WSGIApp(sio, healthcheck_app, socketio_path=socketio_path)
     message_queue = deque(maxlen=500)

@@ -5,5 +5,5 @@ export const mockCustomer = {
   usersPerWorker: 500,
 };
 
-export const mockTotalVuh = [{ totalVuh: '3 days, 2:30' }];
+export const mockTotalVuh = [{ totalVuh: 268200 }];
 export const totalVuhFormatted = '74 hours, 30 minutes';

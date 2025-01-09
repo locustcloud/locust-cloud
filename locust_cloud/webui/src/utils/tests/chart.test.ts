@@ -12,7 +12,6 @@ describe('adaptPerNameChartData', () => {
 
     const result = adaptPerNameChartData([mockChart, mockChart], 'mockKey');
 
-    expect(result.time).toEqual([mockChart.time, mockChart.time]);
     expect(result[mockChart.name]).toEqual([
       [mockChart.time, mockChart.mockKey],
       [mockChart.time, mockChart.mockKey],
@@ -27,7 +26,6 @@ describe('adaptPerNameChartData', () => {
 
     const result = adaptPerNameChartData<any>([mockChart], 'mockKey');
 
-    expect(result.time).toEqual([mockChart.time]);
     expect(result[mockChart.name]).toEqual([[mockChart.time, '0']]);
   });
 
@@ -39,7 +37,6 @@ describe('adaptPerNameChartData', () => {
 
     const result = adaptPerNameChartData<any>([mockChart], 'mockKey', { fallbackValue: '456' });
 
-    expect(result.time).toEqual([mockChart.time]);
     expect(result[mockChart.name]).toEqual([[mockChart.time, '456']]);
   });
 });

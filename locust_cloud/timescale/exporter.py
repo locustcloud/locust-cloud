@@ -4,15 +4,17 @@ import logging
 import os
 import socket
 import sys
+import threading
 from datetime import UTC, datetime, timedelta
 
 import gevent
 import greenlet
 import locust.env
-import psycopg
-import psycopg.types.json
 from locust.exception import CatchResponseError
 from locust.runners import MasterRunner
+from locust_cloud.client import get_client
+
+lock = threading.Lock()
 
 
 def safe_serialize(obj):
@@ -31,7 +33,7 @@ def parse_datetime(s: str):
 
 
 class Exporter:
-    def __init__(self, environment: locust.env.Environment, pool):
+    def __init__(self, environment: locust.env.Environment):
         self.env = environment
         self._run_id = None
         self._samples: list[tuple] = []
@@ -40,7 +42,7 @@ class Exporter:
         self._finished = False
         self._has_logged_test_stop = False
         self._pid = os.getpid()
-        self.pool = pool
+        self._client = get_client()
 
         events = self.env.events
         events.test_start.add_listener(self.on_test_start)
@@ -54,13 +56,15 @@ class Exporter:
     def on_cpu_warning(self, environment: locust.env.Environment, cpu_usage, message=None, timestamp=None, **kwargs):
         # passing a custom message & timestamp to the event is a haxx to allow using this event for reporting generic events
         if not timestamp:
-            timestamp = datetime.now(UTC).isoformat()
+            timestamp = datetime.now(UTC)
         if not message:
             message = f"High CPU usage ({cpu_usage}%)"
-        with self.pool.connection() as conn:
-            conn.execute(
-                "INSERT INTO events (time, text, run_id, customer) VALUES (%s, %s, %s, current_user)",
-                (timestamp, message, self._run_id),
+
+        with lock:
+            self._client.insert(
+                "events",
+                [(timestamp, message, self._run_id)],
+                column_names=["time", "text", "run_id"],
             )
 
     def on_test_start(self, environment: locust.env.Environment):
@@ -75,27 +79,31 @@ class Exporter:
             self._run_id = parse_datetime(self.env.parsed_options.run_id)
 
     def _log_user_count(self):
+        log_user_client = get_client()
+
         while True:
             if self.env.runner is None:
                 return  # there is no runner, so nothing to log...
             try:
-                with self.pool.connection() as conn:
-                    conn.execute(
-                        """INSERT INTO number_of_users(time, run_id, user_count, customer) VALUES (%s, %s, %s, current_user)""",
-                        (datetime.now(UTC).isoformat(), self._run_id, self.env.runner.user_count),
-                    )
-            except psycopg.Error as error:
-                logging.error("Failed to write user count to Postgresql: " + repr(error))
+                log_user_client.insert(
+                    "number_of_users",
+                    [(datetime.now(UTC), self._run_id, self.env.runner.user_count)],
+                    column_names=["time", "run_id", "user_count"],
+                )
+            except Exception as error:
+                logging.error("Failed to write user count: " + repr(error))
             gevent.sleep(2.0)
 
     def _run(self):
+        samples_client = get_client()
+
         while True:
             if self._samples:
                 # Buffer samples, so that a locust greenlet will write to the new list
                 # instead of the one that has been sent into postgres client
                 samples_buffer = self._samples
                 self._samples = []
-                self.write_samples_to_db(samples_buffer)
+                self.write_samples_to_db(samples_buffer, samples_client)
             else:
                 if self._finished:
                     break
@@ -110,37 +118,50 @@ class Exporter:
         while True:
             current_end_time = datetime.now(UTC)
             try:
-                with self.pool.connection() as conn:
-                    conn.execute(
-                        "UPDATE testruns SET end_time = %s WHERE id = %s",
-                        (current_end_time, self._run_id),
+                with lock:
+                    self._client.command(
+                        "ALTER TABLE testruns UPDATE end_time = %(end_time)s WHERE id = %(run_id)s",
+                        {"end_time": current_end_time, "run_id": self._run_id},
                     )
                 gevent.sleep(60)
-            except psycopg.Error as error:
+            except Exception as error:
                 logging.error("Failed to update testruns table with end time: " + repr(error))
                 gevent.sleep(1)
 
-    def write_samples_to_db(self, samples):
+    def write_samples_to_db(self, samples, client):
         try:
-            with self.pool.connection() as conn:
-                conn: psycopg.connection.Connection
-                with conn.cursor().copy(
-                    "COPY requests (time,run_id,greenlet_id,loadgen,name,request_type,response_time,success,response_length,exception,pid,url,context) FROM STDIN"
-                ) as copy:
-                    for sample in samples:
-                        copy.write_row(sample)
-        except psycopg.Error as error:
-            logging.error("Failed to write samples to Postgresql timescale database: " + repr(error))
+            client.insert(
+                "requests",
+                samples,
+                column_names=[
+                    "time",
+                    "run_id",
+                    "greenlet_id",
+                    "loadgen",
+                    "name",
+                    "request_type",
+                    "response_time",
+                    "success",
+                    "response_length",
+                    "exception",
+                    "pid",
+                    "url",
+                    "context",
+                ],
+            )
+        except Exception as error:
+            logging.error("Failed to write samples to database: " + repr(error))
 
     def on_test_stop(self, environment):
         if getattr(self, "_update_end_time_task", False):
             self._update_end_time_task.kill()
         if getattr(self, "_user_count_logger", False):
             self._user_count_logger.kill()
-            with self.pool.connection() as conn:
-                conn.execute(
-                    """INSERT INTO number_of_users(time, run_id, user_count, customer) VALUES (%s, %s, %s, current_user)""",
-                    (datetime.now(UTC).isoformat(), self._run_id, 0),
+            with lock:
+                self._client.insert(
+                    "number_of_users",
+                    [(datetime.now(UTC), self._run_id, 0)],
+                    column_names=["time", "run_id", "user_count"],
                 )
         self.log_stop_test_run()
         self._has_logged_test_stop = True
@@ -173,13 +194,14 @@ class Exporter:
         # handle if a worker connects after test_start
         if not self._run_id:
             self._run_id = parse_datetime(self.env.parsed_options.run_id)
-        success = 0 if exception else 1
+        success = not exception
         if start_time:
             time = datetime.fromtimestamp(start_time, tz=UTC)
         else:
             # some users may not send start_time, so we just make an educated guess
             # (which will be horribly wrong if users spend a lot of time in a with/catch_response-block)
             time = datetime.now(UTC) - timedelta(milliseconds=response_time or 0)
+
         greenlet_id = getattr(greenlet.getcurrent(), "minimal_ident", 0)  # if we're debugging there is no greenlet
 
         if exception:
@@ -208,106 +230,131 @@ class Exporter:
             exception,
             self._pid,
             url[0:255] if url else None,
-            psycopg.types.json.Json(context, safe_serialize),
+            json.dumps(context),
         )
 
         self._samples.append(sample)
 
     def log_start_testrun(self):
         cmd = sys.argv[1:]
-        with self.pool.connection() as conn:
-            conn.execute(
-                "INSERT INTO testruns (id, num_users, worker_count, username, locustfile, profile, arguments, customer) VALUES (%s,%s,%s,%s,%s,%s,%s,current_user)",
-                (
-                    self._run_id,
-                    self.env.runner.target_user_count if self.env.runner else 1,
-                    len(self.env.runner.clients)
-                    if isinstance(
-                        self.env.runner,
-                        MasterRunner,
-                    )
-                    else 0,
-                    self.env.web_ui.template_args.get("username", "") if self.env.web_ui else "",
-                    self.env.parsed_locustfiles[0].split("/")[-1].split("__")[-1],
-                    self.env.parsed_options.profile,
-                    " ".join(cmd),
-                ),
+
+        with lock:
+            self._client.insert(
+                "testruns",
+                [
+                    [
+                        self._run_id,
+                        self.env.runner.target_user_count if self.env.runner else 1,
+                        len(self.env.runner.clients)
+                        if isinstance(
+                            self.env.runner,
+                            MasterRunner,
+                        )
+                        else 0,
+                        self.env.web_ui.template_args.get("username", "") if self.env.web_ui else "",
+                        self.env.parsed_locustfiles[0].split("/")[-1].split("__")[-1],
+                        self.env.parsed_options.profile or "",
+                        " ".join(cmd),
+                    ]
+                ],
+                column_names=[
+                    "id",
+                    "num_users",
+                    "worker_count",
+                    "username",
+                    "locustfile",
+                    "profile",
+                    "arguments",
+                ],
             )
-            conn.execute(
-                "INSERT INTO events (time, text, run_id, customer) VALUES (%s, %s, %s, current_user)",
-                (datetime.now(UTC).isoformat(), "Test run started", self._run_id),
+            self._client.insert(
+                "events",
+                [(datetime.now(UTC), "Test run started", self._run_id)],
+                column_names=["time", "text", "run_id"],
             )
 
     def spawning_complete(self, user_count):
         if not self.env.parsed_options.worker:  # only log for master/standalone
             end_time = datetime.now(UTC)
             try:
-                with self.pool.connection() as conn:
-                    conn.execute(
-                        "INSERT INTO events (time, text, run_id, customer) VALUES (%s, %s, %s, current_user)",
-                        (end_time, f"Rampup complete, {user_count} users spawned", self._run_id),
+                with lock:
+                    self._client.insert(
+                        "events",
+                        [(end_time, f"Rampup complete, {user_count} users spawned", self._run_id)],
+                        column_names=["time", "text", "run_id"],
                     )
-            except psycopg.Error as error:
+
+            except Exception as error:
                 logging.error(
                     "Failed to insert rampup complete event time to Postgresql timescale database: " + repr(error)
                 )
 
     def log_stop_test_run(self):
         logging.debug(f"Test run id {self._run_id} stopping")
-        if self.env.parsed_options.worker:
+        if self.env.parsed_options.worker or not self._run_id:
             return  # only run on master or standalone
         end_time = datetime.now(UTC)
         try:
-            with self.pool.connection() as conn:
-                conn.execute(
-                    "UPDATE testruns SET end_time = %s WHERE id = %s",
-                    (end_time, self._run_id),
+            with lock:
+                # The AND time > run_id clause in the following statements are there to help performance
+                # We dont use start_time / end_time to calculate RPS, instead we use the time between the actual first and last request
+                # (as this is a more accurate measurement of the actual test)
+                self._client.command(
+                    """
+                    CREATE TEMPORARY TABLE testrun_update AS SELECT reqs, resp_time, GREATEST(duration, 1) as rps_avg, fails / GREATEST(reqs, 1) as fail_ratio FROM
+                    (SELECT
+                        countMerge(count)::numeric AS reqs,
+                        avgMerge(response_time_state)::numeric as resp_time
+                    FROM requests_summary WHERE run_id = %(run_id)s AND bucket > %(run_id)s) AS _,
+                    (SELECT
+                        (max_time - min_time) AS duration
+                    FROM
+                    (SELECT
+                        max(time) AS max_time,
+                        min(time) AS min_time
+                    FROM requests WHERE run_id = %(run_id)s AND time > %(run_id)s)) AS __,
+                    (SELECT
+                        countMerge(failed_count)::numeric AS fails
+                    FROM requests_summary WHERE run_id = %(run_id)s AND bucket > %(run_id)s) AS ___;
+                    """,
+                    {"run_id": self._run_id},
                 )
-
-                try:
-                    # The AND time > run_id clause in the following statements are there to help Timescale performance
-                    # We dont use start_time / end_time to calculate RPS, instead we use the time between the actual first and last request
-                    # (as this is a more accurate measurement of the actual test)
-                    conn.execute(
-                        """
-UPDATE testruns
-SET (requests, resp_time_avg, rps_avg, fail_ratio) =
-(SELECT reqs, resp_time, reqs / GREATEST(duration, 1), fails / GREATEST(reqs, 1)) FROM
-(SELECT
- COUNT(*)::numeric AS reqs,
- AVG(response_time)::numeric as resp_time
- FROM requests_view WHERE run_id = %(run_id)s AND time > %(run_id)s) AS _,
-(SELECT
- EXTRACT(epoch FROM (SELECT MAX(time)-MIN(time) FROM requests_view WHERE run_id = %(run_id)s AND time > %(run_id)s))::numeric AS duration) AS __,
-(SELECT
- COUNT(*)::numeric AS fails
- FROM requests_view WHERE run_id = %(run_id)s AND time > %(run_id)s AND success = 0) AS ___
-WHERE id = %(run_id)s""",
-                        {"run_id": self._run_id},
-                    )
-                except psycopg.errors.DivisionByZero:  # remove this except later, because it shouldnt happen any more
-                    logging.info(
-                        "Got DivisionByZero error when trying to update testruns, most likely because there were no requests logged"
-                    )
-        except psycopg.Error as error:
-            logging.error(
-                "Failed to update testruns record (or events) with end time to Postgresql timescale database: "
-                + repr(error)
-            )
+                self._client.command(
+                    """
+                    ALTER TABLE testruns
+                    UPDATE
+                        requests = (SELECT reqs FROM testrun_update),
+                        resp_time_avg = (SELECT resp_time FROM testrun_update),
+                        rps_avg = (SELECT rps_avg FROM testrun_update),
+                        fail_ratio = (SELECT fail_ratio FROM testrun_update),
+                        end_time = %(end_time)s
+                    WHERE id = %(run_id)s;
+                    """,
+                    {"run_id": self._run_id, "end_time": end_time},
+                )
+        except Exception as error:
+            logging.error("Failed to update testruns record (or events) with end time to database: " + repr(error))
 
     def log_exit_code(self, exit_code=None):
+        if not self._run_id:
+            return
+
         try:
-            with self.pool.connection() as conn:
-                conn.execute(
-                    "UPDATE testruns SET exit_code = %s WHERE id = %s",
-                    (exit_code, self._run_id),
+            with lock:
+                self._client.command(
+                    "ALTER TABLE testruns UPDATE exit_code = %(exit_code)s WHERE id = %(run_id)s",
+                    {"exit_code": exit_code, "run_id": self._run_id},
                 )
-                conn.execute(
-                    "INSERT INTO events (time, text, run_id, customer) VALUES (%s, %s, %s, current_user)",
-                    (datetime.now(UTC).isoformat(), f"Finished with exit code: {exit_code}", self._run_id),
+                self._client.insert(
+                    "events",
+                    [
+                        (
+                            datetime.now(UTC),
+                            f"Finished with exit code: {exit_code}",
+                            self._run_id,
+                        )
+                    ],
+                    column_names=["time", "text", "run_id"],
                 )
-        except psycopg.Error as error:
-            logging.error(
-                "Failed to update testruns record (or events) with end time to Postgresql timescale database: "
-                + repr(error)
-            )
+        except Exception as error:
+            logging.error("Failed to update testruns record (or events) with end time to database: " + repr(error))

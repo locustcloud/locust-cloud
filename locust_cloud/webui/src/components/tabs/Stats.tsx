@@ -15,13 +15,14 @@ import {
 import { useAction, useLocustSelector, useSelector } from 'redux/hooks';
 import { snackbarActions } from 'redux/slice/snackbar.slice';
 import { IFailuresData, IStatsData } from 'types/request.types';
+import { utcNow } from 'utils/date';
 
 export default function Stats() {
   const swarmState = useLocustSelector(({ swarm }) => swarm.state);
   const { currentTestrun, currentTestrunIndex, testruns } = useSelector(({ toolbar }) => toolbar);
   const setSnackbar = useAction(snackbarActions.setSnackbar);
 
-  const [timestamp, setTimestamp] = useState(new Date().toISOString());
+  const [timestamp, setTimestamp] = useState(utcNow());
   const [totalRequests, setTotalRequests] = useState<number>(0);
   const [totalFailures, setTotalFailures] = useState<number>(0);
   const [errorPercentage, setErrorPercentage] = useState<number>(0);
@@ -36,7 +37,7 @@ export default function Stats() {
 
   const fetchStats = async () => {
     if (currentTestrun) {
-      const currentTimestamp = new Date().toISOString();
+      const currentTimestamp = utcNow();
       const { endTime } = testruns[new Date(currentTestrun).toLocaleString()];
 
       const payload = {
