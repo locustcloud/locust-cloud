@@ -37,56 +37,9 @@ jobs:
           name: dist-artifact
           path: dist/*
 
-  lint_typecheck_test_webui:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22.x
-      - uses: borales/actions-yarn@v5
-        with:
-          cmd: install
-          dir: locust_cloud/webui
-      - name: Lint
-        uses: borales/actions-yarn@v5
-        with:
-          cmd: lint
-          dir: locust_cloud/webui
-      - name: Typecheck
-        uses: borales/actions-yarn@v5
-        with:
-          cmd: type-check
-          dir: locust_cloud/webui
-      - name: Tests
-        uses: borales/actions-yarn@v5
-        with:
-          cmd: test
-          dir: locust_cloud/webui
-
-  test:
-    timeout-minutes: 15 # just in case pytest hangs
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          fetch-tags: true
-      - uses: astral-sh/setup-uv@v2
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22.x
-      - run: uv venv --python 3.11
-      - env:
-          LOCUSTCLOUD_USERNAME: ${{ secrets.LOCUSTCLOUD_USERNAME }}
-          LOCUSTCLOUD_PASSWORD: ${{ secrets.LOCUSTCLOUD_PASSWORD }}
-          CHUSER: ${{ secrets.CHUSER }}
-          CHPASSWORD: ${{ secrets.CHPASSWORD }}
-        run: uv run pytest
-
   publish_pypi:
     name: Publish to PyPI
-    needs: [build, lint_typecheck_test_webui]
+    needs: [build]
     if: startsWith(github.event.ref, 'refs/tags')
     runs-on: ubuntu-latest
     permissions:
@@ -103,57 +56,3 @@ jobs:
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:
           skip-existing: true
-
-  publish_docker:
-    if: github.ref == 'refs/heads/master' || startsWith(github.event.ref, 'refs/tags') || github.event_name == 'workflow_dispatch'
-    needs: [build, lint_typecheck_test_webui]
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Download Python dist
-        uses: actions/download-artifact@v4
-        with:
-          name: dist-artifact
-          path: dist
-
-      - name: Configure AWS credentials via OIDC
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: arn:aws:iam::${{ env.AWS_ACCOUNT_ID }}:role/GitHubActionsECRPushRole
-          aws-region: ${{ env.AWS_REGION }}
-          role-session-name: GitHubActionsECRPushSession
-
-      - name: Login to Amazon ECR
-        uses: aws-actions/amazon-ecr-login@v2
-
-      - name: Set image tags and repository
-        id: tags
-        run: |
-          if [[ $GITHUB_REF == refs/heads/master ]]; then
-            TAGS="master"
-          elif [[ $GITHUB_REF == refs/tags/* ]]; then
-            VERSION=${GITHUB_REF#refs/tags/}
-            TAGS="$VERSION latest"
-          elif [[ $GITHUB_EVENT_NAME == workflow_dispatch ]]; then
-            TAGS="manual-$GITHUB_RUN_ID"
-          else
-            echo "No matching branch or tag found. Exiting."
-            exit 1
-          fi
-          echo "TAGS=$TAGS" >> $GITHUB_ENV
-
-      - name: Build Docker image
-        run: |
-          docker build -t locust .
-          for TAG in $TAGS; do
-            docker tag locust:latest ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/locust-cloud:$TAG
-          done
-
-      - name: Push Docker image to ECR
-        run: |
-          for TAG in $TAGS; do
-            docker push ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/locust-cloud:$TAG
-          done

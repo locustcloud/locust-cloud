@@ -1,3 +1,4 @@
+import importlib.metadata
 import logging
 import time
 from datetime import UTC, datetime
@@ -8,7 +9,8 @@ import jwt
 import requests
 from botocore.credentials import RefreshableCredentials
 from botocore.session import Session as BotocoreSession
-from locust_cloud import __version__
+
+__version__ = importlib.metadata.version("locust-cloud")
 
 logger = logging.getLogger(__name__)
 

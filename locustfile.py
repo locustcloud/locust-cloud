@@ -1,7 +1,7 @@
 # Simple locustfile for testing against example target
 import random
 
-from locust import FastHttpUser, run_single_user, task
+from locust import FastHttpUser, run_single_user, task  # pyright: ignore [reportMissingImports]
 
 product_ids = [1, 2, 42, 4711]
 

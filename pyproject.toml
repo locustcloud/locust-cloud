@@ -5,12 +5,10 @@ description = "Locust Cloud"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "locust>=2.32.5.dev10",
     "boto3==1.34.125",
+    "configargparse==1.7",
     "PyJWT>=2.0",
     "python-socketio[client]==5.11.4",
-    "gevent-websocket==0.10.1",
-    "clickhouse-connect>=0.8.10",
 ]
 [project.urls]
 Homepage = "https://locust.cloud"
@@ -26,19 +24,12 @@ build-backend = "hatchling.build"
 include = [
     "locust_cloud/**/*"
 ]
-exclude = [
-    "locust_cloud/webui/src",
-    "locust_cloud/webui/node_modules",
-]
 
 [tool.hatch.version]
 source = "vcs"
 
 [tool.hatch.version.raw-options]
 local_scheme = "no-local-version"
-
-[tool.hatch.build.hooks.custom]
-[tool.hatch.build.targets.BuildFrontend.hooks.custom]
 
 [tool.ruff]
 target-version = "py311"

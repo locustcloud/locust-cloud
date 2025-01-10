@@ -1,5 +1,6 @@
 import base64
 import gzip
+import importlib.metadata
 import logging
 import os
 import sys
@@ -14,8 +15,9 @@ import configargparse
 import requests
 import socketio
 import socketio.exceptions
-from locust_cloud import __version__
 from locust_cloud.credential_manager import CredentialError, CredentialManager
+
+__version__ = importlib.metadata.version("locust-cloud")
 
 
 class LocustTomlConfigParser(configargparse.TomlConfigParser):
