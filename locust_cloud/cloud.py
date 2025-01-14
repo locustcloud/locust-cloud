@@ -155,7 +155,7 @@ parser.add_argument(
 parser.add_argument(
     "--image-tag",
     type=str,
-    default="latest",
+    default="master",
     help=configargparse.SUPPRESS,  # overrides the locust-cloud docker image tag. for internal use
 )
 parser.add_argument(
