@@ -1,21 +1,27 @@
 import base64
 import gzip
 import importlib.metadata
+import json
 import logging
 import os
+import pathlib
 import sys
 import threading
+import time
 import tomllib
 import urllib.parse
+import webbrowser
 from argparse import Namespace
 from collections import OrderedDict
+from dataclasses import dataclass
 from typing import IO, Any
 
 import configargparse
+import jwt
+import platformdirs
 import requests
 import socketio
 import socketio.exceptions
-from locust_cloud.credential_manager import CredentialError, CredentialManager
 
 __version__ = importlib.metadata.version("locust-cloud")
 
@@ -110,36 +116,15 @@ advanced.add_argument(
     help="Optional requirements.txt file that contains your external libraries.",
 )
 advanced.add_argument(
+    "--login",
+    action="store_true",
+    default=False,
+    help=configargparse.SUPPRESS,
+)
+advanced.add_argument(
     "--region",
     type=str,
-    default=os.environ.get("AWS_DEFAULT_REGION"),
-    help="Sets the AWS region to use for the deployed cluster, e.g. us-east-1. It defaults to use AWS_DEFAULT_REGION env var, like AWS tools.",
-)
-parser.add_argument(
-    "--aws-access-key-id",
-    type=str,
     help=configargparse.SUPPRESS,
-    env_var="AWS_ACCESS_KEY_ID",
-    default=None,
-)
-parser.add_argument(
-    "--aws-secret-access-key",
-    type=str,
-    help=configargparse.SUPPRESS,
-    env_var="AWS_SECRET_ACCESS_KEY",
-    default=None,
-)
-parser.add_argument(
-    "--username",
-    type=str,
-    help=configargparse.SUPPRESS,
-    default=os.getenv("LOCUST_CLOUD_USERNAME", None),  # backwards compatitibility for dmdb
-)
-parser.add_argument(
-    "--password",
-    type=str,
-    help=configargparse.SUPPRESS,
-    default=os.getenv("LOCUST_CLOUD_PASSWORD", None),  # backwards compatitibility for dmdb
 )
 parser.add_argument(
     "--workers",
@@ -155,7 +140,7 @@ parser.add_argument(
 parser.add_argument(
     "--image-tag",
     type=str,
-    default="master",
+    default="latest",
     help=configargparse.SUPPRESS,  # overrides the locust-cloud docker image tag. for internal use
 )
 parser.add_argument(
@@ -171,6 +156,7 @@ parser.add_argument(
 )
 
 options, locust_options = parser.parse_known_args()
+
 options: Namespace
 locust_options: list
 
@@ -185,51 +171,215 @@ logging.getLogger("boto3").setLevel(logging.INFO)
 logging.getLogger("requests").setLevel(logging.INFO)
 logging.getLogger("urllib3").setLevel(logging.INFO)
 
+cloud_conf_file = pathlib.Path(platformdirs.user_config_dir(appname="locust-cloud")) / "config"
 
-api_url = os.environ.get("LOCUSTCLOUD_DEPLOYER_URL", f"https://api.{options.region}.locust.cloud/1")
+
+def get_api_url(region):
+    return os.environ.get("LOCUSTCLOUD_DEPLOYER_URL", f"https://api.{region}.locust.cloud/1")
+
+
+@dataclass
+class CloudConfig:
+    id_token: str | None = None
+    refresh_token: str | None = None
+    refresh_token_expires: int = 0
+    region: str | None = None
+
+
+def read_cloud_config() -> CloudConfig:
+    if cloud_conf_file.exists():
+        with open(cloud_conf_file) as f:
+            return CloudConfig(**json.load(f))
+
+    return CloudConfig()
+
+
+def write_cloud_config(config: CloudConfig) -> None:
+    cloud_conf_file.parent.mkdir(parents=True, exist_ok=True)
+
+    with open(cloud_conf_file, "w") as f:
+        json.dump(config.__dict__, f)
+
+
+def web_login() -> None:
+    config = read_cloud_config()
+
+    if config.region is None:
+        if not options.region:
+            print(
+                "You need to also provide the region with the login command:\n    locust-cloud --login --region <some region>"
+            )
+            sys.exit(1)
+
+        config.region = options.region
+
+    else:
+        if options.region and config.region != options.region:
+            print(f"Region was previusly set to '{config.region}', using '{options.region}' instead.")
+            config.region = options.region
+
+    try:
+        response = requests.post(f"{get_api_url(config.region)}/cli-auth")
+        response.raise_for_status()
+        response_data = response.json()
+        authentication_url = response_data["authentication_url"]
+        result_url = response_data["result_url"]
+    except Exception as e:
+        print("Something went wrong trying to authorize the locust-cloud CLI:", str(e))
+        sys.exit(1)
+
+    message = f"""
+Attempting to automatically open the SSO authorization page in your default browser.
+If the browser does not open or you wish to use a different device to authorize this request, open the following URL:
+
+{authentication_url}
+    """.strip()
+    print(message)
+
+    webbrowser.open_new_tab(authentication_url)
+
+    while True:  # Should there be some kind of timeout?
+        response = requests.get(result_url)
+
+        if not response.ok:
+            print("Oh no!")
+            print(response.text)
+            sys.exit(1)
+
+        data = response.json()
+
+        if data["state"] == "pending":
+            time.sleep(1)
+            continue
+        elif data["state"] == "failed":
+            print(f"Failed to authorize CLI: {data['reason']}")
+            sys.exit(1)
+        elif data["state"] == "authorized":
+            print("Authorization succeded")
+            break
+        else:
+            print("Got unexpected response when authorizing CLI")
+            sys.exit(1)
+
+    config.id_token = data["id_token"]
+    config.refresh_token = data["refresh_token"]
+    config.refresh_token_expires = data["refresh_token_expires"]
+    write_cloud_config(config)
+
+
+class ApiSession(requests.Session):
+    def __init__(self) -> None:
+        super().__init__()
+
+        username = os.getenv("LOCUSTCLOUD_USERNAME")
+        password = os.getenv("LOCUSTCLOUD_PASSWORD")
+        config = read_cloud_config()
+
+        if username and password:
+            if not options.region:
+                print("When running with username and password you need to set the region")
+                sys.exit(1)
+
+            self.__configure_for_region(options.region)
+            self.__file_cache = False
+            response = requests.post(
+                self.__login_url,
+                json={"username": username, "password": password},
+                headers={"X-Client-Version": __version__},
+            )
+            if not response.ok:
+                print(f"Authentication failed: {response.text}")
+                sys.exit(1)
+
+            self.__refresh_token = response.json()["refresh_token"]
+            id_token = response.json()["cognito_client_id_token"]
+
+        else:
+            if config.refresh_token_expires < time.time() + 24 * 60 * 60:
+                message = "You need to authenticate before proceeding. Please run:\n    locust-cloud --login"
+                if not config.region:
+                    message += " --region <some region>"
+                print(message)
+                sys.exit(1)
+
+            if options.region:
+                print("The --region option is only used when doing a --login")
+                sys.exit(1)
+
+            assert config.region
+            self.__configure_for_region(config.region)
+            self.__file_cache = True
+            self.__refresh_token = config.refresh_token
+            id_token = config.id_token
+
+        assert id_token
+
+        decoded = jwt.decode(id_token, options={"verify_signature": False})
+        self.__expiry_time = decoded["exp"] - 60  # Refresh 1 minute before expiry
+        self.headers["Authorization"] = f"Bearer {id_token}"
+
+        self.__sub = decoded["sub"]
+        self.headers["X-Client-Version"] = __version__
+
+    def __configure_for_region(self, region: str) -> None:
+        self.__region = region
+        self.api_url = get_api_url(region)
+        self.__login_url = f"{self.api_url}/auth/login"
+
+        logger.debug(f"Lambda url: {self.api_url}")
+
+    def __ensure_valid_authorization_header(self) -> None:
+        if self.__expiry_time > time.time():
+            return
+
+        logger.info(f"Authenticating ({self.__region}, v{__version__})")
+
+        response = requests.post(
+            self.__login_url,
+            json={"user_sub_id": self.__sub, "refresh_token": self.__refresh_token},
+            headers={"X-Client-Version": __version__},
+        )
+
+        if not response.ok:
+            logger.error(f"Authentication failed: {response.text}")
+            sys.exit(1)
+
+        # TODO: Technically the /login endpoint can return a challenge for you
+        #       to change your password. Don't know how we should handle that
+        #       in the cli.
+
+        id_token = response.json()["cognito_client_id_token"]
+        decoded = jwt.decode(id_token, options={"verify_signature": False})
+        self.__expiry_time = decoded["exp"] - 60  # Refresh 1 minute before expiry
+        self.headers["Authorization"] = f"Bearer {id_token}"
+
+        if self.__file_cache:
+            config = read_cloud_config()
+            config.id_token = id_token
+            write_cloud_config(config)
+
+    def request(self, method, url, *args, **kwargs) -> requests.Response:
+        self.__ensure_valid_authorization_header()
+        return super().request(method, f"{self.api_url}{url}", *args, **kwargs)
 
 
 def main() -> None:
     if options.version:
         print(f"locust-cloud version {__version__}")
         sys.exit(0)
-
-    if not options.region:
-        logger.error(
-            "Setting a region is required to use Locust Cloud. Please ensure the AWS_DEFAULT_REGION env variable or the --region flag is set."
-        )
-        sys.exit(1)
-    if options.region:
-        os.environ["AWS_DEFAULT_REGION"] = options.region
-
-    if not ((options.username and options.password) or (options.aws_access_key_id and options.aws_secret_access_key)):
-        logger.error(
-            "Authentication is required to use Locust Cloud. Please ensure the LOCUSTCLOUD_USERNAME and LOCUSTCLOUD_PASSWORD environment variables are set."
-        )
-        sys.exit(1)
     if not options.locustfile:
         logger.error("A locustfile is required to run a test.")
         sys.exit(1)
 
+    if options.login:
+        web_login()
+        sys.exit()
+
+    session = ApiSession()
+
     try:
-        logger.info(f"Authenticating ({options.region}, v{__version__})")
-        logger.debug(f"Lambda url: {api_url}")
-        credential_manager = CredentialManager(
-            lambda_url=api_url,
-            access_key=options.aws_access_key_id,
-            secret_key=options.aws_secret_access_key,
-            username=options.username,
-            password=options.password,
-        )
-
-        credentials = credential_manager.get_current_credentials()
-        cognito_client_id_token = credentials["cognito_client_id_token"]
-        aws_access_key_id = credentials.get("access_key")
-        aws_secret_access_key = credentials.get("secret_key")
-        aws_session_token = credentials.get("token", "")
-
         if options.delete:
-            delete(credential_manager)
+            delete(session)
             return
 
         try:
@@ -251,24 +401,22 @@ def main() -> None:
 
         logger.info("Deploying load generators")
         locust_env_variables = [
-            {"name": env_variable, "value": str(os.environ[env_variable])}
+            {"name": env_variable, "value": os.environ[env_variable]}
             for env_variable in os.environ
             if env_variable.startswith("LOCUST_")
-            and not env_variable
-            in [
+            and env_variable
+            not in [
                 "LOCUST_LOCUSTFILE",
                 "LOCUST_USERS",
                 "LOCUST_WEB_HOST_DISPLAY_NAME",
                 "LOCUST_SKIP_MONKEY_PATCH",
             ]
-            and os.environ[env_variable]
         ]
-        deploy_endpoint = f"{api_url}/deploy"
         payload = {
             "locust_args": [
                 {"name": "LOCUST_USERS", "value": str(options.users)},
                 {"name": "LOCUST_FLAGS", "value": " ".join(locust_options)},
-                {"name": "LOCUSTCLOUD_DEPLOYER_URL", "value": api_url},
+                {"name": "LOCUSTCLOUD_DEPLOYER_URL", "value": session.api_url},
                 {"name": "LOCUSTCLOUD_PROFILE", "value": options.profile},
                 *locust_env_variables,
             ],
@@ -277,21 +425,15 @@ def main() -> None:
             "image_tag": options.image_tag,
             "mock_server": options.mock_server,
         }
+
         if options.workers is not None:
             payload["worker_count"] = options.workers
+
         if options.requirements:
             payload["requirements"] = {"filename": options.requirements, "data": requirements_data}
-        headers = {
-            "Authorization": f"Bearer {cognito_client_id_token}",
-            "Content-Type": "application/json",
-            "AWS_ACCESS_KEY_ID": aws_access_key_id,
-            "AWS_SECRET_ACCESS_KEY": aws_secret_access_key,
-            "AWS_SESSION_TOKEN": aws_session_token,
-            "X-Client-Version": __version__,
-        }
+
         try:
-            # logger.info(payload) # might be useful when debugging sometimes
-            response = requests.post(deploy_endpoint, json=payload, headers=headers)
+            response = session.post("/deploy", json=payload)
         except requests.exceptions.RequestException as e:
             logger.error(f"Failed to deploy the load generators: {e}")
             sys.exit(1)
@@ -306,10 +448,9 @@ def main() -> None:
                     f"HTTP {response.status_code}/{response.reason} - Response: {response.text} - URL: {response.request.url}"
                 )
             sys.exit(1)
-    except CredentialError as ce:
-        logger.error(f"Credential error: {ce}")
-        sys.exit(1)
+
     except KeyboardInterrupt:
+        # TODO: This would potentially leave a deployment running, combine with try-catch below?
         logger.debug("Interrupted by user")
         sys.exit(0)
 
@@ -320,10 +461,10 @@ def main() -> None:
     shutdown_allowed.set()
     reconnect_aborted = threading.Event()
     connect_timeout = threading.Timer(2 * 60, reconnect_aborted.set)
+    sio = socketio.Client(handle_sigint=False)
 
     try:
         ws_connection_info = urllib.parse.urlparse(log_ws_url)
-        sio = socketio.Client(handle_sigint=False)
 
         @sio.event
         def connect():
@@ -366,38 +507,23 @@ def main() -> None:
 
     except KeyboardInterrupt:
         logger.debug("Interrupted by user")
-        delete(credential_manager)
+        delete(session)
         shutdown_allowed.wait(timeout=90)
     except Exception as e:
         logger.exception(e)
-        delete(credential_manager)
+        delete(session)
         sys.exit(1)
     else:
-        delete(credential_manager)
+        delete(session)
     finally:
         sio.shutdown()
 
 
-def delete(credential_manager):
+def delete(session):
     try:
         logger.info("Tearing down Locust cloud...")
-        credential_manager.refresh_credentials()
-        refreshed_credentials = credential_manager.get_current_credentials()
-
-        headers = {
-            "AWS_ACCESS_KEY_ID": refreshed_credentials.get("access_key", ""),
-            "AWS_SECRET_ACCESS_KEY": refreshed_credentials.get("secret_key", ""),
-            "Authorization": f"Bearer {refreshed_credentials.get('cognito_client_id_token', '')}",
-            "X-Client-Version": __version__,
-        }
-
-        token = refreshed_credentials.get("token")
-        if token:
-            headers["AWS_SESSION_TOKEN"] = token
-
-        response = requests.delete(
-            f"{api_url}/teardown",
-            headers=headers,
+        response = session.delete(
+            "/teardown",
         )
 
         if response.status_code == 200:
@@ -409,7 +535,7 @@ def delete(credential_manager):
     except Exception as e:
         logger.error(f"Could not automatically tear down Locust Cloud: {e.__class__.__name__}:{e}")
 
-    logger.info("Done! ✨")
+    logger.info("Done! ✨")  # FIXME: Should probably not say it's done since at this point it could still be running
 
 
 if __name__ == "__main__":
