@@ -57,7 +57,7 @@ parser = configargparse.ArgumentParser(
         "cloud.conf",
     ],
     auto_env_var_prefix="LOCUSTCLOUD_",
-    formatter_class=configargparse.RawDescriptionHelpFormatter,
+    formatter_class=configargparse.RawTextHelpFormatter,
     config_file_parser_class=configargparse.CompositeConfigParser(
         [
             LocustTomlConfigParser(["tool.locust"]),
@@ -122,9 +122,10 @@ advanced.add_argument(
     help=configargparse.SUPPRESS,
 )
 advanced.add_argument(
-    "--region",
-    type=str,
-    help=configargparse.SUPPRESS,
+    "--non-interactive",
+    action="store_true",
+    default=False,
+    help="This can be set when, for example, running in a CI/CD environment to ensure no interactive steps while executing.\nRequires that LOCUSTCLOUD_USERNAME, LOCUSTCLOUD_PASSWORD and LOCUSTCLOUD_REGION environment variables are set.",
 )
 parser.add_argument(
     "--workers",
@@ -172,6 +173,7 @@ logging.getLogger("requests").setLevel(logging.INFO)
 logging.getLogger("urllib3").setLevel(logging.INFO)
 
 cloud_conf_file = pathlib.Path(platformdirs.user_config_dir(appname="locust-cloud")) / "config"
+valid_regions = ["us-east-1", "eu-north-1"]
 
 
 def get_api_url(region):
@@ -202,24 +204,23 @@ def write_cloud_config(config: CloudConfig) -> None:
 
 
 def web_login() -> None:
-    config = read_cloud_config()
+    print("Enter the number for the region to authenticate against")
+    print()
+    for i, valid_region in enumerate(valid_regions, start=1):
+        print(f"  {i}. {valid_region}")
+    print()
+    choice = input("> ")
+    try:
+        region_index = int(choice) - 1
+        assert 0 <= region_index < len(valid_regions)
+    except (ValueError, AssertionError):
+        print(f"Not a valid choice: '{choice}'")
+        sys.exit(1)
 
-    if config.region is None:
-        if not options.region:
-            print(
-                "You need to also provide the region with the login command:\n    locust-cloud --login --region <some region>"
-            )
-            sys.exit(1)
-
-        config.region = options.region
-
-    else:
-        if options.region and config.region != options.region:
-            print(f"Region was previusly set to '{config.region}', using '{options.region}' instead.")
-            config.region = options.region
+    region = valid_regions[region_index]
 
     try:
-        response = requests.post(f"{get_api_url(config.region)}/cli-auth")
+        response = requests.post(f"{get_api_url(region)}/cli-auth")
         response.raise_for_status()
         response_data = response.json()
         authentication_url = response_data["authentication_url"]
@@ -234,6 +235,7 @@ If the browser does not open or you wish to use a different device to authorize 
 
 {authentication_url}
     """.strip()
+    print()
     print(message)
 
     webbrowser.open_new_tab(authentication_url)
@@ -252,18 +254,21 @@ If the browser does not open or you wish to use a different device to authorize 
             time.sleep(1)
             continue
         elif data["state"] == "failed":
-            print(f"Failed to authorize CLI: {data['reason']}")
+            print(f"\nFailed to authorize CLI: {data['reason']}")
             sys.exit(1)
         elif data["state"] == "authorized":
-            print("Authorization succeded")
+            print("\nAuthorization succeded")
             break
         else:
-            print("Got unexpected response when authorizing CLI")
+            print("\nGot unexpected response when authorizing CLI")
             sys.exit(1)
 
-    config.id_token = data["id_token"]
-    config.refresh_token = data["refresh_token"]
-    config.refresh_token_expires = data["refresh_token_expires"]
+    config = CloudConfig(
+        id_token=data["id_token"],
+        refresh_token=data["refresh_token"],
+        refresh_token_expires=data["refresh_token_expires"],
+        region=region,
+    )
     write_cloud_config(config)
 
 
@@ -271,17 +276,22 @@ class ApiSession(requests.Session):
     def __init__(self) -> None:
         super().__init__()
 
-        username = os.getenv("LOCUSTCLOUD_USERNAME")
-        password = os.getenv("LOCUSTCLOUD_PASSWORD")
-        config = read_cloud_config()
+        if options.non_interactive:
+            username = os.getenv("LOCUSTCLOUD_USERNAME")
+            password = os.getenv("LOCUSTCLOUD_PASSWORD")
+            region = os.getenv("LOCUSTCLOUD_REGION")
 
-        if username and password:
-            if not options.region:
-                print("When running with username and password you need to set the region")
+            if not all([username, password, region]):
+                print(
+                    "Running with --non-interaction requires that LOCUSTCLOUD_USERNAME, LOCUSTCLOUD_PASSWORD and LOCUSTCLOUD_REGION environment variables are set."
+                )
                 sys.exit(1)
 
-            self.__configure_for_region(options.region)
-            self.__file_cache = False
+            if region not in valid_regions:
+                print("Environment variable LOCUSTCLOUD_REGION needs to be set to one of", ", ".join(valid_regions))
+                sys.exit(1)
+
+            self.__configure_for_region(region)
             response = requests.post(
                 self.__login_url,
                 json={"username": username, "password": password},
@@ -295,20 +305,15 @@ class ApiSession(requests.Session):
             id_token = response.json()["cognito_client_id_token"]
 
         else:
+            config = read_cloud_config()
+
             if config.refresh_token_expires < time.time() + 24 * 60 * 60:
                 message = "You need to authenticate before proceeding. Please run:\n    locust-cloud --login"
-                if not config.region:
-                    message += " --region <some region>"
                 print(message)
-                sys.exit(1)
-
-            if options.region:
-                print("The --region option is only used when doing a --login")
                 sys.exit(1)
 
             assert config.region
             self.__configure_for_region(config.region)
-            self.__file_cache = True
             self.__refresh_token = config.refresh_token
             id_token = config.id_token
 
@@ -353,7 +358,7 @@ class ApiSession(requests.Session):
         self.__expiry_time = decoded["exp"] - 60  # Refresh 1 minute before expiry
         self.headers["Authorization"] = f"Bearer {id_token}"
 
-        if self.__file_cache:
+        if not options.non_interactive:
             config = read_cloud_config()
             config.id_token = id_token
             write_cloud_config(config)
