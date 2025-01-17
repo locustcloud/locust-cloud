@@ -377,7 +377,10 @@ def main() -> None:
         sys.exit(1)
 
     if options.login:
-        web_login()
+        try:
+            web_login()
+        except KeyboardInterrupt:
+            pass
         sys.exit()
 
     session = ApiSession()
