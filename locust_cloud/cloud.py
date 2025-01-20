@@ -141,7 +141,7 @@ parser.add_argument(
 parser.add_argument(
     "--image-tag",
     type=str,
-    default="latest",
+    default=None,
     help=configargparse.SUPPRESS,  # overrides the locust-cloud docker image tag. for internal use
 )
 parser.add_argument(
@@ -430,9 +430,11 @@ def main() -> None:
             ],
             "locustfile": {"filename": options.locustfile, "data": locustfile_data},
             "user_count": options.users,
-            "image_tag": options.image_tag,
             "mock_server": options.mock_server,
         }
+
+        if options.image_tag is not None:
+            payload["image_tag"] = options.image_tag
 
         if options.workers is not None:
             payload["worker_count"] = options.workers
