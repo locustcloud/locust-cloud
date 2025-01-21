@@ -21,13 +21,14 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
       - uses: astral-sh/setup-uv@v2
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22.x
       - run: uv venv --python 3.11
       - run: uv run ruff check
       - run: uv run ruff format --check
       - run: uv run pyright
+      - run: uv run pytest
+        env:
+          LOCUSTCLOUD_USERNAME: ${{ secrets.LOCUSTCLOUD_USERNAME }}
+          LOCUSTCLOUD_PASSWORD: ${{ secrets.LOCUSTCLOUD_PASSWORD }}
       # any local changes would make hatch-vcs set a "local version" (+dev0...), so we ignore any uv.lock updates:
       - run: git update-index --assume-unchanged uv.lock
       - run: uv run locust-cloud --help
