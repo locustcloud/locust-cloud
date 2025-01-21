@@ -167,8 +167,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 # Restore log level for other libs. Yes, this can be done more nicely
-logging.getLogger("botocore").setLevel(logging.INFO)
-logging.getLogger("boto3").setLevel(logging.INFO)
 logging.getLogger("requests").setLevel(logging.INFO)
 logging.getLogger("urllib3").setLevel(logging.INFO)
 
