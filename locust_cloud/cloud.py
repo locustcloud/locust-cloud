@@ -708,8 +708,6 @@ def delete(session):
     except Exception as e:
         logger.error(f"Could not automatically tear down Locust Cloud: {e.__class__.__name__}:{e}")
 
-    logger.info("Done! ✨")  # FIXME: Should probably not say it's done since at this point it could still be running
-
 
 if __name__ == "__main__":
     main()
