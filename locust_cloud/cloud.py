@@ -1,6 +1,7 @@
 import base64
 import gzip
 import importlib.metadata
+import io
 import json
 import logging
 import os
@@ -11,10 +12,11 @@ import time
 import tomllib
 import urllib.parse
 import webbrowser
-from argparse import Namespace
+from argparse import ArgumentTypeError, Namespace
 from collections import OrderedDict
 from dataclasses import dataclass
 from typing import IO, Any
+from zipfile import ZipFile
 
 import configargparse
 import jwt
@@ -24,6 +26,7 @@ import socketio
 import socketio.exceptions
 
 __version__ = importlib.metadata.version("locust-cloud")
+CWD = pathlib.Path.cwd()
 
 
 class LocustTomlConfigParser(configargparse.TomlConfigParser):
@@ -46,6 +49,51 @@ class LocustTomlConfigParser(configargparse.TomlConfigParser):
                 break
 
         return result
+
+
+def valid_extra_files_path(file_path: str) -> pathlib.Path:
+    p = pathlib.Path(file_path).resolve()
+
+    if not CWD in p.parents:
+        raise ArgumentTypeError(f"Can only reference files under current working directory: {CWD}")
+    if not p.exists():
+        raise ArgumentTypeError(f"File not found: {file_path}")
+    return p
+
+
+def transfer_encode(file_name: str, stream: IO[bytes]) -> dict[str, str]:
+    return {
+        "filename": file_name,
+        "data": base64.b64encode(gzip.compress(stream.read())).decode(),
+    }
+
+
+def transfer_encoded_file(file_path: str) -> dict[str, str]:
+    try:
+        with open(file_path, "rb") as f:
+            return transfer_encode(file_path, f)
+    except FileNotFoundError:
+        raise ArgumentTypeError(f"File not found: {file_path}")
+
+
+def transfer_encoded_extra_files(paths: list[pathlib.Path]) -> dict[str, str]:
+    def expanded(paths):
+        for path in paths:
+            if path.is_dir():
+                for path, _, file_names in path.walk():
+                    for file_name in file_names:
+                        yield path / file_name
+            else:
+                yield path
+
+    buffer = io.BytesIO()
+
+    with ZipFile(buffer, "w") as zf:
+        for path in set(expanded(paths)):
+            zf.write(path.relative_to(CWD))
+
+    buffer.seek(0)
+    return transfer_encode("extra-files.zip", buffer)
 
 
 parser = configargparse.ArgumentParser(
@@ -93,6 +141,7 @@ parser.add_argument(
     default="locustfile.py",
     help="The Python file that contains your test. Defaults to 'locustfile.py'.",
     env_var="LOCUST_LOCUSTFILE",
+    type=transfer_encoded_file,
 )
 parser.add_argument(
     "-u",
@@ -112,7 +161,7 @@ advanced.add_argument(
 )
 advanced.add_argument(
     "--requirements",
-    type=str,
+    type=transfer_encoded_file,
     help="Optional requirements.txt file that contains your external libraries.",
 )
 advanced.add_argument(
@@ -155,11 +204,15 @@ parser.add_argument(
     type=str,
     help="Set a profile to group the testruns together",
 )
+parser.add_argument(
+    "--extra-files",
+    nargs="*",
+    type=valid_extra_files_path,
+    help="A list of extra files or directories to upload. Space-separated, e.g. --extra-files testdata.csv *.py my-directory/",
+)
 
-options, locust_options = parser.parse_known_args()
-
-options: Namespace
-locust_options: list
+parsed_args: tuple[Namespace, list[str]] = parser.parse_known_args()
+options, locust_options = parsed_args
 
 logging.basicConfig(
     format="[LOCUST-CLOUD] %(levelname)s: %(message)s",
@@ -348,8 +401,9 @@ class ApiSession(requests.Session):
             sys.exit(1)
 
         # TODO: Technically the /login endpoint can return a challenge for you
-        #       to change your password. Don't know how we should handle that
-        #       in the cli.
+        #       to change your password.
+        #       Now that we have a web based login flow we should force them to
+        #       do a locust-cloud --login if we get that.
 
         id_token = response.json()["cognito_client_id_token"]
         decoded = jwt.decode(id_token, options={"verify_signature": False})
@@ -587,23 +641,6 @@ def main() -> None:
         sys.exit()
 
     try:
-        try:
-            with open(options.locustfile, "rb") as f:
-                locustfile_data = base64.b64encode(gzip.compress(f.read())).decode()
-        except FileNotFoundError:
-            logger.error(f"File not found: {options.locustfile}")
-            sys.exit(1)
-
-        requirements_data = None
-
-        if options.requirements:
-            try:
-                with open(options.requirements, "rb") as f:
-                    requirements_data = base64.b64encode(gzip.compress(f.read())).decode()
-            except FileNotFoundError:
-                logger.error(f"File not found: {options.requirements}")
-                sys.exit(1)
-
         logger.info("Deploying load generators")
         locust_env_variables = [
             {"name": env_variable, "value": os.environ[env_variable]}
@@ -625,7 +662,7 @@ def main() -> None:
                 {"name": "LOCUSTCLOUD_PROFILE", "value": options.profile},
                 *locust_env_variables,
             ],
-            "locustfile": {"filename": options.locustfile, "data": locustfile_data},
+            "locustfile": options.locustfile,
             "user_count": options.users,
             "mock_server": options.mock_server,
         }
@@ -637,7 +674,10 @@ def main() -> None:
             payload["worker_count"] = options.workers
 
         if options.requirements:
-            payload["requirements"] = {"filename": options.requirements, "data": requirements_data}
+            payload["requirements"] = options.requirements
+
+        if options.extra_files:
+            payload["extra_files"] = transfer_encoded_extra_files(options.extra_files)
 
         try:
             response = session.post("/deploy", json=payload)
