@@ -168,7 +168,7 @@ advanced.add_argument(
     "--login",
     action="store_true",
     default=False,
-    help=configargparse.SUPPRESS,
+    help="Launch an interactive session to authenticate your user.\nOnce completed your credentials will be stored and automatically refreshed for quite a long time.\nOnce those expires you will be prompted to perform another login.",
 )
 advanced.add_argument(
     "--non-interactive",
@@ -334,7 +334,7 @@ class ApiSession(requests.Session):
 
             if not all([username, password, region]):
                 print(
-                    "Running with --non-interaction requires that LOCUSTCLOUD_USERNAME, LOCUSTCLOUD_PASSWORD and LOCUSTCLOUD_REGION environment variables are set."
+                    "Running with --non-interactive requires that LOCUSTCLOUD_USERNAME, LOCUSTCLOUD_PASSWORD and LOCUSTCLOUD_REGION environment variables are set."
                 )
                 sys.exit(1)
 
