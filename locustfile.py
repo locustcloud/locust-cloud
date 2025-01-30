@@ -1,4 +1,5 @@
 # Simple locustfile for testing against example target
+import pathlib
 import random
 
 from locust import FastHttpUser, run_single_user, task  # pyright: ignore [reportMissingImports]
@@ -20,6 +21,11 @@ class MyUser(FastHttpUser):
         with self.rest("POST", "/checkout/confirm") as resp:
             if not resp.js.get("orderId"):
                 resp.failure("orderId missing")
+
+
+extra = pathlib.Path("testdata/extra.txt")
+if extra.exists():
+    print("--extra-files verification:", extra.read_text())
 
 
 if __name__ == "__main__":
