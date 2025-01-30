@@ -658,7 +658,7 @@ def main() -> None:
         session_id = response.json()["session_id"]
         logger.debug(f"Session ID is {session_id}")
 
-        logger.info("Waiting for pods to be ready...")
+        logger.info("Waiting for load generators to be ready...")
         websocket.connect(
             log_ws_url,
             auth=session_id,
