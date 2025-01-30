@@ -35,9 +35,11 @@ jobs:
       # any local changes would make hatch-vcs set a "local version" (+dev0...), so we ignore any uv.lock updates:
       - run: git update-index --assume-unchanged uv.lock
       - run: uv run locust-cloud --help
-      - run: uv run locust-cloud --image-tag master --profile status-checker --mock-server --autostart --autoquit 0 --run-time 1m --loglevel DEBUG |& tee output.txt
+      - run: uv run locust-cloud --image-tag master --profile status-checker --mock-server --autostart --autoquit 0 --run-time 1m --loglevel DEBUG --extra-files testdata |& tee output.txt
       # check ok exit
       - run: grep -m 1 '(exit code 0)' output.txt
+      # check extra files specified were available
+      - run: "grep -m 1 -- '--extra-files verification: pineapple' output.txt"
       # check for errors
       - run: bash -ec "! grep Traceback output.txt"
       - run: bash -ec "! grep ERROR output.txt"
