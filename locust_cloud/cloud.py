@@ -14,6 +14,7 @@ import urllib.parse
 import webbrowser
 from argparse import ArgumentTypeError, Namespace
 from collections import OrderedDict
+from collections.abc import Generator
 from dataclasses import dataclass
 from typing import IO, Any
 from zipfile import ZipFile
@@ -77,12 +78,12 @@ def transfer_encoded_file(file_path: str) -> dict[str, str]:
 
 
 def transfer_encoded_extra_files(paths: list[pathlib.Path]) -> dict[str, str]:
-    def expanded(paths):
+    def expanded(paths: list[pathlib.Path]) -> Generator[pathlib.Path, None, None]:
         for path in paths:
             if path.is_dir():
-                for path, _, file_names in path.walk():
+                for root, _, file_names in os.walk(path):
                     for file_name in file_names:
-                        yield path / file_name
+                        yield pathlib.Path(root) / file_name
             else:
                 yield path
 
