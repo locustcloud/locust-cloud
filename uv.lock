@@ -316,7 +316,7 @@ wheels = [
 
 [[package]]
 name = "locust-cloud"
-version = "1.13.1.dev5"
+version = "1.14.2.dev7"
 source = { editable = "." }
 dependencies = [
     { name = "configargparse" },
@@ -356,7 +356,7 @@ dev = [
     { name = "flask", specifier = ">=3.1.0" },
     { name = "gevent", specifier = ">=24.11.1" },
     { name = "gevent-websocket", specifier = "==0.10.1" },
-    { name = "pyright", specifier = ">=1.1.380" },
+    { name = "pyright", specifier = "==1.1.393" },
     { name = "pytest", specifier = "==8.3.4" },
     { name = "requests-mock", specifier = "==1.12.1" },
     { name = "ruff", specifier = ">=0.6.4" },
@@ -469,14 +469,15 @@ wheels = [
 
 [[package]]
 name = "pyright"
-version = "1.1.380"
+version = "1.1.393"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "nodeenv" },
+    { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/fa/bc/3bb71d02125dae6730d64bb32571c0eda5e5d86483b198b7f6dd82c49c6f/pyright-1.1.380.tar.gz", hash = "sha256:e6ceb1a5f7e9f03106e0aa1d6fbb4d97735a5e7ffb59f3de6b2db590baf935b2", size = 17487 }
+sdist = { url = "https://files.pythonhosted.org/packages/f4/c1/aede6c74e664ab103673e4f1b7fd3d058fef32276be5c43572f4067d4a8e/pyright-1.1.393.tar.gz", hash = "sha256:aeeb7ff4e0364775ef416a80111613f91a05c8e01e58ecfefc370ca0db7aed9c", size = 3790430 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c9/fc/527c58a3b66d5a16dbb124e1c40cf9f207147f5a36f224fb29eb786a0763/pyright-1.1.380-py3-none-any.whl", hash = "sha256:a6404392053d8848bacc7aebcbd9d318bb46baf1a1a000359305481920f43879", size = 18219 },
+    { url = "https://files.pythonhosted.org/packages/92/47/f0dd0f8afce13d92e406421ecac6df0990daee84335fc36717678577d3e0/pyright-1.1.393-py3-none-any.whl", hash = "sha256:8320629bb7a44ca90944ba599390162bf59307f3d9fb6e27da3b7011b8c17ae5", size = 5646057 },
 ]
 
 [[package]]
