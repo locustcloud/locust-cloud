@@ -1,4 +1,4 @@
-name: Daily locust-cloud test run
+name: Daily test run (api-dev)
 
 on:
   schedule: # 12 AM daily
