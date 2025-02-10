@@ -8,7 +8,7 @@ import geventwebsocket.handler
 import pytest
 import socketio
 import socketio.exceptions
-from locust_cloud.cloud import SessionMismatchError, Websocket, WebsocketTimeout
+from locust_cloud.websocket import SessionMismatchError, Websocket, WebsocketTimeout
 
 LOCUSTCLOUD_SESSION_ID = "valid-session-id"
 
