@@ -20,7 +20,7 @@ def mocked_requests():
             f"{API_URL}/cli-auth",
             json={
                 "authentication_url": "<url goes here>",
-                "result_url": f"{API_URL}/1/cli-auth/result/{AUTH_ID}",
+                "result_url": f"{API_URL}/cli-auth/result/{AUTH_ID}",
             },
         )
         yield m
@@ -43,7 +43,7 @@ def block_browser_launch(monkeypatch):
 
 def test_browser_login_failed(mocked_requests, select_region, capsys):  # noqa: ARG001
     mocked_requests.get(
-        f"{API_URL}/1/cli-auth/result/{AUTH_ID}",
+        f"{API_URL}/cli-auth/result/{AUTH_ID}",
         [{"json": {"state": "pending"}}, {"json": {"state": "failed", "reason": "because"}}],
     )
     with pytest.raises(SystemExit):
@@ -65,7 +65,7 @@ def test_browser_login_succeded(mocked_requests, select_region, monkeypatch, cap
     }
 
     mocked_requests.get(
-        f"{API_URL}/1/cli-auth/result/{AUTH_ID}",
+        f"{API_URL}/cli-auth/result/{AUTH_ID}",
         [{"json": {"state": "pending"}}, {"json": response}],
     )
     locust_cloud.web_login.web_login()

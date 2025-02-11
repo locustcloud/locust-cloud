@@ -6,15 +6,18 @@ import select
 import subprocess
 import time
 from datetime import timedelta
+from urllib.parse import parse_qs, urlparse
 
+import locust_cloud.common
 import platformdirs
 import pytest
 import requests
-from bs4 import BeautifulSoup
 
 CLOUD_CONFIG_FILE = pathlib.Path(platformdirs.user_config_dir(appname="locust-cloud")) / "config"
 LOCUSTCLOUD_USERNAME = os.environ["LOCUSTCLOUD_USERNAME"]
 LOCUSTCLOUD_PASSWORD = os.environ["LOCUSTCLOUD_PASSWORD"]
+REGION = "eu-north-1"
+API_URL = locust_cloud.common.get_api_url(REGION)
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -96,17 +99,18 @@ def test_cli_auth() -> None:
     response = session.get(url)
     assert response.ok, "Failed to load login url"
 
-    # Extract csrf token
-    soup = BeautifulSoup(response.text, "html.parser")
-    _csrf = next(x["value"] for x in soup.find_all("input", {"name": "_csrf"}))
+    auth_id = parse_qs(urlparse(url).query).get("auth_id", [])[0]
 
-    # Submit the login form
+    assert auth_id, "Auth id is missing"
+
+    # Login form submits to the deployer, so we'll skip a step
     response = session.post(
-        url, data={"_csrf": _csrf, "username": LOCUSTCLOUD_USERNAME, "password": LOCUSTCLOUD_PASSWORD}
+        f"{API_URL}/authenticate?auth_id={auth_id}",
+        json={"username": LOCUSTCLOUD_USERNAME, "password": LOCUSTCLOUD_PASSWORD},
     )
 
     # Check that we end up on the success page
-    assert "Log in successful. You can close this window now." in response.text, "Login failed"
+    assert "Login successful! You may now close this page." in response.text, "Login failed"
 
     # Wait for the process to finish
     process.wait()
