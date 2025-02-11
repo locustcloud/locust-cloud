@@ -70,7 +70,7 @@ def test_browser_login_succeded(mocked_requests, select_region, monkeypatch, cap
     )
     locust_cloud.web_login.web_login()
 
-    expected = "Authorization succeded"
+    expected = "Authorization succeded. Now you can re-run locust-cloud without the --login flag."
     assert expected in capsys.readouterr().out
 
     expected_cloud_config = locust_cloud.common.CloudConfig(
