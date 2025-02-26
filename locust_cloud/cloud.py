@@ -1,11 +1,14 @@
 import logging
 import os
 import sys
+import webbrowser
+from threading import Thread
 
 import requests
 from locust_cloud.apisession import ApiSession
 from locust_cloud.args import parse_known_args
 from locust_cloud.common import __version__
+from locust_cloud.input_events import input_listener
 from locust_cloud.web_login import web_login
 from locust_cloud.websocket import SessionMismatchError, Websocket, WebsocketTimeout
 
@@ -88,21 +91,29 @@ def main() -> None:
 
         try:
             response = session.post("/deploy", json=payload)
+            js = response.json()
         except requests.exceptions.RequestException as e:
             logger.error(f"Failed to deploy the load generators: {e}")
             sys.exit(1)
 
         if response.status_code != 200:
             try:
-                logger.error(f"{response.json()['Message']} (HTTP {response.status_code}/{response.reason})")
+                logger.error(f"{js['Message']} (HTTP {response.status_code}/{response.reason})")
             except Exception:
                 logger.error(
                     f"HTTP {response.status_code}/{response.reason} - Response: {response.text} - URL: {response.request.url}"
                 )
             sys.exit(1)
 
-        log_ws_url = response.json()["log_ws_url"]
-        session_id = response.json()["session_id"]
+        log_ws_url = js["log_ws_url"]
+        session_id = js["session_id"]
+        webui_url = log_ws_url.replace("/socket-logs", "")
+
+        def open_ui():
+            webbrowser.open_new_tab(webui_url)
+
+        Thread(target=input_listener({"\r": open_ui, "\n": open_ui}), daemon=True).start()
+
         logger.debug(f"Session ID is {session_id}")
 
         logger.info("Waiting for load generators to be ready...")
