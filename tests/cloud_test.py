@@ -96,7 +96,7 @@ def test_cli_auth() -> None:
 
     # Make a request to the login url
     session = requests.Session()
-    response = session.get(url)
+    response = requests.get(url)
     assert response.ok, "Failed to load login url"
 
     auth_id = parse_qs(urlparse(url).query).get("auth_id", [])[0]
@@ -105,12 +105,12 @@ def test_cli_auth() -> None:
 
     # Login form submits to the deployer, so we'll skip a step
     response = session.post(
-        f"{API_URL}/authenticate?auth_id={auth_id}",
-        json={"username": LOCUSTCLOUD_USERNAME, "password": LOCUSTCLOUD_PASSWORD},
+        f"{API_URL}/authenticate",
+        json={"email": LOCUSTCLOUD_USERNAME, "password": LOCUSTCLOUD_PASSWORD, "auth_id": auth_id},
     )
 
     # Check that we end up on the success page
-    assert "Login successful! You may now close this page." in response.text, "Login failed"
+    assert response.json().get("auth_id") == auth_id
 
     # Wait for the process to finish
     process.wait()
