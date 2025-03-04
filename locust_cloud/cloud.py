@@ -16,11 +16,13 @@ logger = logging.getLogger(__name__)
 
 
 def configure_logging(loglevel: str) -> None:
-    logging.basicConfig(
-        format="[LOCUST-CLOUD] %(levelname)s: %(message)s",
-        level=loglevel,
+    format = (
+        "[%(asctime)s] %(levelname)s: %(message)s"
+        if loglevel == "INFO"
+        else "[%(asctime)s] %(levelname)s/%(module)s: %(message)s"
     )
-    # Restore log level for other libs. Yes, this can be done more nicely
+    logging.basicConfig(format=format, level=loglevel)
+    # Restore log level for other libs. Yes, this can probably be done more nicely
     logging.getLogger("requests").setLevel(logging.INFO)
     logging.getLogger("urllib3").setLevel(logging.INFO)
 
@@ -114,7 +116,7 @@ def main() -> None:
 
         Thread(target=input_listener({"\r": open_ui, "\n": open_ui}), daemon=True).start()
 
-        logger.debug(f"Session ID is {session_id}")
+        # logger.debug(f"Session ID is {session_id}")
 
         logger.info("Waiting for load generators to be ready...")
         websocket.connect(
@@ -158,7 +160,7 @@ def delete(session):
         )
 
         if response.status_code == 200:
-            logger.debug(response.json()["message"])
+            logger.debug(f"Response message from teardown: {response.json()['message']}")
         else:
             logger.info(
                 f"Could not automatically tear down Locust Cloud: HTTP {response.status_code}/{response.reason} - Response: {response.text} - URL: {response.request.url}"

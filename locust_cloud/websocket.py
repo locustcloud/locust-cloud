@@ -64,7 +64,7 @@ class Websocket:
 
         self.__connect_timeout_timer = threading.Timer(timeout, _timeout)
         self.__connect_timeout_timer.daemon = True
-        logger.debug(f"Setting websocket connection timeout to {timeout} seconds")
+        # logger.debug(f"Setting websocket connection timeout to {timeout} seconds")
         self.__connect_timeout_timer.start()
 
     def connect(self, url, *, auth) -> None:
@@ -110,7 +110,8 @@ class Websocket:
         __on_connect_error method), raise it.
         """
         timeout = self.wait_timeout if timeout else None
-        logger.debug(f"Waiting for shutdown for {str(timeout)+'s' if timeout else 'ever'}")
+        if timeout:  # not worth even debug logging if we dont have a timeout
+            logger.debug(f"Waiting for shutdown for {str(timeout)+'s' if timeout else 'ever'}")
         res = self.__shutdown_allowed.wait(timeout)
         if self.exception:
             raise self.exception
