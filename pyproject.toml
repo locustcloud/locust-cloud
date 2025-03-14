@@ -47,7 +47,7 @@ ignore-variadic-names = true
 
 [tool.uv]
 dev-dependencies = [
-    "ruff>=0.6.4",
+    "ruff==0.10.0",
     "pyright==1.1.393",
     "types-boto3>=1.0.2",
     "pytest==8.3.4",

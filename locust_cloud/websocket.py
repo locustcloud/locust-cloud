@@ -111,7 +111,7 @@ class Websocket:
         """
         timeout = self.wait_timeout if timeout else None
         if timeout:  # not worth even debug logging if we dont have a timeout
-            logger.debug(f"Waiting for shutdown for {str(timeout)+'s' if timeout else 'ever'}")
+            logger.debug(f"Waiting for shutdown for {str(timeout) + 's' if timeout else 'ever'}")
         res = self.__shutdown_allowed.wait(timeout)
         if self.exception:
             raise self.exception
