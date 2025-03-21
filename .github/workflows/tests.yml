@@ -34,12 +34,14 @@ jobs:
           LOCUSTCLOUD_PASSWORD: ${{ secrets.LOCUSTCLOUD_PASSWORD }}
       # any local changes would make hatch-vcs set a "local version" (+dev0...), so we ignore any uv.lock updates:
       - run: git update-index --assume-unchanged uv.lock
-      - run: uv run locust-cloud --help
       - run: uvx --from build pyproject-build --wheel --installer uv
       - uses: actions/upload-artifact@v4
         with:
           name: dist-artifact
           path: dist/*
+      # Ensure what customers will actually run does not rely on dev-dependencies
+      - run: rm -rf uv.lock .venv 
+      - run: uv run --no-default-groups locust-cloud --help
 
   publish_pypi:
     name: Publish to PyPI
