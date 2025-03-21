@@ -175,6 +175,7 @@ class Websocket:
 
         if shutdown:
             logger.debug("Got shutdown from locust master")
+            self.__connect_timeout_timer.cancel()  # I dont know exactly why/if this is necessary but we had an issue in status-checker once
             if shutdown_message:
                 print(shutdown_message)
 
