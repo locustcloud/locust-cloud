@@ -46,8 +46,8 @@ locust_cloud = ["locust_cloud"]
 [tool.ruff.lint.flake8-unused-arguments]
 ignore-variadic-names = true
 
-[tool.uv]
-dev-dependencies = [
+[dependency-groups]
+dev = [
     "ruff==0.10.0",
     "pyright==1.1.393",
     "types-boto3>=1.0.2",
