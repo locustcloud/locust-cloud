@@ -70,7 +70,7 @@ def transfer_encode(file_name: str, stream: IO[bytes]) -> dict[str, str]:
 def transfer_encoded_file(file_path: str) -> dict[str, str]:
     try:
         with open(file_path, "rb") as f:
-            return transfer_encode(file_path, f)
+            return transfer_encode(os.path.basename(file_path), f)
     except FileNotFoundError:
         raise ArgumentTypeError(f"File not found: {file_path}")
 
