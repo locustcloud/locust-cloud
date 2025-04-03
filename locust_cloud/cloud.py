@@ -1,6 +1,7 @@
 import logging
 import os
 import sys
+import time
 import webbrowser
 from threading import Thread
 
@@ -91,11 +92,24 @@ def main() -> None:
         if options.extra_files:
             payload["extra_files"] = options.extra_files
 
-        try:
-            response = session.post("/deploy", json=payload)
-            js = response.json()
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Failed to deploy the load generators: {e}")
+        for attempt in range(1, 16):
+            try:
+                response = session.post("/deploy", json=payload)
+                js = response.json()
+
+                if response.status_code != 202:
+                    # 202 means the stack is currently terminating, so we retry
+                    break
+
+                if attempt == 1:
+                    logger.info(js["message"])
+
+                time.sleep(2)
+            except requests.exceptions.RequestException as e:
+                logger.error(f"Failed to deploy the load generators: {e}")
+                sys.exit(1)
+        else:
+            logger.error("Your Locust instance is still running, run locust-cloud --delete")
             sys.exit(1)
 
         if response.status_code != 200:
