@@ -92,16 +92,18 @@ def main() -> None:
         if options.extra_files:
             payload["extra_files"] = options.extra_files
 
-        for attempt in range(1, 11):
+        for attempt in range(1, 16):
             try:
                 response = session.post("/deploy", json=payload)
                 js = response.json()
 
                 if response.status_code != 202:
-                    # Break out of the loop if status is not 202
+                    # 202 means the stack is currently terminating, so we retry
                     break
 
-                logger.warning(f"Waiting for existing load generators to terminate ({attempt}/10)")
+                if attempt == 1:
+                    logger.info(js["message"])
+
                 time.sleep(2)
             except requests.exceptions.RequestException as e:
                 logger.error(f"Failed to deploy the load generators: {e}")
