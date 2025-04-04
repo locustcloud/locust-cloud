@@ -179,6 +179,8 @@ def delete(session):
             logger.info(
                 f"Could not automatically tear down Locust Cloud: HTTP {response.status_code}/{response.reason} - Response: {response.text} - URL: {response.request.url}"
             )
+    except KeyboardInterrupt:
+        pass  # don't show nasty callstack
     except Exception as e:
         logger.error(f"Could not automatically tear down Locust Cloud: {e.__class__.__name__}:{e}")
 
