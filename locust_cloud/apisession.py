@@ -66,7 +66,7 @@ class ApiSession(requests.Session):
         self.headers["X-Client-Version"] = __version__
 
     def __configure_for_region(self, region: str) -> None:
-        self.__region = region
+        self.region = region
         self.api_url = get_api_url(region)
         self.__login_url = f"{self.api_url}/auth/login"
 
@@ -75,8 +75,6 @@ class ApiSession(requests.Session):
     def __ensure_valid_authorization_header(self) -> None:
         if self.__expiry_time > time.time():
             return
-
-        logger.info(f"Authenticating ({self.__region}, v{__version__})")
 
         response = requests.post(
             self.__login_url,

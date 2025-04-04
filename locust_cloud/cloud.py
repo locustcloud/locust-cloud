@@ -54,7 +54,7 @@ def main() -> None:
         sys.exit()
 
     try:
-        logger.info("Deploying load generators")
+        logger.info(f"Deploying ({session.region}, {__version__})")
         locust_env_variables = [
             {"name": env_variable, "value": os.environ[env_variable]}
             for env_variable in os.environ
@@ -179,6 +179,8 @@ def delete(session):
             logger.info(
                 f"Could not automatically tear down Locust Cloud: HTTP {response.status_code}/{response.reason} - Response: {response.text} - URL: {response.request.url}"
             )
+    except KeyboardInterrupt:
+        pass  # don't show nasty callstack
     except Exception as e:
         logger.error(f"Could not automatically tear down Locust Cloud: {e.__class__.__name__}:{e}")
 
