@@ -54,7 +54,7 @@ def main() -> None:
         sys.exit()
 
     try:
-        logger.info("Deploying load generators")
+        logger.info(f"Deploying ({session.region}, {__version__})")
         locust_env_variables = [
             {"name": env_variable, "value": os.environ[env_variable]}
             for env_variable in os.environ
