@@ -4,7 +4,13 @@ import gzip
 import io
 import os
 import pathlib
-import tomllib
+import sys
+
+if sys.version_info >= (3, 11):
+    import tomllib
+else:
+    import tomli as tomllib
+
 from argparse import ArgumentTypeError, Namespace
 from collections import OrderedDict
 from collections.abc import Callable, Generator
