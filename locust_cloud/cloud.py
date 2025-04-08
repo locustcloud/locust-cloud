@@ -1,13 +1,12 @@
 import logging
 import os
-import sys
 import time
 import webbrowser
 from threading import Thread
 
 import requests
 from locust_cloud.apisession import ApiSession
-from locust_cloud.args import parse_known_args
+from locust_cloud.args import combined_cloud_parser
 from locust_cloud.common import __version__
 from locust_cloud.input_events import input_listener
 from locust_cloud.web_login import web_login
@@ -28,30 +27,28 @@ def configure_logging(loglevel: str) -> None:
     logging.getLogger("urllib3").setLevel(logging.INFO)
 
 
-def main() -> None:
-    options, locust_options = parse_known_args()
+def main():
+    options, locust_options = combined_cloud_parser.parse_known_args()
+
     configure_logging(options.loglevel)
 
-    if options.version:
-        print(f"locust-cloud version {__version__}")
-        sys.exit(0)
     if not options.locustfile:
         logger.error("A locustfile is required to run a test.")
-        sys.exit(1)
+        return 1
 
     if options.login:
         try:
             web_login()
         except KeyboardInterrupt:
             pass
-        sys.exit()
+        return
 
     session = ApiSession(options.non_interactive)
     websocket = Websocket()
 
     if options.delete:
         delete(session)
-        sys.exit()
+        return
 
     try:
         logger.info(f"Deploying ({session.region}, {__version__})")
@@ -67,6 +64,7 @@ def main() -> None:
                 "LOCUST_SKIP_MONKEY_PATCH",
             ]
         ]
+
         payload = {
             "locust_args": [
                 {"name": "LOCUST_USERS", "value": str(options.users)},
@@ -107,10 +105,10 @@ def main() -> None:
                 time.sleep(2)
             except requests.exceptions.RequestException as e:
                 logger.error(f"Failed to deploy the load generators: {e}")
-                sys.exit(1)
+                return 1
         else:
-            logger.error("Your Locust instance is still running, run locust-cloud --delete")
-            sys.exit(1)
+            logger.error("Your Locust instance is still running, run locust --cloud --delete")
+            return 1
 
         if response.status_code != 200:
             try:
@@ -119,7 +117,7 @@ def main() -> None:
                 logger.error(
                     f"HTTP {response.status_code}/{response.reason} - Response: {response.text} - URL: {response.request.url}"
                 )
-            sys.exit(1)
+            return 1
 
         log_ws_url = js["log_ws_url"]
         session_id = js["session_id"]
@@ -146,19 +144,19 @@ def main() -> None:
             websocket.wait(timeout=True)
         except (WebsocketTimeout, SessionMismatchError) as e:
             logger.error(str(e))
-            sys.exit(1)
+            return 1
     except WebsocketTimeout as e:
         logger.error(str(e))
         delete(session)
-        sys.exit(1)
+        return 1
     except SessionMismatchError as e:
         # In this case we do not trigger the teardown since the running instance is not ours
         logger.error(str(e))
-        sys.exit(1)
+        return 1
     except Exception as e:
         logger.exception(e)
         delete(session)
-        sys.exit(1)
+        return 1
     else:
         delete(session)
     finally:
@@ -183,7 +181,3 @@ def delete(session):
         pass  # don't show nasty callstack
     except Exception as e:
         logger.error(f"Could not automatically tear down Locust Cloud: {e.__class__.__name__}:{e}")
-
-
-if __name__ == "__main__":
-    main()

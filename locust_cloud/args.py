@@ -11,7 +11,7 @@ if sys.version_info >= (3, 11):
 else:
     import tomli as tomllib
 
-from argparse import ArgumentTypeError, Namespace
+from argparse import ArgumentTypeError
 from collections import OrderedDict
 from collections.abc import Callable, Generator
 from typing import IO, Any, cast
@@ -109,116 +109,59 @@ class MergeToTransferEncodedZip(argparse.Action):
         setattr(namespace, self.dest, value)
 
 
-parser = configargparse.ArgumentParser(
-    default_config_files=[
-        "~/.locust.conf",
-        "locust.conf",
-        "pyproject.toml",
-        "~/.cloud.conf",
-        "cloud.conf",
-    ],
-    auto_env_var_prefix="LOCUSTCLOUD_",
-    formatter_class=configargparse.RawTextHelpFormatter,
-    config_file_parser_class=configargparse.CompositeConfigParser(
-        [
-            LocustTomlConfigParser(["tool.locust"]),
-            configargparse.DefaultConfigFileParser,
-        ]
-    ),
-    description="""Launches a distributed Locust runs on locust.cloud infrastructure.
-
-Example: locust-cloud -f my_locustfile.py --users 1000 ...""",
-    epilog="""Any parameters not listed here are forwarded to locust master unmodified, so go ahead and use things like --users, --host, --run-time, ...
-Locust config can also be set using config file (~/.locust.conf, locust.conf, pyproject.toml, ~/.cloud.conf or cloud.conf).
-Parameters specified on command line override env vars, which in turn override config files.""",
-    add_config_file_help=False,
-    add_env_var_help=False,
-    add_help=False,
-)
-parser.add_argument(
-    "-h",
-    "--help",
-    action="help",
-    help=configargparse.SUPPRESS,
-)
-parser.add_argument(
-    "-V",
-    "--version",
+cloud_parser = argparse.ArgumentParser(prog="locust --cloud", add_help=False)
+cloud_parser.add_argument(
+    "--cloud",
     action="store_true",
-    help=configargparse.SUPPRESS,
+    help="Run Locust in cloud mode.",
 )
-parser.add_argument(
-    "-f",
-    "--locustfile",
-    metavar="<filename>",
-    default="locustfile.py",
-    help="The Python file that contains your test. Defaults to 'locustfile.py'.",
-    env_var="LOCUST_LOCUSTFILE",
-    type=transfer_encoded_file,
+cloud_parser.add_argument(
+    "--login",
+    action="store_true",
+    help="Launch an interactive session to authenticate your user.\nOnce completed your credentials will be stored and automatically refreshed for quite a long time.\nOnce those expires you will be prompted to perform another login.",
 )
-parser.add_argument(
-    "-u",
-    "--users",
-    type=int,
-    default=1,
-    help="Number of users to launch. This is the same as the regular Locust argument, but also affects how many workers to launch.",
-    env_var="LOCUST_USERS",
+cloud_parser.add_argument(
+    "--delete",
+    action="store_true",
+    help="Delete a running cluster. Useful if locust-cloud was killed/disconnected or if there was an error.",
 )
-advanced = parser.add_argument_group("advanced")
-advanced.add_argument(
-    "--loglevel",
-    "-L",
-    type=str.upper,
-    help="Set --loglevel DEBUG for extra info.",
-    choices=["DEBUG", "INFO", "WARNING", "ERROR"],
-    default="INFO",
-)
-advanced.add_argument(
+cloud_parser.add_argument(
     "--requirements",
+    metavar="<filename>",
     type=transfer_encoded_file,
     help="Optional requirements.txt file that contains your external libraries.",
 )
-advanced.add_argument(
-    "--login",
-    action="store_true",
-    default=False,
-    help="Launch an interactive session to authenticate your user.\nOnce completed your credentials will be stored and automatically refreshed for quite a long time.\nOnce those expires you will be prompted to perform another login.",
-)
-advanced.add_argument(
+cloud_parser.add_argument(
     "--non-interactive",
     action="store_true",
     default=False,
     help="This can be set when, for example, running in a CI/CD environment to ensure no interactive steps while executing.\nRequires that LOCUSTCLOUD_USERNAME, LOCUSTCLOUD_PASSWORD and LOCUSTCLOUD_REGION environment variables are set.",
 )
-parser.add_argument(
+cloud_parser.add_argument(
     "--workers",
+    metavar="<int>",
     type=int,
     help="Number of workers to use for the deployment. Defaults to number of users divided by 500, but the default may be customized for your account.",
     default=None,
 )
-parser.add_argument(
-    "--delete",
-    action="store_true",
-    help="Delete a running cluster. Useful if locust-cloud was killed/disconnected or if there was an error.",
-)
-parser.add_argument(
+cloud_parser.add_argument(
     "--image-tag",
     type=str,
     default=None,
     help=configargparse.SUPPRESS,  # overrides the locust-cloud docker image tag. for internal use
 )
-parser.add_argument(
+cloud_parser.add_argument(
     "--mock-server",
     action="store_true",
     default=False,
     help="Start a demo mock service and set --host parameter to point Locust towards it",
 )
-parser.add_argument(
+cloud_parser.add_argument(
     "--profile",
     type=str,
     help="Set a profile to group the testruns together",
 )
-parser.add_argument(
+cloud_parser.add_argument(
     "--extra-files",
     action=MergeToTransferEncodedZip,
     nargs="*",
@@ -226,6 +169,25 @@ parser.add_argument(
     help="A list of extra files or directories to upload. Space-separated, e.g. --extra-files testdata.csv *.py my-directory/",
 )
 
-
-def parse_known_args(args: Any | None = None) -> tuple[Namespace, list[str]]:
-    return parser.parse_known_args(args)
+combined_cloud_parser = argparse.ArgumentParser(parents=[cloud_parser])
+combined_cloud_parser.add_argument(
+    "-f",
+    "--locustfile",
+    default="locustfile.py",
+    env_var="LOCUST_LOCUSTFILE",
+    type=transfer_encoded_file,
+)
+combined_cloud_parser.add_argument(
+    "-u",
+    "--users",
+    type=int,
+    default=1,
+    env_var="LOCUST_USERS",
+)
+combined_cloud_parser.add_argument(
+    "--loglevel",
+    "-L",
+    type=str.upper,
+    choices=["DEBUG", "INFO", "WARNING", "ERROR"],
+    default="INFO",
+)
