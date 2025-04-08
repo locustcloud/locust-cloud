@@ -109,7 +109,21 @@ class MergeToTransferEncodedZip(argparse.Action):
         setattr(namespace, self.dest, value)
 
 
-cloud_parser = argparse.ArgumentParser(prog="locust --cloud", add_help=False)
+cloud_parser = configargparse.ArgumentParser(
+    default_config_files=[
+        "~/.cloud.conf",
+        "cloud.conf",
+    ],
+    auto_env_var_prefix="LOCUSTCLOUD_",
+    formatter_class=configargparse.RawTextHelpFormatter,
+    config_file_parser_class=configargparse.CompositeConfigParser(
+        [
+            LocustTomlConfigParser(["tool.locust"]),
+            configargparse.DefaultConfigFileParser,
+        ]
+    ),
+    add_help=False,
+)
 cloud_parser.add_argument(
     "--cloud",
     action="store_true",
@@ -169,7 +183,7 @@ cloud_parser.add_argument(
     help="A list of extra files or directories to upload. Space-separated, e.g. --extra-files testdata.csv *.py my-directory/",
 )
 
-combined_cloud_parser = argparse.ArgumentParser(parents=[cloud_parser])
+combined_cloud_parser = configargparse.ArgumentParser(parents=[cloud_parser])
 combined_cloud_parser.add_argument(
     "-f",
     "--locustfile",
