@@ -171,11 +171,6 @@ cloud_parser.add_argument(
     help="Start a demo mock service and set --host parameter to point Locust towards it",
 )
 cloud_parser.add_argument(
-    "--profile",
-    type=str,
-    help="Set a profile to group the testruns together",
-)
-cloud_parser.add_argument(
     "--extra-files",
     action=MergeToTransferEncodedZip,
     nargs="*",

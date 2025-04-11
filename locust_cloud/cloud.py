@@ -70,7 +70,6 @@ def main():
                 {"name": "LOCUST_USERS", "value": str(options.users)},
                 {"name": "LOCUST_FLAGS", "value": " ".join(locust_options)},
                 {"name": "LOCUSTCLOUD_DEPLOYER_URL", "value": session.api_url},
-                {"name": "LOCUSTCLOUD_PROFILE", "value": options.profile},
                 *locust_env_variables,
             ],
             "locustfile": options.locustfile,
