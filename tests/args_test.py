@@ -8,8 +8,8 @@ from zipfile import ZipFile
 import pytest
 from locust_cloud.args import (
     CWD,
+    combined_cloud_parser,
     expanded,
-    parse_known_args,
     pipe,
     transfer_encode,
     transfer_encoded_extra_files,
@@ -81,29 +81,29 @@ def test_transfer_encoded_extra_files():
 
 def test_parser_locustfile(capsys):
     with pytest.raises(SystemExit):
-        parse_known_args("locust-cloud --locustfile does-not-exist")
+        combined_cloud_parser.parse_known_args("locust-cloud --locustfile does-not-exist")
 
     expected = "error: argument -f/--locustfile: File not found: does-not-exist"
     assert expected in capsys.readouterr().err
 
-    options, _ = parse_known_args("locust-cloud --locustfile testdata/extra.txt")
+    options, _ = combined_cloud_parser.parse_known_args("locust-cloud --locustfile testdata/extra.txt")
     assert options.locustfile == transfer_encoded_file("testdata/extra.txt")
 
 
 def test_parser_extra_files(capsys):
     with pytest.raises(SystemExit):
-        parse_known_args("locust-cloud --extra-files ../pineapple")
+        combined_cloud_parser.parse_known_args("locust-cloud --extra-files ../pineapple")
 
     expected = "error: argument --extra-files: Can only reference files under current working directory"
     assert expected in capsys.readouterr().err
 
     with pytest.raises(SystemExit):
-        parse_known_args("locust-cloud --extra-files does-not-exist")
+        combined_cloud_parser.parse_known_args("locust-cloud --extra-files does-not-exist")
 
     expected = "error: argument --extra-files: File not found: does-not-exist"
     assert expected in capsys.readouterr().err
 
-    options, _ = parse_known_args("locust-cloud --extra-files testdata")
+    options, _ = combined_cloud_parser.parse_known_args("locust-cloud --extra-files testdata")
     assert options.extra_files["filename"] == "extra-files.zip"
     buffer = pipe(
         options.extra_files["data"],
@@ -118,11 +118,11 @@ def test_parser_extra_files(capsys):
 
 
 def test_parser_loglevel(capsys):
-    options, _ = parse_known_args("locust-cloud --loglevel DEBUG")
+    options, _ = combined_cloud_parser.parse_known_args("locust-cloud --loglevel DEBUG")
     assert options.loglevel == "DEBUG"
 
     with pytest.raises(SystemExit):
-        parse_known_args("locust-cloud --loglevel pineapple")
+        combined_cloud_parser.parse_known_args("locust-cloud --loglevel pineapple")
 
     expected = "error: argument --loglevel/-L: invalid choice: 'PINEAPPLE'"
     assert expected in capsys.readouterr().err
