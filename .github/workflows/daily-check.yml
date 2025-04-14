@@ -1,0 +1,54 @@
+name: Daily test run (api-dev)
+
+on:
+  schedule: # 00:00, skipping Sunday and Monday
+    - cron: '0 0 * * 2-6'
+  workflow_dispatch:
+
+env:
+  LOCUSTCLOUD_USERNAME: ${{ secrets.LOCUSTCLOUD_USERNAME }}
+  LOCUSTCLOUD_PASSWORD: ${{ secrets.LOCUSTCLOUD_PASSWORD }}
+  LOCUSTCLOUD_DEPLOYER_URL: https://api-dev.eu-north-1.locust.cloud/1
+  LOCUSTCLOUD_REGION: eu-north-1
+  LOCUSTCLOUD_NON_INTERACTIVE: 1
+  LOCUST_LOGLEVEL: DEBUG
+  SLACK_NOTIFICATIONS_WEBHOOK: ${{ secrets.SLACK_NOTIFICATIONS_WEBHOOK }}
+  PYTHONUNBUFFERED: 1 # ensure we see logs output right away
+
+jobs:
+  locust_cloud_full_run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+      - uses: actions/setup-python@v5
+        with:
+            python-version: '3.11'
+      - uses: astral-sh/setup-uv@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+      - run: uv venv --python 3.11
+      # any local changes would make hatch-vcs set a "local version" (+dev0...), so we ignore any uv.lock updates:
+      - run: git update-index --assume-unchanged uv.lock
+      - run: uv run locust-cloud --help
+      - run: uv run locust-cloud --image-tag master --profile status-checker --mock-server --autostart --autoquit 0 --run-time 1m --loglevel DEBUG --extra-files testdata |& tee output.txt
+      # check ok exit
+      - run: grep -m 1 '(exit code 0)' output.txt
+      # check extra files specified were available
+      - run: "grep -m 1 -- '--extra-files verification: pineapple' output.txt"
+      # check for errors
+      - run: bash -ec "! grep Traceback output.txt"
+      - run: bash -ec "! grep ERROR output.txt"
+      # Disabled the following test for now, because of incorrect warning about:
+      # You can't start a distributed test before at least one worker processes has connected
+      # - run: bash -ec "! grep WARNING output.txt"
+      - name: On failure, notify slack
+        if: failure()
+        run: curl -d "{\"text\":\"Failed run $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID\"}" $SLACK_NOTIFICATIONS_WEBHOOK
+      - name: Make sure to delete (only really needed for mock)
+        if: always()
+        run: uv tool run locust-cloud --delete

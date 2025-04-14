@@ -1,0 +1,7 @@
+.DS_Store
+
+venv
+**/__pycache__
+locust_cloud.egg*
+.eggs
+**_cache
