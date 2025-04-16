@@ -77,6 +77,9 @@ def main():
             "mock_server": options.mock_server,
         }
 
+        if options.testrun_tags:
+            payload["LOCUSTCLOUD_TESTRUN_TAGS"] = " ".join(options.testrun_tags)
+
         if options.image_tag is not None:
             payload["image_tag"] = options.image_tag
 
