@@ -12,7 +12,7 @@ dependencies = [
     "python-socketio[client]==5.11.4",
     "requests==2.32.3",
     "tomli>=1.1.0; python_version < '3.11'",
-    "locust>=2.34.0",
+    "locust>=2.35.0",
 ]
 
 [project.urls]
