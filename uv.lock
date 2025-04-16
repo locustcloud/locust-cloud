@@ -567,7 +567,7 @@ wheels = [
 
 [[package]]
 name = "locust"
-version = "2.34.0"
+version = "2.35.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "configargparse" },
@@ -586,9 +586,9 @@ dependencies = [
     { name = "typing-extensions", marker = "python_full_version < '3.11'" },
     { name = "werkzeug" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/b0/c9/8e3ce7467a92376a1b16996f14d8d009f9b2c0c111c22e478bc07f1e3b24/locust-2.34.0.tar.gz", hash = "sha256:8761a60b1ee7af0606fb0d5ce4cbee7c8c1d2dcc1cb17215c8c994799c5f1ac6", size = 2240609 }
+sdist = { url = "https://files.pythonhosted.org/packages/79/21/d5aeeee74173d73d7d8d392e307ec24d8281fca69a2bf1f19199bd84c498/locust-2.35.0.tar.gz", hash = "sha256:97f83e591646ca3227644cfb6d4fa590e9a3e3d791ab18b216ca98be235b9b24", size = 2240690 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b3/1b/4ce0ccda6c94b50a958983cde836e9fc7b9194789555d293ded9f517682e/locust-2.34.0-py3-none-any.whl", hash = "sha256:9e9af1bab52ded67a9f0fac2ac039be18084f7e7473e3f95d04781391db854b8", size = 2257940 },
+    { url = "https://files.pythonhosted.org/packages/3d/15/9e92757c08af3f0c0168ab6480315ed6374396d635f70055df5c42cfa672/locust-2.35.0-py3-none-any.whl", hash = "sha256:fb9e0ec25c5db3ed6a3c6d48e7236d7c2c370b0ddae102e9badcb2d3d101abde", size = 2258054 },
 ]
 
 [[package]]
@@ -623,7 +623,7 @@ dev = [
 requires-dist = [
     { name = "configargparse", specifier = "==1.7" },
     { name = "gevent", specifier = ">=24.11.1" },
-    { name = "locust", specifier = ">=2.34.0" },
+    { name = "locust", specifier = ">=2.35.0" },
     { name = "platformdirs", specifier = ">=4.3.6" },
     { name = "pyjwt", specifier = ">=2.0" },
     { name = "python-socketio", extras = ["client"], specifier = "==5.11.4" },
