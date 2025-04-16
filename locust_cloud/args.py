@@ -163,6 +163,18 @@ cloud_parser.add_argument(
     type=valid_extra_files_path,
     help="A list of extra files or directories to upload. Space-separated, e.g. --extra-files testdata.csv *.py my-directory/",
 )
+cloud_parser.add_argument(
+    "--profile",
+    type=str,
+    default=None,
+    help="Set a profile to categorize testruns. Defaults to the name of your locustfile if not set",
+)
+cloud_parser.add_argument(
+    "--testrun-tags",
+    nargs="*",
+    default=None,
+    help="A list of tags that can be used to filter testruns",
+)
 
 combined_cloud_parser = configargparse.ArgumentParser(
     default_config_files=[
