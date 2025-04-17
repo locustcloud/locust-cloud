@@ -65,20 +65,22 @@ def main():
             ]
         ]
 
+        locust_args = [
+            {"name": "LOCUST_USERS", "value": str(options.users)},
+            {"name": "LOCUST_FLAGS", "value": " ".join(locust_options)},
+            {"name": "LOCUSTCLOUD_DEPLOYER_URL", "value": session.api_url},
+            *locust_env_variables,
+        ]
+
+        if options.testrun_tags:
+            locust_args.append({"name": "LOCUSTCLOUD_TESTRUN_TAGS", "value": " ".join(options.testrun_tags)})
+
         payload = {
-            "locust_args": [
-                {"name": "LOCUST_USERS", "value": str(options.users)},
-                {"name": "LOCUST_FLAGS", "value": " ".join(locust_options)},
-                {"name": "LOCUSTCLOUD_DEPLOYER_URL", "value": session.api_url},
-                *locust_env_variables,
-            ],
+            "locust_args": locust_args,
             "locustfile": options.locustfile,
             "user_count": options.users,
             "mock_server": options.mock_server,
         }
-
-        if options.testrun_tags:
-            payload["LOCUSTCLOUD_TESTRUN_TAGS"] = " ".join(options.testrun_tags)
 
         if options.image_tag is not None:
             payload["image_tag"] = options.image_tag
