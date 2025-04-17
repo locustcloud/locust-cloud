@@ -2,6 +2,7 @@
 name = "locust-cloud"
 dynamic = ["version"]
 description = "Locust Cloud"
+license = { text = "MIT" }
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
@@ -16,7 +17,8 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://locust.cloud"
+homepage = "https://locust.cloud"
+repository = "https://github.com/locustcloud/locust-cloud"
 
 [project.scripts]
 locust-cloud = "locust_cloud.cloud:main"
