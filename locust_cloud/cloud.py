@@ -73,7 +73,7 @@ def main():
         ]
 
         if options.testrun_tags:
-            locust_args.append({"name": "LOCUSTCLOUD_TESTRUN_TAGS", "value": " ".join(options.testrun_tags)})
+            locust_args.append({"name": "LOCUSTCLOUD_TESTRUN_TAGS", "value": ",".join(options.testrun_tags)})
 
         payload = {
             "locust_args": locust_args,
