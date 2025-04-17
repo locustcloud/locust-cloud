@@ -113,7 +113,7 @@ cloud_parser = configargparse.ArgumentParser(add_help=False)
 cloud_parser.add_argument(
     "--login",
     action="store_true",
-    help="Launch an interactive session to authenticate your user.\nOnce completed your credentials will be stored and automatically refreshed for quite a long time.\nOnce those expires you will be prompted to perform another login.",
+    help="Launch an interactive session to authenticate your user.\nOnce completed your credentials will be stored and automatically refreshed for quite a long time.\nOnce those expire you will be prompted to perform another login.",
 )
 cloud_parser.add_argument(
     "--delete",
