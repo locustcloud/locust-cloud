@@ -111,11 +111,6 @@ class MergeToTransferEncodedZip(argparse.Action):
 
 cloud_parser = configargparse.ArgumentParser(add_help=False)
 cloud_parser.add_argument(
-    "--cloud",
-    action="store_true",
-    help="Run Locust in cloud mode.",
-)
-cloud_parser.add_argument(
     "--login",
     action="store_true",
     help="Launch an interactive session to authenticate your user.\nOnce completed your credentials will be stored and automatically refreshed for quite a long time.\nOnce those expires you will be prompted to perform another login.",
@@ -171,6 +166,7 @@ cloud_parser.add_argument(
 )
 
 combined_cloud_parser = configargparse.ArgumentParser(
+    parents=[cloud_parser],
     default_config_files=[
         "~/.cloud.conf",
         "cloud.conf",
@@ -183,12 +179,21 @@ combined_cloud_parser = configargparse.ArgumentParser(
             configargparse.DefaultConfigFileParser,
         ]
     ),
-    parents=[cloud_parser],
+    description="""Launches a distributed Locust runs on locust.cloud infrastructure.
+
+Example: locust-cloud -f my_locustfile.py --users 1000 ...""",
+    epilog="""Any parameters not listed here are forwarded to locust master unmodified, so go ahead and use things like --users, --host, --run-time, ...
+Locust config can also be set using config file (~/.locust.conf, locust.conf, pyproject.toml, ~/.cloud.conf or cloud.conf).
+Parameters specified on command line override env vars, which in turn override config files.""",
+    add_config_file_help=False,
+    add_env_var_help=False,
 )
 combined_cloud_parser.add_argument(
     "-f",
     "--locustfile",
+    metavar="<filename>",
     default="locustfile.py",
+    help="The Python file that contains your test. Defaults to 'locustfile.py'.",
     env_var="LOCUST_LOCUSTFILE",
     type=transfer_encoded_file,
 )
@@ -197,12 +202,14 @@ combined_cloud_parser.add_argument(
     "--users",
     type=int,
     default=1,
+    help="Number of users to launch. This is the same as the regular Locust argument, but also affects how many workers to launch.",
     env_var="LOCUST_USERS",
 )
 combined_cloud_parser.add_argument(
     "--loglevel",
     "-L",
     type=str.upper,
+    help="Set --loglevel DEBUG for extra info.",
     choices=["DEBUG", "INFO", "WARNING", "ERROR"],
     default="INFO",
 )
