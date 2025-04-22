@@ -1,0 +1,155 @@
+#
+# This file is execfile()d with the current directory set to its containing dir.
+#
+# The contents of this file are pickled, so don't put values in the namespace
+# that aren't pickleable (module imports are okay, they're removed automatically).
+#
+# All configuration values have a default value; values that are commented out
+# serve to show the default value.
+
+import os
+import subprocess
+
+from locust_cloud.args import cloud_parser as parser
+
+# Add fixes for RTD deprecation
+# https://about.readthedocs.com/blog/2024/07/addons-by-default/
+
+# Define the canonical URL if you are using a custom domain on Read the Docs
+html_baseurl = os.environ.get("READTHEDOCS_CANONICAL_URL", "")
+
+# Tell Jinja2 templates the build is running on Read the Docs
+if os.environ.get("READTHEDOCS", "") == "True":
+    if "html_context" not in globals():
+        html_context = {}
+    html_context["READTHEDOCS"] = True
+
+
+def save_locust_help_output():
+    cli_help_output_file = os.path.join(os.path.abspath(os.path.dirname(__file__)), "cli-help-output.txt")
+    print(f"Running `locust-cloud --help` command and storing output in {cli_help_output_file}")
+    help_output = subprocess.check_output(["locust-cloud", "--help"], text=True)
+    with open(cli_help_output_file, "w") as f:
+        f.write(help_output)
+
+
+save_locust_help_output()
+
+
+def save_locust_cloud_env_variables():
+    env_options_output_file = os.path.join(os.path.abspath(os.path.dirname(__file__)), "config-options.rst")
+    print(f"Generating RST table for Locust environment variables and storing in {env_options_output_file}")
+    table_data = []
+    for action in parser._actions:
+        if action.help != "==SUPPRESS==":
+            table_data.append(
+                (
+                    ", ".join([f"``{c}``" for c in action.option_strings]),
+                    action.help.replace("\n", " ").replace("`", "``"),
+                )
+            )
+    colsizes = [max(len(r[i]) for r in table_data) for i in range(len(table_data[0]))]
+    formatter = " ".join(f"{{:<{c}}}" for c in colsizes)
+    rows = [formatter.format(*row) for row in table_data]
+    edge = formatter.format(*["=" * c for c in colsizes])
+    divider = formatter.format(*["-" * c for c in colsizes])
+    headline = formatter.format(*["Command line", "Description"])
+    output = "\n".join(
+        [
+            edge,
+            headline,
+            divider,
+            "\n".join(rows),
+            edge,
+        ]
+    )
+    with open(env_options_output_file, "w") as f:
+        f.write(output)
+
+
+save_locust_cloud_env_variables()
+
+
+# General configuration
+# ---------------------
+
+# Add any Sphinx extension module names here, as strings. They can be extensions
+# coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
+extensions = [
+    "sphinx-prompt",
+    "sphinx_substitution_extensions",
+    "sphinx.ext.autodoc",
+    "sphinx.ext.intersphinx",
+    "sphinx.ext.viewcode",
+    "sphinx_search.extension",
+    "sphinx_rtd_theme",
+    "sphinxcontrib.googleanalytics",
+]
+
+# autoclass options
+# autoclass_content = "both"
+
+autodoc_typehints = "none"
+
+# Add any paths that contain templates here, relative to this directory.
+# templates_path = ["_templates"]
+
+# The suffix of source filenames.
+source_suffix = ".rst"
+
+# The master toctree document.
+master_doc = "index"
+
+# General substitutions.
+project = "Locust Cloud"
+copyright = "Locust Cloud"
+
+# Intersphinx config
+intersphinx_mapping = {}
+
+# The full version, including alpha/beta/rc tags.
+# release = __version__
+
+# There are two options for replacing |today|: either, you set today to some
+# non-false value, then it is used:
+# today = ''
+# Else, today_fmt is used as the format for a strftime call.
+today_fmt = "%B %d, %Y"
+
+# List of documents that shouldn't be included in the build.
+# unused_docs = []
+
+# If true, '()' will be appended to :func: etc. cross-reference text.
+add_function_parentheses = True
+
+# If true, the current module name will be prepended to all description
+# unit titles (such as .. function::).
+add_module_names = False
+
+# If true, sectionauthor and moduleauthor directives will be shown in the
+# output. They are ignored by default.
+show_authors = False
+
+# Sphinx will recurse into subversion configuration folders and try to read
+# any document file within. These should be ignored.
+# Note: exclude_dirnames is new in Sphinx 0.5
+exclude_dirnames = []
+
+# Options for HTML output
+# -----------------------
+
+html_show_sourcelink = False
+html_file_suffix = ".html"
+html_theme = "sphinx_rtd_theme"
+
+# Custom CSS overrides
+# html_static_path = ["_static"]
+# html_css_files = ["_static/css/rtd_sphinx_search.min.css"]
+
+# Google Analytics ID
+googleanalytics_id = "G-MCG99XYF9M"
+googleanalytics_enabled = True
+
+# rst_prolog = f"""
+# .. |version| replace:: {__version__}
+# """
