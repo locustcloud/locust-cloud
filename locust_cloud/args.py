@@ -149,20 +149,20 @@ cloud_parser.add_argument(
     "--mock-server",
     action="store_true",
     default=False,
-    help="Start a demo mock service and set --host parameter to point Locust towards it",
+    help="Start a demo mock service and set --host parameter to point Locust towards it.",
 )
 cloud_parser.add_argument(
     "--extra-files",
     action=MergeToTransferEncodedZip,
     nargs="*",
     type=valid_extra_files_path,
-    help="A list of extra files or directories to upload. Space-separated, e.g. --extra-files testdata.csv *.py my-directory/",
+    help="A list of extra files or directories to upload. Space-separated, e.g. `--extra-files testdata.csv *.py my-directory/`.",
 )
 cloud_parser.add_argument(
     "--testrun-tags",
     nargs="*",
     default=None,
-    help="A list of tags that can be used to filter testruns",
+    help="A list of tags that can be used to filter testruns.",
 )
 
 combined_cloud_parser = configargparse.ArgumentParser(
