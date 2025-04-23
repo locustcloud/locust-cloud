@@ -9,7 +9,7 @@ If you're learning Locust and want to try it out, Locust Cloud has its own demo 
 
 .. code-block:: console
 
-    $ locust-cloud -f my_locustfile.py --users 100 --mock-server
+    $ locust --cloud -f my_locustfile.py --users 100 --mock-server
 
 
 .. code-block:: python
@@ -45,7 +45,7 @@ quit 1s after finishing and print statistics to the console while running:
 
 .. code-block:: console
 
-    $ locust-cloud --users 100 --autostart --run-time 60s --autoquit 1 --print-stats
+    $ locust --cloud --users 100 --autostart --run-time 60s --autoquit 1 --print-stats
     [LOCUST-CLOUD] INFO: Authenticating (eu-north-1, v1.11.2.dev23)
     [LOCUST-CLOUD] INFO: Deploying load generators
     [LOCUST-CLOUD] INFO: Waiting for pods to be ready...
@@ -99,7 +99,7 @@ You can also use standard Locust env vars in the same fashion:
 
 .. code-block::
 
-    LOCUST_USERS=100 LOCUST_AUTOSTART=1 ... locust-cloud
+    LOCUST_USERS=100 LOCUST_AUTOSTART=1 ... locust --cloud
 
 
 Automated runs (CI)
@@ -137,8 +137,8 @@ Typically you will also want to specify the standard Locust parameters ``--headl
             - uses: actions/setup-python@v5
               with:
                 python-version: '3.11' 
-            - run: pip install locust-cloud
-            - run: locust-cloud -f my_locustfile.py --headless --run-time 5m
+            - run: pip install locust
+            - run: locust --cloud -f my_locustfile.py --headless --run-time 5m
 
 
 Extra python packages
@@ -148,7 +148,7 @@ If your locustfile needs some additional Python packages, you can install them b
 
 .. code-block:: console
 
-    locust-cloud -f my_locustfile.py --requirements requirements.txt
+    locust --cloud -f my_locustfile.py --requirements requirements.txt
 
 
 View dashboard / previous test runs
