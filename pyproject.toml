@@ -6,14 +6,10 @@ license = { text = "MIT" }
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "configargparse==1.7",
-    "gevent>=24.11.1,<25.0.0",
+    "locust>=2.35.0",
     "platformdirs>=4.3.6,<5.0.0",
     "pyjwt>=2.0,<3.0",
     "python-socketio[client]==5.13.0",
-    "requests==2.32.3",
-    "tomli>=1.1.0; python_version < '3.11'",
-    "locust>=2.35.0",
 ]
 
 [project.urls]
