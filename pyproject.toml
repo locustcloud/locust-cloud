@@ -6,7 +6,7 @@ license = { text = "MIT" }
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "locust>=2.35.0",
+    "locust>=2.36.0",
     "platformdirs>=4.3.6,<5.0.0",
     "pyjwt>=2.0,<3.0",
     "python-socketio[client]==5.13.0",
