@@ -62,12 +62,13 @@ def main():
                 "LOCUST_USERS",
                 "LOCUST_WEB_HOST_DISPLAY_NAME",
                 "LOCUST_SKIP_MONKEY_PATCH",
+                "LOCUST_CLOUD",
             ]
         ]
 
         locust_args = [
             {"name": "LOCUST_USERS", "value": str(options.users)},
-            {"name": "LOCUST_FLAGS", "value": " ".join(locust_options)},
+            {"name": "LOCUST_FLAGS", "value": " ".join([option for option in locust_options if option != "--cloud"])},
             {"name": "LOCUSTCLOUD_DEPLOYER_URL", "value": session.api_url},
             *locust_env_variables,
         ]
