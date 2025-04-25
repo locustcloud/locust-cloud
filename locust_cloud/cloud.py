@@ -9,7 +9,7 @@ from locust_cloud.apisession import ApiSession
 from locust_cloud.args import combined_cloud_parser
 from locust_cloud.common import __version__
 from locust_cloud.input_events import input_listener
-from locust_cloud.web_login import web_login
+from locust_cloud.web_login import logout, web_login
 from locust_cloud.websocket import SessionMismatchError, Websocket, WebsocketTimeout
 
 logger = logging.getLogger(__name__)
@@ -39,7 +39,13 @@ def main():
     if options.login:
         try:
             web_login()
-        except KeyboardInterrupt:
+        except Exception:
+            pass
+        return
+    if options.logout:
+        try:
+            logout()
+        except Exception:
             pass
         return
 

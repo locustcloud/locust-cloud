@@ -3,7 +3,6 @@ import os
 import sys
 import time
 
-import jwt
 import requests
 from locust_cloud.common import VALID_REGIONS, __version__, get_api_url, read_cloud_config, write_cloud_config
 
@@ -42,7 +41,8 @@ class ApiSession(requests.Session):
 
             self.__refresh_token = response.json()["refresh_token"]
             id_token = response.json()["cognito_client_id_token"]
-
+            user_sub_id = response.json()["user_sub_id"]
+            id_token_expires = response.json()["id_token_expires"]
         else:
             config = read_cloud_config()
 
@@ -55,14 +55,14 @@ class ApiSession(requests.Session):
             self.__configure_for_region(config.region)
             self.__refresh_token = config.refresh_token
             id_token = config.id_token
+            user_sub_id = config.user_sub_id
+            id_token_expires = config.id_token_expires
 
         assert id_token
 
-        decoded = jwt.decode(id_token, options={"verify_signature": False})
-        self.__expiry_time = decoded["exp"] - 60  # Refresh 1 minute before expiry
+        self.__user_sub_id = user_sub_id
+        self.__id_token_expires = id_token_expires - 60  # Refresh 1 minute before expiry
         self.headers["Authorization"] = f"Bearer {id_token}"
-
-        self.__sub = decoded["sub"]
         self.headers["X-Client-Version"] = __version__
 
     def __configure_for_region(self, region: str) -> None:
@@ -73,12 +73,12 @@ class ApiSession(requests.Session):
         logger.debug(f"Lambda url: {self.api_url}")
 
     def __ensure_valid_authorization_header(self) -> None:
-        if self.__expiry_time > time.time():
+        if self.__id_token_expires > time.time():
             return
 
         response = requests.post(
             self.__login_url,
-            json={"user_sub_id": self.__sub, "refresh_token": self.__refresh_token},
+            json={"user_sub_id": self.__user_sub_id, "refresh_token": self.__refresh_token},
             headers={"X-Client-Version": __version__},
         )
 
@@ -92,13 +92,14 @@ class ApiSession(requests.Session):
         #       do a locust-cloud --login if we get that.
 
         id_token = response.json()["cognito_client_id_token"]
-        decoded = jwt.decode(id_token, options={"verify_signature": False})
-        self.__expiry_time = decoded["exp"] - 60  # Refresh 1 minute before expiry
+        id_token_expires = response.json()["id_token_expires"]
+        self.__id_token_expires = id_token_expires - 60  # Refresh 1 minute before expiry
         self.headers["Authorization"] = f"Bearer {id_token}"
 
         if not self.non_interactive:
             config = read_cloud_config()
             config.id_token = id_token
+            config.id_token_expires = id_token_expires
             write_cloud_config(config)
 
     def request(self, method, url, *args, **kwargs) -> requests.Response:

@@ -16,9 +16,11 @@ CLOUD_CONF_FILE = pathlib.Path(platformdirs.user_config_dir(appname="locust-clou
 @dataclass
 class CloudConfig:
     id_token: str | None = None
+    user_sub_id: str | None = None
     refresh_token: str | None = None
     refresh_token_expires: int = 0
     region: str | None = None
+    id_token_expires: int = 0
 
 
 def get_api_url(region):
@@ -38,3 +40,8 @@ def write_cloud_config(config: CloudConfig) -> None:
 
     with open(CLOUD_CONF_FILE, "w") as f:
         json.dump(config.__dict__, f)
+
+
+def delete_cloud_config() -> None:
+    if CLOUD_CONF_FILE.exists():
+        CLOUD_CONF_FILE.unlink()

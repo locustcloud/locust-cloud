@@ -3,7 +3,7 @@ import time
 import webbrowser
 
 import requests
-from locust_cloud.common import VALID_REGIONS, CloudConfig, get_api_url, write_cloud_config
+from locust_cloud.common import VALID_REGIONS, CloudConfig, delete_cloud_config, get_api_url, write_cloud_config
 
 POLLING_FREQUENCY = 1
 
@@ -71,7 +71,13 @@ If the browser does not open or you wish to use a different device to authorize 
     config = CloudConfig(
         id_token=data["id_token"],
         refresh_token=data["refresh_token"],
+        user_sub_id=data["user_sub_id"],
         refresh_token_expires=data["refresh_token_expires"],
+        id_token_expires=data["id_token_expires"],
         region=region,
     )
     write_cloud_config(config)
+
+
+def logout():
+    delete_cloud_config()

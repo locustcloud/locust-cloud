@@ -61,7 +61,9 @@ def test_browser_login_succeded(mocked_requests, select_region, monkeypatch, cap
         "state": "authorized",
         "id_token": "A",
         "refresh_token": "B",
+        "user_sub_id": "C",
         "refresh_token_expires": 42,
+        "id_token_expires": 52,
     }
 
     mocked_requests.get(
@@ -76,7 +78,9 @@ def test_browser_login_succeded(mocked_requests, select_region, monkeypatch, cap
     expected_cloud_config = locust_cloud.common.CloudConfig(
         id_token=response["id_token"],
         refresh_token=response["refresh_token"],
+        user_sub_id=response["user_sub_id"],
         refresh_token_expires=response["refresh_token_expires"],
+        id_token_expires=response["id_token_expires"],
         region=REGION,
     )
     mock.assert_called_once_with(expected_cloud_config)

@@ -116,6 +116,11 @@ cloud_parser.add_argument(
     help="Launch an interactive session to authenticate your user.\nOnce completed your credentials will be stored and automatically refreshed for quite a long time.\nOnce those expire you will be prompted to perform another login.",
 )
 cloud_parser.add_argument(
+    "--logout",
+    action="store_true",
+    help="Removes the authentication credentials",
+)
+cloud_parser.add_argument(
     "--delete",
     action="store_true",
     help="Delete a running cluster. Useful if locust-cloud was killed/disconnected or if there was an error.",
