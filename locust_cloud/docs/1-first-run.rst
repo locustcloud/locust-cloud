@@ -1,6 +1,12 @@
+`Locust Cloud <https://locust.cloud/>`_ is a hosted version of Locust that allows you to run distributed load tests without having to set up and maintain your own infrastructure.
+
+It also allows more detailed reporting and analysis, as well as storing historical test results and tracking them over time.
+
 #########
 First run
 #########
+
+Once you have signed up for Locust Cloud, you can run your first test in just a few minutes:
 
 1. Log in
 

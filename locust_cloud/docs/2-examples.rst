@@ -1,7 +1,3 @@
-########
-Examples
-########
-
 Locustfile and mock server
 ==========================
 
