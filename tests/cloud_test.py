@@ -12,6 +12,7 @@ import locust_cloud.common
 import platformdirs
 import pytest
 import requests
+from locust_cloud.apisession import unauthorized_message
 
 CLOUD_CONFIG_FILE = pathlib.Path(platformdirs.user_config_dir(appname="locust-cloud")) / "config"
 LOCUSTCLOUD_USERNAME = os.environ["LOCUSTCLOUD_USERNAME"]
@@ -72,7 +73,7 @@ def test_cli_auth() -> None:
     process = subprocess.Popen(["locust-cloud"], env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     process.wait(timeout=1)
     assert process.stdout  # typing, not testing...
-    assert "You need to authenticate before proceeding. Please run:\n    locust-cloud --login" in process.stdout.read()
+    assert unauthorized_message in process.stdout.read()
 
     # Do a locust-cloud --login
     process = subprocess.Popen(

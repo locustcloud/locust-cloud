@@ -186,7 +186,7 @@ combined_cloud_parser = configargparse.ArgumentParser(
     ),
     description="""Launches a distributed Locust runs on locust.cloud infrastructure.
 
-Example: locust-cloud -f my_locustfile.py --users 1000 ...""",
+Example: locust --cloud -f my_locustfile.py --users 1000 ...""",
     epilog="""Any parameters not listed here are forwarded to locust master unmodified, so go ahead and use things like --users, --host, --run-time, ...
 Locust config can also be set using config file (~/.locust.conf, locust.conf, pyproject.toml, ~/.cloud.conf or cloud.conf).
 Parameters specified on command line override env vars, which in turn override config files.""",
