@@ -146,6 +146,12 @@ If your locustfile needs some additional Python packages, you can install them b
 
     locust --cloud -f my_locustfile.py --requirements requirements.txt
 
+If your package is not published to Pypi, requirements.txt can reference other repositories, just make sure it is reachable from the load generators:
+
+.. code-block:: console
+
+    --extra-index-url https://test.pypi.org/simple/ # your index url
+    ... # your packages
 
 View dashboard / previous test runs
 ===================================
