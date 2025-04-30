@@ -4,7 +4,9 @@ import gzip
 import io
 import os
 import pathlib
+import shutil
 import sys
+import tempfile
 
 if sys.version_info >= (3, 11):
     import tomllib
@@ -113,10 +115,50 @@ def transfer_encoded_args_files(paths: list[pathlib.Path], to_file: str | None) 
     return transfer_encode(f"{to_file}.zip", buffer)
 
 
+def flat_transfer_encoded_args_files(paths: list[pathlib.Path], to_file: str | None) -> dict[str, str]:
+    buffer = io.BytesIO()
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmp_path = pathlib.Path(tmpdir)
+
+        for src in paths:
+            src_path = pathlib.Path(src)
+            dest_path = tmp_path / src_path.name
+
+            if src_path.is_file():
+                shutil.copy(src_path, dest_path)
+            elif src_path.is_dir():
+                shutil.copytree(src_path, dest_path)
+            else:
+                print(f"Warning: {src} is not a valid file or directory")
+
+        # Create the zip archive
+        with ZipFile(buffer, "w") as zf:
+            for item in tmp_path.iterdir():
+                if item.is_file():
+                    zf.write(item, arcname=item.name)
+                elif item.is_dir():
+                    for root, _, files in os.walk(item):
+                        for file in files:
+                            file_path = pathlib.Path(root) / file
+                            arcname = file_path.relative_to(tmp_path)
+                            zf.write(file_path, arcname)
+
+    buffer.seek(0)
+    return transfer_encode(f"{to_file}.zip", buffer)
+
+
 class MergeToTransferEncodedZip(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
         paths = cast(list[pathlib.Path], values)
         value = transfer_encoded_args_files(paths, option_string.lstrip("-"))
+        setattr(namespace, self.dest, value)
+
+
+class MergeToTransferEncodedZipFlat(MergeToTransferEncodedZip):
+    def __call__(self, parser, namespace, values, option_string=None):
+        paths = cast(list[pathlib.Path], values)
+        value = flat_transfer_encoded_args_files(paths, option_string.lstrip("-"))
         setattr(namespace, self.dest, value)
 
 
@@ -176,7 +218,7 @@ cloud_parser.add_argument(
 )
 cloud_parser.add_argument(
     "--extra-packages",
-    action=MergeToTransferEncodedZip,
+    action=MergeToTransferEncodedZipFlat,
     nargs="*",
     type=valid_extra_packages_path,
     help="A list of extra packages to upload. Space-separated whl/tar.gz files or directory packages to be installed when running locust.",

@@ -59,12 +59,12 @@ def test_transfer_encoded_file():
 
 
 def test_expanded():
-    result = list(expanded([pathlib.Path("locustfile.py"), pathlib.Path("testdata")]))
-    assert result == [pathlib.Path("locustfile.py"), pathlib.Path("testdata/extra.txt")]
+    result = list(expanded([pathlib.Path("locustfile.py"), pathlib.Path("testdata/extra-files")]))
+    assert result == [pathlib.Path("locustfile.py"), pathlib.Path("testdata/extra-files/extra.txt")]
 
 
 def test_transfer_encoded_args_files():
-    result = transfer_encoded_args_files([pathlib.Path("testdata").resolve()], "extra-files")
+    result = transfer_encoded_args_files([pathlib.Path("testdata/extra-files").resolve()], "extra-files")
     assert result["filename"] == "extra-files.zip"
 
     buffer = pipe(
@@ -76,7 +76,7 @@ def test_transfer_encoded_args_files():
     )
 
     with ZipFile(buffer) as zf:
-        assert zf.namelist() == ["testdata/extra.txt"]
+        assert zf.namelist() == ["testdata/extra-files/extra.txt"]
 
 
 def test_parser_locustfile(capsys):
@@ -86,8 +86,8 @@ def test_parser_locustfile(capsys):
     expected = "error: argument -f/--locustfile: File not found: does-not-exist"
     assert expected in capsys.readouterr().err
 
-    options, _ = combined_cloud_parser.parse_known_args("locust-cloud --locustfile testdata/extra.txt")
-    assert options.locustfile == transfer_encoded_file("testdata/extra.txt")
+    options, _ = combined_cloud_parser.parse_known_args("locust-cloud --locustfile testdata/extra-files/extra.txt")
+    assert options.locustfile == transfer_encoded_file("testdata/extra-files/extra.txt")
 
 
 def test_parser_extra_files(capsys):
@@ -103,7 +103,7 @@ def test_parser_extra_files(capsys):
     expected = "error: argument --extra-files: File not found: does-not-exist"
     assert expected in capsys.readouterr().err
 
-    options, _ = combined_cloud_parser.parse_known_args("locust-cloud --extra-files testdata")
+    options, _ = combined_cloud_parser.parse_known_args("locust-cloud --extra-files testdata/extra-files")
     assert options.extra_files["filename"] == "extra-files.zip"
     buffer = pipe(
         options.extra_files["data"],
@@ -114,7 +114,7 @@ def test_parser_extra_files(capsys):
     )
 
     with ZipFile(buffer) as zf:
-        assert zf.namelist() == ["testdata/extra.txt"]
+        assert zf.namelist() == ["testdata/extra-files/extra.txt"]
 
 
 def test_parser_loglevel(capsys):
