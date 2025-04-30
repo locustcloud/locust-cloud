@@ -12,7 +12,7 @@ from locust_cloud.args import (
     expanded,
     pipe,
     transfer_encode,
-    transfer_encoded_extra_files,
+    transfer_encoded_args_files,
     transfer_encoded_file,
     valid_extra_files_path,
 )
@@ -63,8 +63,8 @@ def test_expanded():
     assert result == [pathlib.Path("locustfile.py"), pathlib.Path("testdata/extra.txt")]
 
 
-def test_transfer_encoded_extra_files():
-    result = transfer_encoded_extra_files([pathlib.Path("testdata").resolve()])
+def test_transfer_encoded_args_files():
+    result = transfer_encoded_args_files([pathlib.Path("testdata").resolve()], "extra-files")
     assert result["filename"] == "extra-files.zip"
 
     buffer = pipe(

@@ -101,6 +101,9 @@ def main():
         if options.extra_files:
             payload["extra_files"] = options.extra_files
 
+        if options.extra_packages:
+            payload["extra_packages"] = options.extra_packages
+
         for attempt in range(1, 16):
             try:
                 response = session.post("/deploy", json=payload)
