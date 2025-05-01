@@ -23,9 +23,14 @@ class MyUser(FastHttpUser):
                 resp.failure("orderId missing")
 
 
-extra = pathlib.Path("testdata/extra.txt")
+extra = pathlib.Path("testdata/extra-files/extra.txt")
 if extra.exists():
     print("--extra-files verification:", extra.read_text())
+
+
+import example  # type: ignore
+
+example.hello()
 
 
 if __name__ == "__main__":
