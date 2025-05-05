@@ -20,7 +20,7 @@ jobs:
         with:
           fetch-depth: 0
           fetch-tags: true
-      - uses: astral-sh/setup-uv@v2
+      - uses: astral-sh/setup-uv@v5
       - run: uv venv --python 3.10
       - run: uv run ruff check
       - run: uv run ruff format --check
