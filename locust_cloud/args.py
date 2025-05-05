@@ -266,6 +266,7 @@ combined_cloud_parser.add_argument(
     "-u",
     "--users",
     type=int,
+    default=1,
     help="Number of users to launch. This is the same as the regular Locust argument, but also affects how many workers to launch.",
     env_var="LOCUST_USERS",
 )
