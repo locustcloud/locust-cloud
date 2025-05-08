@@ -6,7 +6,7 @@ It also allows more detailed reporting and analysis, as well as storing historic
 First run
 #########
 
-Once you have signed up for Locust Cloud, you can run your first test in just a few minutes:
+Once you have `signed up <https://locust.cloud/pricing>`_ for Locust Cloud, you can run your first test in just a few minutes:
 
 1. Log in
 
