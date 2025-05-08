@@ -34,7 +34,7 @@ Your results should be something like this (the mock intentionally has some conc
 Passing options to Locust
 =========================
 
-Any parameters specified on command line that are not recognized by ``locust-cloud`` will be passed along to Locust. This allows for a seamless transition from local runs to cloud runs.
+Any arguments specified on command line will be passed along to Locust. This allows for a seamless transition from local runs to cloud runs.
 
 Here's how to run a 100 User test, start immediately, run for 60 seconds,
 quit 1s after finishing and print statistics to the console while running:
@@ -101,7 +101,7 @@ You can also use standard Locust env vars in the same fashion:
 Automated runs (CI)
 ===================
 
-If you want to run ``locust-cloud`` in a CI/CD environment, where an interactive login is not possible, you can set the ``--non-interactive`` flag or ``LOCUSTCLOUD_NON_INTERACTIVE`` environment variable. Then ``locust-cloud`` will use credentials specified environment variables instead.
+If you want to run tests in a CI/CD environment, where an interactive login is not possible, you can set the ``--non-interactive`` flag or ``LOCUSTCLOUD_NON_INTERACTIVE`` environment variable. Then Locust will use credentials specified environment variables instead.
 
 Simply make sure to export the corrent environment variables before running the command and things will work.
 
