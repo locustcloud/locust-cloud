@@ -156,4 +156,4 @@ If your package is not published to Pypi, requirements.txt can reference other r
 View dashboard / previous test runs
 ===================================
 
-You can examine the results from previous test runs (without needing to start your load generators) from your `Locust Cloud dashboard <https://auth.eu-north-1.locust.cloud/region-select>`_.
+You can examine the results from previous test runs (without needing to start your load generators) from your `Locust Cloud dashboard <https://auth.locust.cloud>`_.
