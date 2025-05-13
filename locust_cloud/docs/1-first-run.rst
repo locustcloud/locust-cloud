@@ -2,35 +2,28 @@
 
 It also allows more detailed reporting and analysis, as well as storing historical test results and tracking them over time.
 
-#########
 First run
-#########
+=========
 
-Once you have `signed up <https://locust.cloud/pricing>`_ for Locust Cloud, you can run your first test in just a few minutes:
-
-1. Log in
+Once you have `signed up <https://locust.cloud/pricing>`_ for Locust Cloud and :ref:`installed Locust <installation>`, you need to authenticate:
 
 .. code-block:: console
 
     $ locust --cloud --login
-    Enter the number for the region to authenticate against
-
-    1. us-east-1
-    2. eu-north-1
-
-    > 1
-
-    Attempting to automatically open the SSO authorization page in your default browser.
     ...
 
 .. note::
     After logging in, an API token will be stored on your machine, and you will not need to log in until it expires.
 
-2. Run a load test
+Then you can launch a distributed test using Locust Cloud:
 
 .. code-block:: console
 
     $ locust --cloud -f my_locustfile.py --users 100 # ... other regular locust parameters
-    [LOCUST-CLOUD] INFO: Deploying load generators
-    [LOCUST-CLOUD] INFO: Waiting for load generators to be ready...
+    [2025-05-13 12:30:58,252] INFO: Deploying (us-east-1, 1.21.5)
+    [2025-05-13 12:31:06,366] INFO: Waiting for load generators to be ready...
+    [2025-05-13 10:31:11,119] master-lsdhr-8hwhs/INFO/locust.main: Starting Locust 2.37.1 (locust_exporter 1.18.4)
+    [2025-05-13 10:31:11,120] master-lsdhr-8hwhs/INFO/locust.main: Starting web interface at https://us-east-1.webui.locust.cloud/your_customer, press enter to open your default browser.
+    [2025-05-13 10:31:11,760] master-lsdhr-8hwhs/INFO/locust.runners: worker-jdnf6-jl8qq_a45c04a8d925448ea647fdcda2e8cf80 (index 0) reported as ready. 1 workers connected.
+    [2025-05-13 10:31:11,765] master-lsdhr-8hwhs/INFO/locust.runners: worker-jdnf6-pk8cl_6749cd6c0d244b3a9611d6a4e0a8d30b (index 1) reported as ready. 2 workers connected.
     ...
