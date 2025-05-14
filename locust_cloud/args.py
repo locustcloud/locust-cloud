@@ -8,6 +8,10 @@ import shutil
 import sys
 import tempfile
 
+from locust_cloud.actions import delete
+from locust_cloud.apisession import ApiSession
+from locust_cloud.web_login import logout, web_login
+
 if sys.version_info >= (3, 11):
     import tomllib
 else:
@@ -162,20 +166,42 @@ class MergeToTransferEncodedZipFlat(MergeToTransferEncodedZip):
         setattr(namespace, self.dest, value)
 
 
+class WebLogin(argparse.Action):
+    def __call__(self, parser, namespace, values, option_string=None):
+        web_login()
+        parser.exit()
+
+
+class WebLogout(argparse.Action):
+    def __call__(self, parser, namespace, values, option_string=None):
+        logout()
+        parser.exit()
+
+
+class StackTeardown(argparse.Action):
+    def __call__(self, parser, namespace, values, option_string=None):
+        session = ApiSession(namespace.non_interactive)
+        delete(session)
+        parser.exit()
+
+
 cloud_parser = configargparse.ArgumentParser(add_help=False)
 cloud_parser.add_argument(
     "--login",
-    action="store_true",
+    nargs=0,
+    action=WebLogin,
     help="Launch an interactive session to authenticate your user.\nOnce completed your credentials will be stored and automatically refreshed for quite a long time.\nOnce those expire you will be prompted to perform another login.",
 )
 cloud_parser.add_argument(
     "--logout",
-    action="store_true",
+    nargs=0,
+    action=WebLogout,
     help="Removes the authentication credentials",
 )
 cloud_parser.add_argument(
     "--delete",
-    action="store_true",
+    nargs=0,
+    action=StackTeardown,
     help="Delete a running cluster. Useful if locust-cloud was killed/disconnected or if there was an error.",
 )
 cloud_parser.add_argument(

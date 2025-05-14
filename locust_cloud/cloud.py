@@ -5,6 +5,7 @@ import webbrowser
 from threading import Thread
 
 import requests
+from locust_cloud.actions import delete
 from locust_cloud.apisession import ApiSession
 from locust_cloud.args import combined_cloud_parser
 from locust_cloud.common import __version__
@@ -176,22 +177,3 @@ def main():
     finally:
         logger.debug("Shutting down websocket")
         websocket.shutdown()
-
-
-def delete(session):
-    try:
-        logger.info("Tearing down Locust cloud...")
-        response = session.delete(
-            "/teardown",
-        )
-
-        if response.status_code == 200:
-            logger.debug(f"Response message from teardown: {response.json()['message']}")
-        else:
-            logger.info(
-                f"Could not automatically tear down Locust Cloud: HTTP {response.status_code}/{response.reason} - Response: {response.text} - URL: {response.request.url}"
-            )
-    except KeyboardInterrupt:
-        pass  # don't show nasty callstack
-    except Exception as e:
-        logger.error(f"Could not automatically tear down Locust Cloud: {e.__class__.__name__}:{e}")
