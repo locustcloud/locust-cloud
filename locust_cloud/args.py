@@ -215,6 +215,7 @@ cloud_parser.add_argument(
     action="store_true",
     default=False,
     help="This can be set when, for example, running in a CI/CD environment to ensure no interactive steps while executing.\nRequires that LOCUSTCLOUD_USERNAME, LOCUSTCLOUD_PASSWORD and LOCUSTCLOUD_REGION environment variables are set.",
+    env_var="LOCUSTCLOUD_NON_INTERACTIVE",
 )
 cloud_parser.add_argument(
     "--workers",
