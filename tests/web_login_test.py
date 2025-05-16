@@ -72,7 +72,7 @@ def test_browser_login_succeded(mocked_requests, select_region, monkeypatch, cap
     )
     locust_cloud.web_login.web_login()
 
-    expected = "Authorization succeded. Now you can run 'locust --cloud ...' to trigger distributed runs."
+    expected = "Authorization succeded. Now you can start a cloud run using: locust --cloud ..."
     assert expected in capsys.readouterr().out
 
     expected_cloud_config = locust_cloud.common.CloudConfig(
