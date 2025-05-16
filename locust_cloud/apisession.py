@@ -8,7 +8,7 @@ from locust_cloud.common import VALID_REGIONS, __version__, get_api_url, read_cl
 
 logger = logging.getLogger(__name__)
 
-unauthorized_message = "You need to log in again. Please run:\n    locust --cloud --login"
+unauthorized_message = "You need to log in again. Please run:\n    locust --login"
 
 
 class ApiSession(requests.Session):
