@@ -9,7 +9,7 @@ Once you have `signed up <https://locust.cloud/pricing>`_ for Locust Cloud and :
 
 .. code-block:: console
 
-    $ locust --cloud --login
+    $ locust --login
     ...
 
 .. note::

@@ -62,7 +62,7 @@ If the browser does not open or you wish to use a different device to authorize 
             print(f"\nFailed to authorize CLI: {data['reason']}")
             sys.exit(1)
         elif data["state"] == "authorized":
-            print("\nAuthorization succeded. Now you can re-run locust --cloud without the --login flag.")
+            print("\nAuthorization succeded. Now you can start a cloud run using: locust --cloud ...")
             break
         else:
             print("\nGot unexpected response when authorizing CLI")
