@@ -122,7 +122,7 @@ def main():
                 logger.error(f"Failed to deploy the load generators: {e}")
                 return 1
         else:
-            logger.error("Your Locust instance is still running, run locust --cloud --delete")
+            logger.error("Your Locust instance is still running, run locust --delete")
             return 1
 
         if response.status_code != 200:
