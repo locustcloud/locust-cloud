@@ -42,6 +42,8 @@ jobs:
       - run: "grep -m 1 -- '--extra-files verification: pineapple' output.txt"
       # check extra package were successfully installed
       - run: "grep -m 1 -- 'Hello from the example package!' output.txt"
+      # check --requirements were successfully installed
+      - run: "grep -m 1 -- 'dotenv imported successfully' output.txt"
       # check for errors
       - run: bash -ec "! grep Traceback output.txt"
       - run: bash -ec "! grep ERROR output.txt"
