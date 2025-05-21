@@ -27,10 +27,19 @@ extra = pathlib.Path("testdata/extra-files/extra.txt")
 if extra.exists():
     print("--extra-files verification:", extra.read_text())
 
+try:
+    import example  # type: ignore
 
-import example  # type: ignore
+    example.hello()
+except ImportError:
+    pass  # ignore this for local runs
 
-example.hello()
+try:
+    import dotenv  # type: ignore # noqa: F401
+
+    print("dotenv imported successfully, --requirements seems to be working")
+except ImportError:
+    pass  # ignore this for local runs
 
 
 if __name__ == "__main__":
