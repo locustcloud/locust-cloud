@@ -35,7 +35,7 @@ except ImportError:
     pass  # ignore this for local runs
 
 try:
-    import dotenv  # noqa: F401
+    import dotenv  # type: ignore # noqa: F401
 
     print("dotenv imported successfully, --requirements seems to be working")
 except ImportError:
