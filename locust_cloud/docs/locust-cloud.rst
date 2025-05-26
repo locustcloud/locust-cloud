@@ -1,3 +1,5 @@
+.. _locust-cloud:
+
 =========================
 Running with Locust Cloud
 =========================
