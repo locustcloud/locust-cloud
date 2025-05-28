@@ -157,3 +157,27 @@ View dashboard / previous test runs
 ===================================
 
 You can examine the results from previous test runs (without needing to start your load generators) from your `Locust Cloud dashboard <https://auth.locust.cloud>`_.
+
+Source IP Addresses
+===================
+
+If you need to whitelist Locust Cloud IP addresses for your tests, here are the current IPs for each region.
+
+US Region
+
+.. code-block:: console
+
+    23.22.141.121
+    34.199.222.136
+    44.198.252.211
+    44.208.98.77
+    52.86.221.153
+
+EU Region
+
+.. code-block:: console
+
+    13.48.181.114
+    13.53.152.168
+    13.61.39.172
+    51.21.47.95
