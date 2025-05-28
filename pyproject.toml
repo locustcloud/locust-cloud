@@ -6,7 +6,7 @@ license = { text = "MIT" }
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "ConfigArgParse>=1.5.5",
+    "configargparse>=1.7.1",
     "tomli>=1.1.0; python_version < '3.11'",
     "gevent>=24.10.1,<25.0.0",
     "platformdirs>=4.3.6,<5.0.0",
