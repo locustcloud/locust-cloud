@@ -161,7 +161,7 @@ You can examine the results from previous test runs (without needing to start yo
 Source IP Addresses
 ===================
 
-If you need to whitelist Locust Cloud IP addresses for your tests, here are the current IPs for each region.
+If you need to whitelist source IP addresses in order to bypass firewalls or DDoS protections, here are the current IPs for each region:
 
 US Region
 
