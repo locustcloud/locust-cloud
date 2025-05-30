@@ -231,6 +231,14 @@ cloud_parser.add_argument(
     help=configargparse.SUPPRESS,  # overrides the locust-cloud docker image tag. for internal use
 )
 cloud_parser.add_argument(
+    "--local-instance",
+    action="store_true",
+    default=False,
+    help=configargparse.SUPPRESS,
+    # for internal use. Assumes you've started locust/exporter with something like:
+    # LOCUSTCLOUD_SESSION_ID=valid-session-id LOCUST_WEB_LOGIN=1 LOCUST_LOGLEVEL=DEBUG python -m bootstrap
+)
+cloud_parser.add_argument(
     "--mock-server",
     action="store_true",
     default=False,

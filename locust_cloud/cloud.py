@@ -106,6 +106,11 @@ def main():
             payload["extra_packages"] = options.extra_packages
 
         for attempt in range(1, 16):
+            if options.local_instance:
+                response = requests.Response()
+                response.status_code = 200
+                js = {"log_ws_url": "ws://localhost:1095/socket-logs", "session_id": "valid-session-id"}
+                break
             try:
                 response = session.post("/deploy", json=payload)
                 js = response.json()
@@ -154,7 +159,10 @@ def main():
 
     except KeyboardInterrupt:
         logger.debug("Interrupted by user")
-        delete(session)
+        if options.local_instance:
+            os.system("pkill -TERM -f bootstrap")
+        else:
+            delete(session)
         try:
             websocket.wait(timeout=True)
         except (WebsocketTimeout, SessionMismatchError) as e:
