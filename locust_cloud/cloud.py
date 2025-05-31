@@ -109,7 +109,10 @@ def main():
             if options.local_instance:
                 response = requests.Response()
                 response.status_code = 200
-                js = {"log_ws_url": "ws://localhost:1095/socket-logs", "session_id": "valid-session-id"}
+                js = {
+                    "log_ws_url": f"ws://localhost:1095{os.environ.get('LOCUST_WEB_BASE_PATH', '')}/socket-logs",
+                    "session_id": "valid-session-id",
+                }
                 break
             try:
                 response = session.post("/deploy", json=payload)
