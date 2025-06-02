@@ -165,6 +165,7 @@ def main():
         if options.local_instance:
             os.system("pkill -TERM -f bootstrap")
         else:
+            websocket.__timeout_on_disconnect = False
             delete(session)
         try:
             websocket.wait(timeout=True)
@@ -173,6 +174,7 @@ def main():
             return 1
     except WebsocketTimeout as e:
         logger.error(str(e))
+        websocket.__timeout_on_disconnect = False
         delete(session)
         return 1
     except SessionMismatchError as e:
@@ -181,9 +183,11 @@ def main():
         return 1
     except Exception as e:
         logger.exception(e)
+        websocket.__timeout_on_disconnect = False
         delete(session)
         return 1
     else:
+        websocket.__timeout_on_disconnect = False
         delete(session)
     finally:
         logger.debug("Shutting down websocket")
