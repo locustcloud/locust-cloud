@@ -185,6 +185,3 @@ def main():
         return 1
     else:
         delete(session)
-    finally:
-        logger.debug("Shutting down websocket")
-        websocket.shutdown()
