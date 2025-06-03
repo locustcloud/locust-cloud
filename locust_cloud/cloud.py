@@ -8,7 +8,7 @@ import requests
 from locust_cloud.actions import delete
 from locust_cloud.apisession import ApiSession
 from locust_cloud.args import combined_cloud_parser
-from locust_cloud.common import __version__
+from locust_cloud.common import __version__, read_cloud_config, write_cloud_config
 from locust_cloud.input_events import input_listener
 from locust_cloud.web_login import logout, web_login
 from locust_cloud.websocket import SessionMismatchError, Websocket, WebsocketTimeout
@@ -52,6 +52,7 @@ def main():
 
     session = ApiSession(options.non_interactive)
     websocket = Websocket()
+    config = read_cloud_config()
 
     if options.delete:
         delete(session)
@@ -88,6 +89,7 @@ def main():
             "locustfile": options.locustfile,
             "user_count": options.users,
             "mock_server": options.mock_server,
+            "deployment_hash": config.deployment_hash,
         }
 
         if options.image_tag is not None:
@@ -145,6 +147,10 @@ def main():
         log_ws_url = js["log_ws_url"]
         session_id = js["session_id"]
         webui_url = log_ws_url.replace("/socket-logs", "")
+
+        if not config.deployment_hash:
+            config.deployment_hash = js.get("deployment_hash")
+            write_cloud_config(config)
 
         def open_ui():
             webbrowser.open_new_tab(webui_url)
