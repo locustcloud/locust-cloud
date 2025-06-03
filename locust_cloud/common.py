@@ -21,6 +21,7 @@ class CloudConfig:
     refresh_token_expires: int = 0
     region: str | None = None
     id_token_expires: int = 0
+    deployment_hash: str | None = None
 
 
 def get_api_url(region):
