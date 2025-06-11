@@ -91,6 +91,10 @@ def main():
         }
 
         if options.image_tag is not None:
+            logger.log(
+                logging.DEBUG if options.image_tag == "master" else logging.INFO,
+                f"You have requested image tag {options.image_tag}",
+            )
             payload["image_tag"] = options.image_tag
 
         if options.workers is not None:
