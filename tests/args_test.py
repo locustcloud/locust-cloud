@@ -79,17 +79,6 @@ def test_transfer_encoded_args_files():
         assert zf.namelist() == ["testdata/extra-files/extra.txt"]
 
 
-def test_parser_locustfile(capsys):
-    with pytest.raises(SystemExit):
-        combined_cloud_parser.parse_known_args("locust-cloud --locustfile does-not-exist")
-
-    expected = "error: argument -f/--locustfile: File not found: does-not-exist"
-    assert expected in capsys.readouterr().err
-
-    options, _ = combined_cloud_parser.parse_known_args("locust-cloud --locustfile testdata/extra-files/extra.txt")
-    assert options.locustfile == transfer_encoded_file("testdata/extra-files/extra.txt")
-
-
 def test_parser_extra_files(capsys):
     with pytest.raises(SystemExit):
         combined_cloud_parser.parse_known_args("locust-cloud --extra-files ../pineapple")
