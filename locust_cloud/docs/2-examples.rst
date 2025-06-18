@@ -153,11 +153,17 @@ If your package is not published to Pypi, requirements.txt can reference other r
     --extra-index-url https://test.pypi.org/simple/ # your index url
     ... # your packages
 
-You can also specify additional files to be copied to the load generators using the ``--extra-files`` option:   
+You can also upload a package that you have locally:
 
 .. code-block:: console
 
-    --extra-files testdata.csv *.py my-directory/
+    --extra-packages helper.whl other-helper.tar.gz third-helper/
+
+You can also specify additional files (data, python files or even entire directories/modules) to be copied to the load generators using the ``--extra-files`` option:
+
+.. code-block:: console
+
+    --extra-files testdata.csv helper.py more-testdata/ other_helper/
 
 View dashboard / previous test runs
 ===================================
