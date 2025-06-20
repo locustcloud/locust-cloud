@@ -70,14 +70,13 @@ def test_cli_auth() -> None:
     }
 
     # Check that we get the message that login is required
-    process = subprocess.Popen(["locust-cloud"], env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-    process.wait(timeout=1)
+    process = subprocess.run(["locust", "--cloud"], env=env, capture_output=True, text=True, timeout=1)
     assert process.stdout  # typing, not testing...
-    assert unauthorized_message in process.stdout.read()
+    assert unauthorized_message in process.stdout
 
     # Do a locust-cloud --login
     process = subprocess.Popen(
-        ["locust-cloud", "--login"],
+        ["locust", "--login"],
         env=env,
         stdout=subprocess.PIPE,
         stdin=subprocess.PIPE,

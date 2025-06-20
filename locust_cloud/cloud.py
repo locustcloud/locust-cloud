@@ -28,9 +28,7 @@ def configure_logging(loglevel: str) -> None:
     logging.getLogger("urllib3").setLevel(logging.INFO)
 
 
-# We default to "locustfile.py" because the tests do not use
-# locust core that now handles this for us
-def main(locustfiles: list[str] = ["locustfile.py"]):
+def main(locustfiles: list[str]):
     options, locust_options = combined_cloud_parser.parse_known_args()
 
     configure_logging(options.loglevel)

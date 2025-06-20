@@ -28,7 +28,7 @@ jobs:
       # This peculiar way of running pytest is to ensure monkey patching is done before pytest starts loading modules.
       # Otherwise you may get "MonkeyPatchWarning: Monkey-patching ssl after ssl has already been imported" and infinite recursion
       # https://github.com/pytest-dev/pytest/issues/6210
-      - run: uv run python -m gevent.monkey --module pytest
+      - run: uv run --with locust --with . python -m gevent.monkey --module pytest
         env:
           LOCUSTCLOUD_USERNAME: ${{ secrets.LOCUSTCLOUD_USERNAME }}
           LOCUSTCLOUD_PASSWORD: ${{ secrets.LOCUSTCLOUD_PASSWORD }}
@@ -41,7 +41,7 @@ jobs:
           path: dist/*
       # Ensure what customers will actually run does not rely on dev-dependencies
       - run: rm -rf uv.lock .venv
-      - run: uv run --no-default-groups locust-cloud --help
+      - run: uv run --with locust --with . --no-default-groups locust --cloud --help
 
   publish_pypi:
     name: Publish to PyPI
