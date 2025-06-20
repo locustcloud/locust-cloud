@@ -1,13 +1,16 @@
 import logging
 
+from locust_cloud.common import read_cloud_config
+
 logger = logging.getLogger(__name__)
 
 
 def delete(session):
     try:
+        config = read_cloud_config()
         logger.info("Tearing down Locust cloud...")
         response = session.delete(
-            "/teardown",
+            "/teardown", json={"deployment_hash": config.deployment_hash} if config.deployment_hash else None
         )
 
         if response.status_code == 200:
