@@ -10,7 +10,6 @@ from locust_cloud.apisession import ApiSession
 from locust_cloud.args import combined_cloud_parser, transfer_encoded_file
 from locust_cloud.common import __version__
 from locust_cloud.input_events import input_listener
-from locust_cloud.web_login import logout, web_login
 from locust_cloud.websocket import SessionMismatchError, Websocket, WebsocketTimeout
 
 logger = logging.getLogger(__name__)
@@ -39,25 +38,8 @@ def main(locustfiles: list[str]):
 
     s3_locustfiles = [transfer_encoded_file(locustfile) for locustfile in locustfiles]
 
-    if options.login:
-        try:
-            web_login()
-        except Exception:
-            pass
-        return
-    if options.logout:
-        try:
-            logout()
-        except Exception:
-            pass
-        return
-
     session = ApiSession(options.non_interactive)
     websocket = Websocket()
-
-    if options.delete:
-        delete(session)
-        return
 
     try:
         logger.info(f"Deploying ({session.region}, {__version__})")

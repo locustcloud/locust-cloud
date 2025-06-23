@@ -137,8 +137,8 @@ Typically you will also want to specify the standard Locust parameters ``--headl
             - run: locust --cloud -f my_locustfile.py --headless --run-time 5m
 
 
-Extra python packages
-=====================
+Extra Python packages and files
+===============================
 
 If your locustfile needs some additional Python packages, you can install them by specifying a `requirements.txt <https://pip.pypa.io/en/stable/reference/requirements-file-format/>`_ file:
 
@@ -152,6 +152,18 @@ If your package is not published to Pypi, requirements.txt can reference other r
 
     --extra-index-url https://test.pypi.org/simple/ # your index url
     ... # your packages
+
+You can also upload a package that you have locally:
+
+.. code-block:: console
+
+    --extra-packages helper.whl other-helper.tar.gz third-helper/
+
+You can also specify additional files (data, python files or even entire directories/modules) to be copied to the load generators using the ``--extra-files`` option:
+
+.. code-block:: console
+
+    --extra-files testdata.csv helper.py more-testdata/ other_helper/
 
 View dashboard / previous test runs
 ===================================
