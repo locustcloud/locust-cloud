@@ -27,6 +27,13 @@ def configure_logging(loglevel: str) -> None:
     logging.getLogger("urllib3").setLevel(logging.INFO)
 
 
+def deprecated_main():
+    import sys
+
+    print("`locust-cloud` is deprecated; use `locust --cloud` instead.", file=sys.stderr)
+    return 1
+
+
 def main(locustfiles: list[str] | None = None):
     options, locust_options = combined_cloud_parser.parse_known_args()
 
