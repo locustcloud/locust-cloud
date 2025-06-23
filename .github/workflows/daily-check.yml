@@ -2,7 +2,7 @@ name: Daily test run (api-dev)
 
 on:
   schedule: # 00:00, skipping Sunday and Monday
-    - cron: '0 0 * * 2-6'
+    - cron: "0 0 * * 2-6"
   workflow_dispatch:
 
 env:
@@ -26,7 +26,7 @@ jobs:
           fetch-tags: true
       - uses: actions/setup-python@v5
         with:
-            python-version: '3.11'
+          python-version: "3.11"
       - uses: astral-sh/setup-uv@v2
       - uses: actions/setup-node@v4
         with:
@@ -34,8 +34,8 @@ jobs:
       - run: uv venv --python 3.11
       # any local changes would make hatch-vcs set a "local version" (+dev0...), so we ignore any uv.lock updates:
       - run: git update-index --assume-unchanged uv.lock
-      - run: uv run locust-cloud --help
-      - run: uv run locust-cloud --profile status-checker --mock-server --autostart --autoquit 0 --run-time 1m --loglevel DEBUG --extra-files testdata/extra-files --extra-packages testdata/extra-package --requirements testdata/requirements.txt |& tee output.txt
+      - run: uvx --with . locust --cloud --help
+      - run: uvx --with . locust --cloud --profile status-checker --mock-server --autostart --autoquit 0 --run-time 1m --loglevel DEBUG --extra-files testdata/extra-files --extra-packages testdata/extra-package --requirements testdata/requirements.txt |& tee output.txt
       # check ok exit
       - run: grep -m 1 '(exit code 0)' output.txt
       # check extra files specified were available
@@ -55,4 +55,4 @@ jobs:
         run: curl -d "{\"text\":\"Failed run $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID\"}" $SLACK_NOTIFICATIONS_WEBHOOK
       - name: Make sure to delete (only really needed for mock)
         if: always()
-        run: uv tool run locust-cloud --delete
+        run: uvx --with . locust --delete

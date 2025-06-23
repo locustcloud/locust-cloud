@@ -288,14 +288,10 @@ Parameters specified on command line override env vars, which in turn override c
     add_config_file_help=False,
     add_env_var_help=False,
 )
+# We do not use this, but we keep it here to consume it from CLI if provided
 combined_cloud_parser.add_argument(
     "-f",
     "--locustfile",
-    metavar="<filename>",
-    default="locustfile.py",
-    help="The Python file that contains your test. Defaults to 'locustfile.py'.",
-    env_var="LOCUST_LOCUSTFILE",
-    type=transfer_encoded_file,
 )
 combined_cloud_parser.add_argument(
     "-u",

@@ -7,7 +7,7 @@ from threading import Thread
 import requests
 from locust_cloud.actions import delete
 from locust_cloud.apisession import ApiSession
-from locust_cloud.args import combined_cloud_parser
+from locust_cloud.args import combined_cloud_parser, transfer_encoded_file
 from locust_cloud.common import __version__
 from locust_cloud.input_events import input_listener
 from locust_cloud.websocket import SessionMismatchError, Websocket, WebsocketTimeout
@@ -27,14 +27,16 @@ def configure_logging(loglevel: str) -> None:
     logging.getLogger("urllib3").setLevel(logging.INFO)
 
 
-def main():
+def main(locustfiles: list[str]):
     options, locust_options = combined_cloud_parser.parse_known_args()
 
     configure_logging(options.loglevel)
 
-    if not options.locustfile:
+    if not locustfiles:
         logger.error("A locustfile is required to run a test.")
         return 1
+
+    s3_locustfiles = [transfer_encoded_file(locustfile) for locustfile in locustfiles]
 
     session = ApiSession(options.non_interactive)
     websocket = Websocket()
@@ -67,7 +69,7 @@ def main():
 
         payload = {
             "locust_args": locust_args,
-            "locustfile": options.locustfile,
+            "locustfile": s3_locustfiles,
             "user_count": options.users,
             "mock_server": options.mock_server,
         }
