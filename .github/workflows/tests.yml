@@ -28,10 +28,10 @@ jobs:
       # This peculiar way of running pytest is to ensure monkey patching is done before pytest starts loading modules.
       # Otherwise you may get "MonkeyPatchWarning: Monkey-patching ssl after ssl has already been imported" and infinite recursion
       # https://github.com/pytest-dev/pytest/issues/6210
-      # - run: uv run --with locust --with . python -m gevent.monkey --module pytest
-      #   env:
-      #     LOCUSTCLOUD_USERNAME: ${{ secrets.LOCUSTCLOUD_USERNAME }}
-      #     LOCUSTCLOUD_PASSWORD: ${{ secrets.LOCUSTCLOUD_PASSWORD }}
+      - run: uv run --with locust --with . python -m gevent.monkey --module pytest
+        env:
+          LOCUSTCLOUD_USERNAME: ${{ secrets.LOCUSTCLOUD_USERNAME }}
+          LOCUSTCLOUD_PASSWORD: ${{ secrets.LOCUSTCLOUD_PASSWORD }}
       # any local changes would make hatch-vcs set a "local version" (+dev0...), so we ignore any uv.lock updates:
       - run: git update-index --assume-unchanged uv.lock
       - run: uvx --from build pyproject-build --sdist --wheel --installer uv
