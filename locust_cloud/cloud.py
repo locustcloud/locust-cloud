@@ -49,7 +49,7 @@ def main(locustfiles: list[str] | None = None):
     websocket = Websocket()
 
     try:
-        logger.info(f"Deploying ({session.region}, {__version__})")
+        logger.info(f"Deploying ({session.region}, locust-cloud {__version__})")
         locust_env_variables = [
             {"name": env_variable, "value": os.environ[env_variable]}
             for env_variable in os.environ
