@@ -34,8 +34,8 @@ jobs:
       - run: uv venv --python 3.11
       # any local changes would make hatch-vcs set a "local version" (+dev0...), so we ignore any uv.lock updates:
       - run: git update-index --assume-unchanged uv.lock
-      - run: uvx --with . locust --cloud --help
-      - run: uvx --with . locust --cloud --profile status-checker --mock-server --autostart --autoquit 0 --run-time 1m --loglevel DEBUG --extra-files testdata/extra-files --extra-packages testdata/extra-package --requirements testdata/requirements.txt |& tee output.txt
+      - run: uv run --with locust --with . locust --cloud --help
+      - run: uv run --with locust --with . locust --cloud --profile status-checker --mock-server --autostart --autoquit 0 --run-time 1m --loglevel DEBUG --extra-files testdata/extra-files --extra-packages testdata/extra-package --requirements testdata/requirements.txt |& tee output.txt
       # check ok exit
       - run: grep -m 1 '(exit code 0)' output.txt
       # check extra files specified were available
@@ -55,4 +55,4 @@ jobs:
         run: curl -d "{\"text\":\"Failed run $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID\"}" $SLACK_NOTIFICATIONS_WEBHOOK
       - name: Make sure to delete (only really needed for mock)
         if: always()
-        run: uvx --with . locust --delete
+        run: uv run --with locust --with . locust --delete
