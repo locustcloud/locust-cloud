@@ -52,12 +52,13 @@ jobs:
       # - run: bash -ec "! grep WARNING output.txt"
       - name: On failure, notify slack
         if: failure()
-        run: curl -d "{\"text\":\"Failed run $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID\"}" $SLACK_NOTIFICATIONS_WEBHOOK
+        run: curl -d "{\"text\":\"<!channel> Failed full run $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID\"}" $SLACK_NOTIFICATIONS_WEBHOOK
       - name: Make sure to delete (only really needed for mock)
         if: always()
         run: uv run --with locust --with . locust --delete
 
   locust_url_test:
+    needs: [locust_cloud_full_run]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -68,3 +69,9 @@ jobs:
         env:
           LOCUSTCLOUD_USERNAME: ${{ secrets.LOCUSTCLOUD_USERNAME }}
           LOCUSTCLOUD_PASSWORD: ${{ secrets.LOCUSTCLOUD_PASSWORD }}
+      - name: On failure, notify slack
+        if: failure()
+        run: curl -d "{\"text\":\"<!channel> Failed url test run $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID\"}" $SLACK_NOTIFICATIONS_WEBHOOK
+      - name: Make sure to delete (url tester doesn't self-destroy)
+        if: always()
+        run: uv run --with locust --with . locust --delete
