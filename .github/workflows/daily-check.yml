@@ -56,3 +56,15 @@ jobs:
       - name: Make sure to delete (only really needed for mock)
         if: always()
         run: uv run --with locust --with . locust --delete
+
+  locust_url_test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv venv --python 3.11
+      - run: uv run playwright install --with-deps
+      - run: uv run pytest tests/url_tester.py
+        env:
+          LOCUSTCLOUD_USERNAME: ${{ secrets.LOCUSTCLOUD_USERNAME }}
+          LOCUSTCLOUD_PASSWORD: ${{ secrets.LOCUSTCLOUD_PASSWORD }}
