@@ -72,6 +72,7 @@ jobs:
         env:
           LOCUSTCLOUD_USERNAME: ${{ secrets.LOCUSTCLOUD_USERNAME }}
           LOCUSTCLOUD_PASSWORD: ${{ secrets.LOCUSTCLOUD_PASSWORD }}
+          HEADLESS: 1
       - name: On failure, notify slack
         if: failure()
         run: curl -d "{\"text\":\"<!channel> Failed url test run $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID\"}" $SLACK_NOTIFICATIONS_WEBHOOK
