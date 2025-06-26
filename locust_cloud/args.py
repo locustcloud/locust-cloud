@@ -246,7 +246,6 @@ cloud_parser.add_argument(
 )
 cloud_parser.add_argument(
     "--extra-files",
-    action=MergeToTransferEncodedZip,
     nargs="*",
     type=valid_extra_files_path,
     help="A list of extra files or directories to upload. Space-separated, e.g. `--extra-files testdata.csv *.py my-directory/`.",

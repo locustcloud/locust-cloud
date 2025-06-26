@@ -93,9 +93,10 @@ def test_parser_extra_files(capsys):
     assert expected in capsys.readouterr().err
 
     options, _ = combined_cloud_parser.parse_known_args("locust-cloud --extra-files testdata/extra-files")
-    assert options.extra_files["filename"] == "extra-files.zip"
+    extra_files = transfer_encoded_args_files(options.extra_files, "extra-files")
+    assert extra_files["filename"] == "extra-files.zip"
     buffer = pipe(
-        options.extra_files["data"],
+        extra_files["data"],
         str.encode,
         base64.b64decode,
         gzip.decompress,

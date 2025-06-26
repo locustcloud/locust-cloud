@@ -1,5 +1,6 @@
 import logging
 import os
+import pathlib
 import time
 import webbrowser
 from threading import Thread
@@ -7,7 +8,7 @@ from threading import Thread
 import requests
 from locust_cloud.actions import delete
 from locust_cloud.apisession import ApiSession
-from locust_cloud.args import combined_cloud_parser, transfer_encoded_file
+from locust_cloud.args import combined_cloud_parser, transfer_encoded_args_files, transfer_encoded_file
 from locust_cloud.common import __version__
 from locust_cloud.input_events import input_listener
 from locust_cloud.websocket import SessionMismatchError, Websocket, WebsocketTimeout
@@ -34,7 +35,7 @@ def deprecated_main():
     return 1
 
 
-def main(locustfiles: list[str] | None = None):
+def main(locustfiles: list[str] | None = None, extra_files: list[pathlib.Path] = []):
     options, locust_options = combined_cloud_parser.parse_known_args()
 
     configure_logging(options.loglevel)
@@ -94,8 +95,8 @@ def main(locustfiles: list[str] | None = None):
         if options.requirements:
             payload["requirements"] = options.requirements
 
-        if options.extra_files:
-            payload["extra_files"] = options.extra_files
+        if all_extra_files := list(set(options.extra_files + extra_files)):
+            payload["extra_files"] = transfer_encoded_args_files(all_extra_files, "extra-files")
 
         if options.extra_packages:
             payload["extra_packages"] = options.extra_packages
