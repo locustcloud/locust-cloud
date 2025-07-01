@@ -1,0 +1,59 @@
+name: Daily ALB Teardown
+
+on:
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  teardown_eu:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install boto3 kubernetes
+
+      - name: Configure AWS Credentials using OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::637423602143:role/GitHubActionsDeleteIngress
+          aws-region: eu-north-1
+          role-session-name: github-actions-teardown-alb
+
+      - name: Teardown ALB
+        run: python alb-teardown.py
+        env:
+          AWS_DEFAULT_REGION: eu-north-1
+
+  teardown_us:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install boto3 kubernetes
+
+      - name: Configure AWS Credentials using OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::637423602143:role/GitHubActionsDeleteIngress
+          aws-region: eu-north-1
+          role-session-name: github-actions-teardown-alb
+
+      - name: Teardown ALB
+        run: python alb-teardown.py
+        env:
+          AWS_DEFAULT_REGION: us-east-1
