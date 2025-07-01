@@ -153,6 +153,7 @@ def main(locustfiles: list[str] | None = None):
             log_ws_url,
             auth=session_id,
         )
+        logger.debug(f"SocketIO transport type: {websocket.sio.transport()}")
         websocket.wait()
 
     except KeyboardInterrupt:
