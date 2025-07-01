@@ -75,7 +75,7 @@ jobs:
           HEADLESS: 1
       - name: On failure, notify slack
         if: failure()
-        run: curl -d "{\"text\":\"<!channel> Failed url test run $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID\"}" $SLACK_NOTIFICATIONS_WEBHOOK
+        run: curl -d "{\"text\":\"Failed url test run $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID\"}" $SLACK_NOTIFICATIONS_WEBHOOK
       - name: Make sure to delete (url tester doesn't self-destroy)
         if: always()
         run: uv run --with locust --with . locust --delete
