@@ -82,6 +82,7 @@ EXCLUDE_NAMESPACES = {
     "zefr",
     "dmdb",
     "wolters-kluwer",
+    "codepath",
 }
 
 kubernetes_client = get_kubernetes_client()
