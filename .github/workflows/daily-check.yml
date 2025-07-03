@@ -68,7 +68,7 @@ jobs:
       - uses: astral-sh/setup-uv@v5
       - run: uv venv --python 3.11
       - run: uv run playwright install --with-deps
-      - run: uv run pytest tests/url_tester.py
+      - run: uv run pytest tests/browser_tests.py
         env:
           LOCUSTCLOUD_USERNAME: ${{ secrets.LOCUSTCLOUD_USERNAME }}
           LOCUSTCLOUD_PASSWORD: ${{ secrets.LOCUSTCLOUD_PASSWORD }}
