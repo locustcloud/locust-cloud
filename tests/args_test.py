@@ -2,6 +2,7 @@ import base64
 import gzip
 import io
 import pathlib
+import tempfile
 from argparse import ArgumentTypeError
 from zipfile import ZipFile
 
@@ -12,9 +13,9 @@ from locust_cloud.args import (
     expanded,
     pipe,
     transfer_encode,
-    transfer_encoded_args_files,
     transfer_encoded_file,
-    valid_extra_files_path,
+    valid_project_path,
+    zip_project_paths,
 )
 
 
@@ -24,18 +25,19 @@ def test_pipe():
     assert pipe(4, one, two) == 15
 
 
-def test_valid_extra_files_path():
-    with pytest.raises(ArgumentTypeError) as exception:
-        valid_extra_files_path("../pineapple")
+def test_valid_project_path():
+    with tempfile.NamedTemporaryFile() as tmp:
+        with pytest.raises(ArgumentTypeError) as exception:
+            valid_project_path(tmp.name)
 
-    assert str(exception.value) == f"Can only reference files under current working directory: {CWD}"
+    assert str(exception.value) == f"'{tmp.name}' is not under current working directory: {CWD}"
 
     bad_path = str(CWD / "does-not-exist")
 
     with pytest.raises(ArgumentTypeError) as exception:
-        valid_extra_files_path(bad_path)
+        valid_project_path(bad_path)
 
-    assert str(exception.value) == f"File not found: {bad_path}"
+    assert str(exception.value) == f"'{bad_path}' does not exist"
 
 
 def test_transfer_encode():
@@ -63,9 +65,9 @@ def test_expanded():
     assert result == [pathlib.Path("locustfile.py"), pathlib.Path("testdata/extra-files/extra.txt")]
 
 
-def test_transfer_encoded_args_files():
-    result = transfer_encoded_args_files([pathlib.Path("testdata/extra-files").resolve()], "extra-files")
-    assert result["filename"] == "extra-files.zip"
+def test_project_zip():
+    result = zip_project_paths([pathlib.Path("testdata/extra-files")])
+    assert result["filename"] == "project.zip"
 
     buffer = pipe(
         result["data"],
@@ -81,29 +83,17 @@ def test_transfer_encoded_args_files():
 
 def test_parser_extra_files(capsys):
     with pytest.raises(SystemExit):
-        combined_cloud_parser.parse_known_args("locust-cloud --extra-files ../pineapple")
+        with tempfile.NamedTemporaryFile() as tmp:
+            combined_cloud_parser.parse_known_args(f"locust-cloud --extra-files {tmp.name}")
 
-    expected = "error: argument --extra-files: Can only reference files under current working directory"
-    assert expected in capsys.readouterr().err
+        expected = f"error: argument --extra-files: '{tmp.name}' is not under current working directory: {CWD}"
+        assert expected in capsys.readouterr().err
 
     with pytest.raises(SystemExit):
         combined_cloud_parser.parse_known_args("locust-cloud --extra-files does-not-exist")
 
-    expected = "error: argument --extra-files: File not found: does-not-exist"
+    expected = "error: argument --extra-files: 'does-not-exist' does not exist"
     assert expected in capsys.readouterr().err
-
-    options, _ = combined_cloud_parser.parse_known_args("locust-cloud --extra-files testdata/extra-files")
-    assert options.extra_files["filename"] == "extra-files.zip"
-    buffer = pipe(
-        options.extra_files["data"],
-        str.encode,
-        base64.b64decode,
-        gzip.decompress,
-        io.BytesIO,
-    )
-
-    with ZipFile(buffer) as zf:
-        assert zf.namelist() == ["testdata/extra-files/extra.txt"]
 
 
 def test_parser_loglevel(capsys):
