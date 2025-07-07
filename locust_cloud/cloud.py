@@ -68,7 +68,6 @@ def main(locustfiles: list[str] | None = None):
             if env_variable.startswith("LOCUST_")
             and env_variable
             not in [
-                "LOCUST_LOCUSTFILE",
                 "LOCUST_USERS",
                 "LOCUST_WEB_HOST_DISPLAY_NAME",
                 "LOCUST_SKIP_MONKEY_PATCH",
