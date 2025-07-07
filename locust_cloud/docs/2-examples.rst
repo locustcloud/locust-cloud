@@ -165,6 +165,9 @@ You can also specify additional files (data, python files or even entire directo
 
     --extra-files testdata.csv helper.py more-testdata/ other_helper/
 
+.. note::
+    Ensure that any additional files you include are located within the current working directory.
+
 View dashboard / previous test runs
 ===================================
 
