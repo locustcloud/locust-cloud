@@ -1,13 +1,19 @@
 import logging
 import os
+import pathlib
 import time
 import webbrowser
+from argparse import ArgumentTypeError
 from threading import Thread
 
 import requests
 from locust_cloud.actions import delete
 from locust_cloud.apisession import ApiSession
-from locust_cloud.args import combined_cloud_parser, transfer_encoded_file
+from locust_cloud.args import (
+    combined_cloud_parser,
+    valid_project_path,
+    zip_project_paths,
+)
 from locust_cloud.common import __version__
 from locust_cloud.input_events import input_listener
 from locust_cloud.websocket import SessionMismatchError, Websocket, WebsocketTimeout
@@ -43,7 +49,13 @@ def main(locustfiles: list[str] | None = None):
         logger.error("A locustfile is required to run a test.")
         return 1
 
-    s3_locustfiles = [transfer_encoded_file(locustfile) for locustfile in locustfiles]
+    try:
+        relative_locustfiles: list[pathlib.Path] = [valid_project_path(locustfile) for locustfile in locustfiles]
+    except ArgumentTypeError as e:
+        logger.error(e)
+        return
+
+    project_data = zip_project_paths(set(relative_locustfiles + (options.extra_files or [])))
 
     session = ApiSession(options.non_interactive)
     websocket = Websocket()
@@ -56,7 +68,6 @@ def main(locustfiles: list[str] | None = None):
             if env_variable.startswith("LOCUST_")
             and env_variable
             not in [
-                "LOCUST_LOCUSTFILE",
                 "LOCUST_USERS",
                 "LOCUST_WEB_HOST_DISPLAY_NAME",
                 "LOCUST_SKIP_MONKEY_PATCH",
@@ -76,7 +87,7 @@ def main(locustfiles: list[str] | None = None):
 
         payload = {
             "locust_args": locust_args,
-            "locustfile": s3_locustfiles,
+            "project_data": project_data,
             "user_count": options.users,
             "mock_server": options.mock_server,
         }
@@ -93,9 +104,6 @@ def main(locustfiles: list[str] | None = None):
 
         if options.requirements:
             payload["requirements"] = options.requirements
-
-        if options.extra_files:
-            payload["extra_files"] = options.extra_files
 
         if options.extra_packages:
             payload["extra_packages"] = options.extra_packages

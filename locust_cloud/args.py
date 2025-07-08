@@ -19,7 +19,7 @@ else:
 
 from argparse import ArgumentTypeError
 from collections import OrderedDict
-from collections.abc import Callable, Generator
+from collections.abc import Callable, Generator, Iterable
 from typing import IO, Any, cast
 from zipfile import ZipFile
 
@@ -57,14 +57,18 @@ def pipe(value: Any, *functions: Callable) -> Any:
     return value
 
 
-def valid_extra_files_path(file_path: str) -> pathlib.Path:
-    p = pathlib.Path(file_path).resolve()
+def valid_project_path(path: str | pathlib.Path) -> pathlib.Path:
+    try:
+        # Expand '~' and eliminate '..', '.', and symlinks
+        p = pathlib.Path(path).expanduser().resolve(strict=True)
 
-    if not CWD in p.parents:
-        raise ArgumentTypeError(f"Can only reference files under current working directory: {CWD}")
-    if not p.exists():
-        raise ArgumentTypeError(f"File not found: {file_path}")
-    return p
+        return p.relative_to(CWD)
+    except FileNotFoundError:
+        raise ArgumentTypeError(f"{path!r} does not exist")
+    except OSError as exc:  # Bad characters, too long, etc
+        raise ArgumentTypeError(f"{path!r} is not a valid path: {exc}")
+    except ValueError:
+        raise ArgumentTypeError(f"{path!r} is not under current working directory: {CWD}")
 
 
 def valid_extra_packages_path(file_path: str) -> pathlib.Path:
@@ -98,8 +102,10 @@ def transfer_encoded_file(file_path: str) -> dict[str, str]:
         raise ArgumentTypeError(f"File not found: {file_path}")
 
 
-def expanded(paths: list[pathlib.Path]) -> Generator[pathlib.Path, None, None]:
+def expanded(paths: Iterable[pathlib.Path]) -> Generator[pathlib.Path, None, None]:
     for path in paths:
+        path = pathlib.Path(path)
+
         if path.is_dir():
             for root, _, file_names in os.walk(path):
                 for file_name in file_names:
@@ -108,12 +114,12 @@ def expanded(paths: list[pathlib.Path]) -> Generator[pathlib.Path, None, None]:
             yield path
 
 
-def transfer_encoded_args_files(paths: list[pathlib.Path], to_file: str | None) -> dict[str, str]:
+def zip_project_paths(paths: Iterable[pathlib.Path], to_file: str = "project"):
     buffer = io.BytesIO()
 
     with ZipFile(buffer, "w") as zf:
         for path in set(expanded(paths)):
-            zf.write(path.relative_to(CWD))
+            zf.write(path)
 
     buffer.seek(0)
     return transfer_encode(f"{to_file}.zip", buffer)
@@ -152,14 +158,7 @@ def flat_transfer_encoded_args_files(paths: list[pathlib.Path], to_file: str | N
     return transfer_encode(f"{to_file}.zip", buffer)
 
 
-class MergeToTransferEncodedZip(argparse.Action):
-    def __call__(self, parser, namespace, values, option_string=None):
-        paths = cast(list[pathlib.Path], values)
-        value = transfer_encoded_args_files(paths, option_string.lstrip("-"))
-        setattr(namespace, self.dest, value)
-
-
-class MergeToTransferEncodedZipFlat(MergeToTransferEncodedZip):
+class MergeToTransferEncodedZipFlat(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
         paths = cast(list[pathlib.Path], values)
         value = flat_transfer_encoded_args_files(paths, option_string.lstrip("-"))
@@ -246,9 +245,8 @@ cloud_parser.add_argument(
 )
 cloud_parser.add_argument(
     "--extra-files",
-    action=MergeToTransferEncodedZip,
     nargs="*",
-    type=valid_extra_files_path,
+    type=valid_project_path,
     help="A list of extra files or directories to upload. Space-separated, e.g. `--extra-files testdata.csv *.py my-directory/`.",
 )
 cloud_parser.add_argument(
@@ -287,11 +285,6 @@ Locust config can also be set using config file (~/.locust.conf, locust.conf, py
 Parameters specified on command line override env vars, which in turn override config files.""",
     add_config_file_help=False,
     add_env_var_help=False,
-)
-# We do not use this, but we keep it here to consume it from CLI if provided
-combined_cloud_parser.add_argument(
-    "-f",
-    "--locustfile",
 )
 combined_cloud_parser.add_argument(
     "-u",
