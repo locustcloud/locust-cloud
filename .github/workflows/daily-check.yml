@@ -67,6 +67,7 @@ jobs:
           fetch-tags: true
       - uses: astral-sh/setup-uv@v5
       - run: uv venv --python 3.11
+      - run: uv add --dev
       - run: uv run playwright install --with-deps
       - run: uv run pytest tests/browser_tests.py
         env:
