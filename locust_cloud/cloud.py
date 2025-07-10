@@ -16,6 +16,7 @@ from locust_cloud.args import (
 )
 from locust_cloud.common import __version__
 from locust_cloud.input_events import input_listener
+from locust_cloud.utils import get_imported_files
 from locust_cloud.websocket import SessionMismatchError, Websocket, WebsocketTimeout
 
 logger = logging.getLogger(__name__)
@@ -55,7 +56,11 @@ def main(locustfiles: list[str] | None = None):
         logger.error(e)
         return
 
-    project_data = zip_project_paths(set(relative_locustfiles + (options.extra_files or [])))
+    auto_extra_files = set()
+    for lf in relative_locustfiles:
+        auto_extra_files.update(get_imported_files(lf))
+
+    project_data = zip_project_paths(set(relative_locustfiles + (options.extra_files or []) + list(auto_extra_files)))
 
     session = ApiSession(options.non_interactive)
     websocket = Websocket()
