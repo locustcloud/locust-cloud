@@ -60,7 +60,10 @@ def main(locustfiles: list[str] | None = None):
     for lf in relative_locustfiles:
         auto_extra_files.update(get_imported_files(lf))
 
-    project_data = zip_project_paths(set(relative_locustfiles + (options.extra_files or []) + list(auto_extra_files)))
+    project_files = set(relative_locustfiles + (options.extra_files or []) + list(auto_extra_files))
+    logger.debug(f"Project files: {project_files}")
+
+    project_data = zip_project_paths(project_files)
 
     session = ApiSession(options.non_interactive)
     websocket = Websocket()
