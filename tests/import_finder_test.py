@@ -4,7 +4,7 @@ import textwrap
 from contextlib import contextmanager
 from pathlib import Path
 
-from locust_cloud.utils import CWD, get_imported_files
+from locust_cloud.import_finder import CWD, get_imported_files
 
 
 @contextmanager
@@ -107,17 +107,17 @@ def test_package_imports():
             """
         )
     )
+    try:
+        with temporary_file("import test_package") as f:
+            assert get_imported_files(Path(f)) == {test_package}
 
-    with temporary_file("import test_package") as f:
-        assert get_imported_files(Path(f)) == {test_package}
+        with temporary_file("import test_package.test") as f:
+            assert get_imported_files(Path(f)) == {test_package}
 
-    with temporary_file("import test_package.test") as f:
-        assert get_imported_files(Path(f)) == {test_package}
+        with temporary_file("from test_package import baz") as f:
+            assert get_imported_files(Path(f)) == {test_package}
 
-    with temporary_file("from test_package import baz") as f:
-        assert get_imported_files(Path(f)) == {test_package}
-
-    with temporary_file("from test_package.test import baz") as f:
-        assert get_imported_files(Path(f)) == {test_package}
-
-    shutil.rmtree(test_package, ignore_errors=True)
+        with temporary_file("from test_package.test import baz") as f:
+            assert get_imported_files(Path(f)) == {test_package}
+    finally:
+        shutil.rmtree(test_package, ignore_errors=True)

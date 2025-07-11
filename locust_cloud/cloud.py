@@ -15,8 +15,8 @@ from locust_cloud.args import (
     zip_project_paths,
 )
 from locust_cloud.common import __version__
+from locust_cloud.import_finder import get_imported_files
 from locust_cloud.input_events import input_listener
-from locust_cloud.utils import get_imported_files
 from locust_cloud.websocket import SessionMismatchError, Websocket, WebsocketTimeout
 
 logger = logging.getLogger(__name__)

@@ -8,6 +8,7 @@ import platformdirs
 
 __version__ = importlib.metadata.version("locust-cloud")
 
+CWD = pathlib.Path.cwd()
 
 VALID_REGIONS = ["us-east-1", "eu-north-1"]
 CLOUD_CONF_FILE = pathlib.Path(platformdirs.user_config_dir(appname="locust-cloud")) / "config"

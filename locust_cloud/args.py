@@ -10,7 +10,7 @@ import tempfile
 
 from locust_cloud.actions import delete
 from locust_cloud.apisession import ApiSession
-from locust_cloud.utils import CWD
+from locust_cloud.common import CWD
 from locust_cloud.web_login import logout, web_login
 
 if sys.version_info >= (3, 11):
