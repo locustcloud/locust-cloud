@@ -102,12 +102,14 @@ def transfer_encoded_file(file_path: str) -> dict[str, str]:
         raise ArgumentTypeError(f"File not found: {file_path}")
 
 
-def expanded(paths: Iterable[pathlib.Path]) -> Generator[pathlib.Path, None, None]:
+def expanded(paths: Iterable[pathlib.Path], skip_folders: list[str] = []) -> Generator[pathlib.Path, None, None]:
     for path in paths:
         path = pathlib.Path(path)
 
         if path.is_dir():
             for root, _, file_names in os.walk(path):
+                if root.split("/")[-1] in skip_folders:
+                    continue
                 for file_name in file_names:
                     yield pathlib.Path(root) / file_name
         else:
@@ -116,9 +118,10 @@ def expanded(paths: Iterable[pathlib.Path]) -> Generator[pathlib.Path, None, Non
 
 def zip_project_paths(paths: Iterable[pathlib.Path], to_file: str = "project"):
     buffer = io.BytesIO()
+    skip_folders = ["__pycache__"]
 
     with ZipFile(buffer, "w") as zf:
-        for path in set(expanded(paths)):
+        for path in set(expanded(paths, skip_folders=skip_folders)):
             zf.write(path)
 
     buffer.seek(0)
