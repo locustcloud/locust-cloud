@@ -15,6 +15,7 @@ from locust_cloud.args import (
     zip_project_paths,
 )
 from locust_cloud.common import __version__
+from locust_cloud.import_finder import get_imported_files
 from locust_cloud.input_events import input_listener
 from locust_cloud.websocket import SessionMismatchError, Websocket, WebsocketTimeout
 
@@ -55,10 +56,17 @@ def main(locustfiles: list[str] | None = None):
         logger.error(e)
         return
 
-    project_data = zip_project_paths(set(relative_locustfiles + (options.extra_files or [])))
-
     session = ApiSession(options.non_interactive)
     websocket = Websocket()
+
+    auto_extra_files = set()
+    for lf in relative_locustfiles:
+        auto_extra_files.update(get_imported_files(lf))
+
+    project_files = set(relative_locustfiles + (options.extra_files or []) + list(auto_extra_files))
+    logger.debug(f"Project files: {project_files}")
+
+    project_data = zip_project_paths(project_files)
 
     try:
         logger.info(f"Deploying ({session.region}, locust-cloud {__version__})")
