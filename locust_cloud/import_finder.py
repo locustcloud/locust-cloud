@@ -10,7 +10,11 @@ logger = logging.getLogger(__name__)
 SITE_PACKAGES_PATHS = [Path(p) for p in [site.getusersitepackages(), *site.getsitepackages()]]
 
 
-def get_imported_files(file_path: Path) -> set[Path]:
+def get_imported_files(file_path: Path) -> list[Path]:
+    """
+    Get a list of path that are imported from the given python script
+    They are returned as relative paths to CWD
+    """
     imports: set[Path] = set()
 
     script_path = Path(file_path).resolve()
@@ -20,7 +24,7 @@ def get_imported_files(file_path: Path) -> set[Path]:
         mf.run_script(str(script_path))
     except Exception as e:
         logger.debug(f"Unable to run ModuleFinder on {script_path}: {e}")
-        return set()
+        return []
 
     for mod in mf.modules.values():
         path = getattr(mod, "__file__", None)
@@ -38,4 +42,4 @@ def get_imported_files(file_path: Path) -> set[Path]:
             # add the whole package directory if __init__.py, else the file
             imports.add(p.parent if p.name == "__init__.py" else p)
 
-    return imports
+    return [i.relative_to(CWD) for i in imports]
