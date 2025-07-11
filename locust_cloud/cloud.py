@@ -56,6 +56,9 @@ def main(locustfiles: list[str] | None = None):
         logger.error(e)
         return
 
+    session = ApiSession(options.non_interactive)
+    websocket = Websocket()
+
     auto_extra_files = set()
     for lf in relative_locustfiles:
         auto_extra_files.update(get_imported_files(lf))
@@ -64,9 +67,6 @@ def main(locustfiles: list[str] | None = None):
     logger.debug(f"Project files: {project_files}")
 
     project_data = zip_project_paths(project_files)
-
-    session = ApiSession(options.non_interactive)
-    websocket = Websocket()
 
     try:
         logger.info(f"Deploying ({session.region}, locust-cloud {__version__})")
