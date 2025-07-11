@@ -147,10 +147,9 @@ def main(locustfiles: list[str] | None = None):
 
         log_ws_url = js["log_ws_url"]
         session_id = js["session_id"]
-        webui_url = log_ws_url.replace("/socket-logs", "")
 
         def open_ui():
-            webbrowser.open_new_tab(webui_url)
+            webbrowser.open_new_tab("https://auth.locust.cloud/load-test")
 
         Thread(target=input_listener({"\r": open_ui, "\n": open_ui}), daemon=True).start()
 
