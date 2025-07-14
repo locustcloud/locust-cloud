@@ -4,7 +4,12 @@ import random
 
 from locust import FastHttpUser, run_single_user, task  # pyright: ignore [reportMissingImports]
 
+from testdata.autodetected import stuff
+
 product_ids = [1, 2, 42, 4711]
+
+
+stuff()
 
 
 class MyUser(FastHttpUser):

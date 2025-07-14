@@ -40,6 +40,8 @@ jobs:
       - run: grep -m 1 '(exit code 0)' output.txt
       # check extra files specified were available
       - run: "grep -m 1 -- '--extra-files verification: pineapple' output.txt"
+      # check autodetected extra files were available
+      - run: "grep -m 1 -- 'import finder works' output.txt"
       # check extra package were successfully installed
       - run: "grep -m 1 -- 'Hello from the example package!' output.txt"
       # check --requirements were successfully installed
