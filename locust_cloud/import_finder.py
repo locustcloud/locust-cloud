@@ -15,12 +15,12 @@ def imported_modules(tree):
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             for alias in node.names:
-                yield alias.name.split(".")[0]
+                yield alias.name
         if isinstance(node, ast.ImportFrom):
             if node.level:  # relative import
                 continue
             if node.module:
-                yield node.module.split(".")[0]
+                yield node.module
 
 
 def get_imported_files(file_path: Path) -> set[Path]:

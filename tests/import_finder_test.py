@@ -115,7 +115,7 @@ def test_package_imports():
     (test_package / "__init__.py").write_text(
         textwrap.dedent(
             """
-                from test import bar
+                from .test import bar
                 def foo():
                     return "bar"
             """
@@ -134,12 +134,12 @@ def test_package_imports():
             assert get_imported_files(Path(f)) == {test_package.relative_to(CWD)}
 
         with temporary_file("import test_package.test") as f:
-            assert get_imported_files(Path(f)) == {test_package.relative_to(CWD)}
+            assert get_imported_files(Path(f)) == {(test_package / "test.py").relative_to(CWD)}
 
         with temporary_file("from test_package import bar") as f:
             assert get_imported_files(Path(f)) == {test_package.relative_to(CWD)}
 
         with temporary_file("from test_package.test import bar") as f:
-            assert get_imported_files(Path(f)) == {test_package.relative_to(CWD)}
+            assert get_imported_files(Path(f)) == {(test_package / "test.py").relative_to(CWD)}
     finally:
         shutil.rmtree(test_package, ignore_errors=True)
