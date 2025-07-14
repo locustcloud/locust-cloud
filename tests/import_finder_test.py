@@ -35,7 +35,7 @@ def test_import_file():
     ) as to_import:
         with temporary_file(f"import {import_name(to_import)}\n") as f:
             imports = get_imported_files(Path(f))
-            assert imports == [Path(to_import).relative_to(CWD)]
+            assert imports == {Path(to_import).relative_to(CWD)}
 
 
 def test_from_import_file():
@@ -48,7 +48,7 @@ def test_from_import_file():
         )
     ) as to_import:
         with temporary_file(f"from {import_name(to_import)} import foo") as f:
-            assert get_imported_files(Path(f)) == [Path(to_import).relative_to(CWD)]
+            assert get_imported_files(Path(f)) == {Path(to_import).relative_to(CWD)}
 
 
 def test_all_imports():
@@ -68,7 +68,7 @@ def test_all_imports():
                 """
             )
         ) as f:
-            assert get_imported_files(Path(f)) == [Path(to_import).relative_to(CWD)]
+            assert get_imported_files(Path(f)) == {Path(to_import).relative_to(CWD)}
 
 
 def test_second_level_imports():
@@ -88,7 +88,7 @@ def test_second_level_imports():
                 """
             )
         ) as f:
-            assert get_imported_files(Path(f)) == [Path(to_import).relative_to(CWD)]
+            assert get_imported_files(Path(f)) == {Path(to_import).relative_to(CWD)}
 
 
 def test_recursive_imports():
@@ -102,10 +102,10 @@ def test_recursive_imports():
     ) as to_import_1:
         with temporary_file(f"import {import_name(to_import_1)}") as to_import:
             with temporary_file(f"import {import_name(to_import)}") as f:
-                assert get_imported_files(Path(f)) == [
+                assert get_imported_files(Path(f)) == {
                     Path(to_import).relative_to(CWD),
                     Path(to_import_1).relative_to(CWD),
-                ]
+                }
 
 
 def test_package_imports():
@@ -131,15 +131,15 @@ def test_package_imports():
     )
     try:
         with temporary_file("import test_package") as f:
-            assert get_imported_files(Path(f)) == [test_package.relative_to(CWD)]
+            assert get_imported_files(Path(f)) == {test_package.relative_to(CWD)}
 
         with temporary_file("import test_package.test") as f:
-            assert get_imported_files(Path(f)) == [test_package.relative_to(CWD)]
+            assert get_imported_files(Path(f)) == {test_package.relative_to(CWD)}
 
         with temporary_file("from test_package import bar") as f:
-            assert get_imported_files(Path(f)) == [test_package.relative_to(CWD)]
+            assert get_imported_files(Path(f)) == {test_package.relative_to(CWD)}
 
         with temporary_file("from test_package.test import bar") as f:
-            assert get_imported_files(Path(f)) == [test_package.relative_to(CWD)]
+            assert get_imported_files(Path(f)) == {test_package.relative_to(CWD)}
     finally:
         shutil.rmtree(test_package, ignore_errors=True)
