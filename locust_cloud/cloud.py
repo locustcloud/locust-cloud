@@ -64,7 +64,7 @@ def main(locustfiles: list[str] | None = None):
         auto_extra_files.update(get_imported_files(lf))
 
     project_files = set(relative_locustfiles + (options.extra_files or []) + list(auto_extra_files))
-    logger.debug(f"Project files: {project_files}")
+    logger.debug(f"Project files: {', '.join([str(posix_path) for posix_path in project_files])}")
 
     project_data = zip_project_paths(project_files)
 

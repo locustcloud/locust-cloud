@@ -59,6 +59,6 @@ def get_imported_files(file_path: Path) -> set[Path]:
                         paths_queue.append(p)
                         imports.add(p)
             else:
-                logger.debug(f"Unable to find spec for module: {mod}")
+                pass  # logger.debug(f"Unable to find spec for module: {mod}")
 
     return set([i.relative_to(CWD) for i in imports])
