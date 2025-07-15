@@ -48,6 +48,7 @@ def get_imported_files(file_path: Path) -> set[Path]:
                     and all(parent not in SITE_PACKAGES_PATHS for parent in p.parents)
                     and all(parent not in imports for parent in p.parents)
                     and not "site-packages" in str(p)
+                    and p.name not in ["built-in", "frozen"]
                 ):
                     # add the whole package directory if __init__.py, else the file
                     if p.name == "__init__.py":
