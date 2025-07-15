@@ -1,11 +1,11 @@
 Locustfile and mock server
 ==========================
 
-If you're learning Locust and want to try it out, Locust Cloud has its own demo mock server you can test against, using the locustfile below. Pass ``--mock-server`` to spawn the mock next to your load generators and set Locust target hostname accordingly.
+If you're learning Locust and want to try it out, Locust Cloud has its own demo mock server you can test against, using the locustfile below. Pass ``--host https://mock-test-target.eu-north-1.locust.cloud`` test against the mock server.
 
 .. code-block:: console
 
-    $ locust --cloud -f my_locustfile.py --users 100 --mock-server
+    $ locust --cloud -f my_locustfile.py --users 100 --host https://mock-test-target.eu-north-1.locust.cloud
 
 
 .. code-block:: python

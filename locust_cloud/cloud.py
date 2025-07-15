@@ -97,7 +97,6 @@ def main(locustfiles: list[str] | None = None):
             "locust_args": locust_args,
             "project_data": project_data,
             "user_count": options.users,
-            "mock_server": options.mock_server,
         }
 
         if options.image_tag is not None:

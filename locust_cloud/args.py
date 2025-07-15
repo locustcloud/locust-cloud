@@ -240,12 +240,6 @@ cloud_parser.add_argument(
     # LOCUSTCLOUD_SESSION_ID=valid-session-id LOCUST_WEB_LOGIN=1 LOCUST_LOGLEVEL=DEBUG python -m bootstrap
 )
 cloud_parser.add_argument(
-    "--mock-server",
-    action="store_true",
-    default=False,
-    help="Start a demo mock service and set --host parameter to point Locust towards it.",
-)
-cloud_parser.add_argument(
     "--extra-files",
     nargs="*",
     type=valid_project_path,
