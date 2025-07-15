@@ -157,13 +157,20 @@ You can also upload a package that you have locally:
 
 .. code-block:: console
 
-    --extra-packages helper.whl other-helper.tar.gz third-helper/
+    --extra-packages helper.whl other-helper.tar.gz
 
-You can also specify additional files (data, python files or even entire directories/modules) to be copied to the load generators using the ``--extra-files`` option:
+You can also specify additional files (data files even entire directories/modules) to be copied to the load generators using the ``--extra-files`` option:
 
 .. code-block:: console
 
-    --extra-files testdata.csv helper.py more-testdata/ other_helper/
+    --extra-files testdata.csv more-testdata/
+
+Locust will attempt to locate any local imports in your locustfile(s) and automatically include the necessary Python files, so in most cases you won't need to specify them explicitly.
+
+.. code-block:: python
+
+    # Locust will automatically upload some_module.py (or some_module/)
+    from some_module import some_function
 
 .. note::
     Ensure that any additional files you include are located within the current working directory.
