@@ -8,7 +8,6 @@ import shutil
 import sys
 import tempfile
 
-from locust_cloud.actions import delete
 from locust_cloud.apisession import ApiSession
 from locust_cloud.common import CWD
 from locust_cloud.web_login import logout, web_login
@@ -182,7 +181,7 @@ class WebLogout(argparse.Action):
 class StackTeardown(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
         session = ApiSession(namespace.non_interactive)
-        delete(session)
+        session.teardown()
         parser.exit()
 
 

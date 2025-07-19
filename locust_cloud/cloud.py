@@ -7,7 +7,6 @@ from argparse import ArgumentTypeError
 from threading import Thread
 
 import requests
-from locust_cloud.actions import delete
 from locust_cloud.apisession import ApiSession
 from locust_cloud.args import (
     combined_cloud_parser,
@@ -175,7 +174,7 @@ def main(locustfiles: list[str] | None = None):
         if options.local_instance:
             os.system("pkill -TERM -f bootstrap")
         else:
-            delete(session)
+            session.teardown()
         try:
             websocket.wait(timeout=True)
         except (WebsocketTimeout, SessionMismatchError) as e:
@@ -183,7 +182,7 @@ def main(locustfiles: list[str] | None = None):
             return 1
     except WebsocketTimeout as e:
         logger.error(str(e))
-        delete(session)
+        session.teardown()
         return 1
     except SessionMismatchError as e:
         # In this case we do not trigger the teardown since the running instance is not ours
@@ -191,7 +190,7 @@ def main(locustfiles: list[str] | None = None):
         return 1
     except Exception as e:
         logger.exception(e)
-        delete(session)
+        session.teardown()
         return 1
     else:
-        delete(session)
+        session.teardown()
