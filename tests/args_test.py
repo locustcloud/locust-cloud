@@ -10,18 +10,11 @@ import pytest
 from locust_cloud.args import (
     combined_cloud_parser,
     expanded,
-    pipe,
     transfer_encode,
     transfer_encoded_file,
     valid_project_path,
     zip_project_paths,
 )
-
-
-def test_pipe():
-    one = lambda x: x * 3
-    two = lambda x: x + 3
-    assert pipe(4, one, two) == 15
 
 
 def test_valid_project_path():
@@ -44,12 +37,7 @@ def test_transfer_encode():
     data = b"pineapple"
     result = transfer_encode(file_name, io.BytesIO(data))
     assert file_name == result["filename"]
-    assert data == pipe(
-        result["data"],
-        str.encode,
-        base64.b64decode,
-        gzip.decompress,
-    )
+    assert data == gzip.decompress(base64.b64decode(str.encode(result["data"])))
 
 
 def test_transfer_encoded_file():
@@ -67,15 +55,7 @@ def test_expanded():
 def test_project_zip():
     result = zip_project_paths([Path("testdata/extra-files")])
     assert result["filename"] == "project.zip"
-
-    buffer = pipe(
-        result["data"],
-        str.encode,
-        base64.b64decode,
-        gzip.decompress,
-        io.BytesIO,
-    )
-
+    buffer = io.BytesIO(gzip.decompress(base64.b64decode(str.encode(result["data"]))))
     with ZipFile(buffer) as zf:
         assert zf.namelist() == ["testdata/extra-files/extra.txt"]
 

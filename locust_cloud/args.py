@@ -19,7 +19,7 @@ else:
 
 from argparse import ArgumentTypeError
 from collections import OrderedDict
-from collections.abc import Callable, Generator, Iterable
+from collections.abc import Generator, Iterable
 from typing import IO, Any, cast
 from zipfile import ZipFile
 
@@ -46,13 +46,6 @@ class LocustTomlConfigParser(configargparse.TomlConfigParser):
                 break
 
         return result
-
-
-def pipe(value: Any, *functions: Callable) -> Any:
-    for function in functions:
-        value = function(value)
-
-    return value
 
 
 def valid_project_path(path: str | Path) -> Path:
@@ -83,12 +76,7 @@ def valid_extra_packages_path(file_path: str) -> Path:
 def transfer_encode(file_name: str, stream: IO[bytes]) -> dict[str, str]:
     return {
         "filename": file_name,
-        "data": pipe(
-            stream.read(),
-            gzip.compress,
-            base64.b64encode,
-            bytes.decode,
-        ),
+        "data": bytes.decode(base64.b64encode(gzip.compress(stream.read()))),
     }
 
 
