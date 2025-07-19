@@ -18,9 +18,6 @@ dependencies = [
 homepage = "https://locust.cloud"
 repository = "https://github.com/locustcloud/locust-cloud"
 
-[project.scripts]
-locust-cloud = "locust_cloud.cloud:deprecated_main"
-
 [build-system]
 requires = ["hatchling", "hatch-vcs"]
 build-backend = "hatchling.build"
