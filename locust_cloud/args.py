@@ -9,8 +9,8 @@ import sys
 import tempfile
 
 from locust_cloud.apisession import ApiSession
-from locust_cloud.common import CWD
-from locust_cloud.web_login import logout, web_login
+from locust_cloud.common import CWD, delete_cloud_config
+from locust_cloud.web_login import web_login
 
 if sys.version_info >= (3, 11):
     import tomllib
@@ -174,7 +174,7 @@ class WebLogin(argparse.Action):
 
 class WebLogout(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
-        logout()
+        delete_cloud_config()
         parser.exit()
 
 
