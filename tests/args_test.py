@@ -1,17 +1,15 @@
 import base64
 import gzip
 import io
-import pathlib
 import tempfile
 from argparse import ArgumentTypeError
+from pathlib import Path
 from zipfile import ZipFile
 
 import pytest
 from locust_cloud.args import (
-    CWD,
     combined_cloud_parser,
     expanded,
-    pipe,
     transfer_encode,
     transfer_encoded_file,
     valid_project_path,
@@ -19,20 +17,14 @@ from locust_cloud.args import (
 )
 
 
-def test_pipe():
-    one = lambda x: x * 3
-    two = lambda x: x + 3
-    assert pipe(4, one, two) == 15
-
-
 def test_valid_project_path():
     with tempfile.NamedTemporaryFile() as tmp:
         with pytest.raises(ArgumentTypeError) as exception:
             valid_project_path(tmp.name)
 
-    assert str(exception.value) == f"'{tmp.name}' is not under current working directory: {CWD}"
+    assert str(exception.value) == f"'{tmp.name}' is not under current working directory: {Path.cwd()}"
 
-    bad_path = str(CWD / "does-not-exist")
+    bad_path = str(Path.cwd() / "does-not-exist")
 
     with pytest.raises(ArgumentTypeError) as exception:
         valid_project_path(bad_path)
@@ -45,12 +37,7 @@ def test_transfer_encode():
     data = b"pineapple"
     result = transfer_encode(file_name, io.BytesIO(data))
     assert file_name == result["filename"]
-    assert data == pipe(
-        result["data"],
-        str.encode,
-        base64.b64decode,
-        gzip.decompress,
-    )
+    assert data == gzip.decompress(base64.b64decode(str.encode(result["data"])))
 
 
 def test_transfer_encoded_file():
@@ -61,22 +48,14 @@ def test_transfer_encoded_file():
 
 
 def test_expanded():
-    result = list(expanded([pathlib.Path("locustfile.py"), pathlib.Path("testdata/extra-files")]))
-    assert result == [pathlib.Path("locustfile.py"), pathlib.Path("testdata/extra-files/extra.txt")]
+    result = list(expanded([Path("locustfile.py"), Path("testdata/extra-files")]))
+    assert result == [Path("locustfile.py"), Path("testdata/extra-files/extra.txt")]
 
 
 def test_project_zip():
-    result = zip_project_paths([pathlib.Path("testdata/extra-files")])
+    result = zip_project_paths([Path("testdata/extra-files")])
     assert result["filename"] == "project.zip"
-
-    buffer = pipe(
-        result["data"],
-        str.encode,
-        base64.b64decode,
-        gzip.decompress,
-        io.BytesIO,
-    )
-
+    buffer = io.BytesIO(gzip.decompress(base64.b64decode(str.encode(result["data"]))))
     with ZipFile(buffer) as zf:
         assert zf.namelist() == ["testdata/extra-files/extra.txt"]
 
@@ -86,7 +65,7 @@ def test_parser_extra_files(capsys):
         with tempfile.NamedTemporaryFile() as tmp:
             combined_cloud_parser.parse_known_args(f"locust-cloud --extra-files {tmp.name}")
 
-        expected = f"error: argument --extra-files: '{tmp.name}' is not under current working directory: {CWD}"
+        expected = f"error: argument --extra-files: '{tmp.name}' is not under current working directory: {Path.cwd()}"
         assert expected in capsys.readouterr().err
 
     with pytest.raises(SystemExit):
