@@ -63,8 +63,9 @@ def test_all_imports():
         with temporary_file(
             textwrap.dedent(
                 f"""
-                    import requests
-                    import {import_name(to_import)}
+                    import requests                 # should be ignored
+                    import os                       # should be ignored
+                    import {import_name(to_import)} # should be included
                 """
             )
         ) as f:
