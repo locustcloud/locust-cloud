@@ -8,9 +8,6 @@ import platformdirs
 
 __version__ = importlib.metadata.version("locust-cloud")
 
-CWD = pathlib.Path.cwd()
-
-
 VALID_REGIONS = ["us-east-1", "eu-north-1"]
 CLOUD_CONF_FILE = pathlib.Path(platformdirs.user_config_dir(appname="locust-cloud")) / "config"
 
@@ -45,5 +42,4 @@ def write_cloud_config(config: CloudConfig) -> None:
 
 
 def delete_cloud_config() -> None:
-    if CLOUD_CONF_FILE.exists():
-        CLOUD_CONF_FILE.unlink()
+    CLOUD_CONF_FILE.unlink(missing_ok=True)

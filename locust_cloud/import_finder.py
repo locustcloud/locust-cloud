@@ -4,8 +4,6 @@ import logging
 import site
 from pathlib import Path
 
-from locust_cloud.common import CWD
-
 logger = logging.getLogger(__name__)
 
 SITE_PACKAGES_PATHS = [Path(p) for p in [site.getusersitepackages(), *site.getsitepackages()]]
@@ -44,7 +42,7 @@ def get_imported_files(file_path: Path) -> set[Path]:
                 p = Path(spec.origin).resolve()
                 if (
                     p != current
-                    and p.is_relative_to(CWD)
+                    and p.is_relative_to(Path.cwd())
                     and all(parent not in SITE_PACKAGES_PATHS for parent in p.parents)
                     and all(parent not in imports for parent in p.parents)
                     and not "site-packages" in str(p)
@@ -61,4 +59,4 @@ def get_imported_files(file_path: Path) -> set[Path]:
             else:
                 pass  # logger.debug(f"Unable to find spec for module: {mod}")
 
-    return set([i.relative_to(CWD) for i in imports])
+    return set([i.relative_to(Path.cwd()) for i in imports])

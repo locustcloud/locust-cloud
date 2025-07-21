@@ -3,15 +3,14 @@ import base64
 import gzip
 import io
 import os
-import pathlib
 import shutil
 import sys
 import tempfile
+from pathlib import Path
 
-from locust_cloud.actions import delete
 from locust_cloud.apisession import ApiSession
-from locust_cloud.common import CWD
-from locust_cloud.web_login import logout, web_login
+from locust_cloud.common import delete_cloud_config
+from locust_cloud.web_login import web_login
 
 if sys.version_info >= (3, 11):
     import tomllib
@@ -20,7 +19,7 @@ else:
 
 from argparse import ArgumentTypeError
 from collections import OrderedDict
-from collections.abc import Callable, Generator, Iterable
+from collections.abc import Generator, Iterable
 from typing import IO, Any, cast
 from zipfile import ZipFile
 
@@ -49,29 +48,22 @@ class LocustTomlConfigParser(configargparse.TomlConfigParser):
         return result
 
 
-def pipe(value: Any, *functions: Callable) -> Any:
-    for function in functions:
-        value = function(value)
-
-    return value
-
-
-def valid_project_path(path: str | pathlib.Path) -> pathlib.Path:
+def valid_project_path(path: str | Path) -> Path:
     try:
         # Expand '~' and eliminate '..', '.', and symlinks
-        p = pathlib.Path(path).expanduser().resolve(strict=True)
+        p = Path(path).expanduser().resolve(strict=True)
 
-        return p.relative_to(CWD)
+        return p.relative_to(Path.cwd())
     except FileNotFoundError:
         raise ArgumentTypeError(f"{path!r} does not exist")
     except OSError as exc:  # Bad characters, too long, etc
         raise ArgumentTypeError(f"{path!r} is not a valid path: {exc}")
     except ValueError:
-        raise ArgumentTypeError(f"{path!r} is not under current working directory: {CWD}")
+        raise ArgumentTypeError(f"{path!r} is not under current working directory: {Path.cwd()}")
 
 
-def valid_extra_packages_path(file_path: str) -> pathlib.Path:
-    p = pathlib.Path(file_path).resolve()
+def valid_extra_packages_path(file_path: str) -> Path:
+    p = Path(file_path).resolve()
 
     if not p.exists():
         raise ArgumentTypeError(f"Path not found: {file_path}")
@@ -84,12 +76,7 @@ def valid_extra_packages_path(file_path: str) -> pathlib.Path:
 def transfer_encode(file_name: str, stream: IO[bytes]) -> dict[str, str]:
     return {
         "filename": file_name,
-        "data": pipe(
-            stream.read(),
-            gzip.compress,
-            base64.b64encode,
-            bytes.decode,
-        ),
+        "data": bytes.decode(base64.b64encode(gzip.compress(stream.read()))),
     }
 
 
@@ -101,21 +88,21 @@ def transfer_encoded_file(file_path: str) -> dict[str, str]:
         raise ArgumentTypeError(f"File not found: {file_path}")
 
 
-def expanded(paths: Iterable[pathlib.Path], skip_folders: list[str] = []) -> Generator[pathlib.Path, None, None]:
+def expanded(paths: Iterable[Path], skip_folders: list[str] = []) -> Generator[Path, None, None]:
     for path in paths:
-        path = pathlib.Path(path)
+        path = Path(path)
 
         if path.is_dir():
             for root, _, file_names in os.walk(path):
                 if root.split("/")[-1] in skip_folders:
                     continue
                 for file_name in file_names:
-                    yield pathlib.Path(root) / file_name
+                    yield Path(root) / file_name
         else:
             yield path
 
 
-def zip_project_paths(paths: Iterable[pathlib.Path], to_file: str = "project"):
+def zip_project_paths(paths: Iterable[Path], to_file: str = "project"):
     buffer = io.BytesIO()
     skip_folders = ["__pycache__"]
 
@@ -127,14 +114,14 @@ def zip_project_paths(paths: Iterable[pathlib.Path], to_file: str = "project"):
     return transfer_encode(f"{to_file}.zip", buffer)
 
 
-def flat_transfer_encoded_args_files(paths: list[pathlib.Path], to_file: str | None) -> dict[str, str]:
+def flat_transfer_encoded_args_files(paths: list[Path], to_file: str | None) -> dict[str, str]:
     buffer = io.BytesIO()
 
     with tempfile.TemporaryDirectory() as tmpdir:
-        tmp_path = pathlib.Path(tmpdir)
+        tmp_path = Path(tmpdir)
 
         for src in paths:
-            src_path = pathlib.Path(src)
+            src_path = Path(src)
             dest_path = tmp_path / src_path.name
 
             if src_path.is_file():
@@ -152,7 +139,7 @@ def flat_transfer_encoded_args_files(paths: list[pathlib.Path], to_file: str | N
                 elif item.is_dir():
                     for root, _, files in os.walk(item):
                         for file in files:
-                            file_path = pathlib.Path(root) / file
+                            file_path = Path(root) / file
                             arcname = file_path.relative_to(tmp_path)
                             zf.write(file_path, arcname)
 
@@ -162,7 +149,7 @@ def flat_transfer_encoded_args_files(paths: list[pathlib.Path], to_file: str | N
 
 class MergeToTransferEncodedZipFlat(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
-        paths = cast(list[pathlib.Path], values)
+        paths = cast(list[Path], values)
         value = flat_transfer_encoded_args_files(paths, option_string.lstrip("-"))
         setattr(namespace, self.dest, value)
 
@@ -175,14 +162,14 @@ class WebLogin(argparse.Action):
 
 class WebLogout(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
-        logout()
+        delete_cloud_config()
         parser.exit()
 
 
 class StackTeardown(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
         session = ApiSession(namespace.non_interactive)
-        delete(session)
+        session.teardown()
         parser.exit()
 
 

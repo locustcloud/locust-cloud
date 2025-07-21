@@ -34,10 +34,8 @@ def backup_cloud_config_file():
     finally:
         if do_backup:
             backup_file.rename(CLOUD_CONFIG_FILE)
-
-        else:  # was not there before the test, should not be there after
-            if CLOUD_CONFIG_FILE.exists():
-                CLOUD_CONFIG_FILE.unlink()
+        else:
+            locust_cloud.common.delete_cloud_config()
 
 
 def check_for_output(stream, regex, timeout=None) -> re.Match | None:
@@ -58,9 +56,7 @@ def check_for_output(stream, regex, timeout=None) -> re.Match | None:
 
 
 def test_cli_auth() -> None:
-    # Ensure there is no cloud config file by deleting it
-    if CLOUD_CONFIG_FILE.exists():
-        CLOUD_CONFIG_FILE.unlink()
+    locust_cloud.common.delete_cloud_config()
     assert not CLOUD_CONFIG_FILE.exists()
 
     env = {

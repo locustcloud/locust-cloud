@@ -4,11 +4,11 @@ import textwrap
 from contextlib import contextmanager
 from pathlib import Path
 
-from locust_cloud.import_finder import CWD, get_imported_files
+from locust_cloud.import_finder import get_imported_files
 
 
 @contextmanager
-def temporary_file(content, dir=CWD, suffix=".py"):
+def temporary_file(content, dir=Path.cwd(), suffix=".py"):
     with tempfile.NamedTemporaryFile(dir=dir, suffix=suffix) as f:
         f.write(content.encode())
         f.seek(0)
@@ -16,7 +16,7 @@ def temporary_file(content, dir=CWD, suffix=".py"):
 
 
 def import_name(path):
-    return str(Path(path).relative_to(CWD)).removesuffix(".py")
+    return str(Path(path).relative_to(Path.cwd())).removesuffix(".py")
 
 
 def test_ignore_external_packages_imports():
@@ -35,7 +35,7 @@ def test_import_file():
     ) as to_import:
         with temporary_file(f"import {import_name(to_import)}\n") as f:
             imports = get_imported_files(Path(f))
-            assert imports == {Path(to_import).relative_to(CWD)}
+            assert imports == {Path(to_import).relative_to(Path.cwd())}
 
 
 def test_from_import_file():
@@ -48,7 +48,7 @@ def test_from_import_file():
         )
     ) as to_import:
         with temporary_file(f"from {import_name(to_import)} import foo") as f:
-            assert get_imported_files(Path(f)) == {Path(to_import).relative_to(CWD)}
+            assert get_imported_files(Path(f)) == {Path(to_import).relative_to(Path.cwd())}
 
 
 def test_all_imports():
@@ -69,7 +69,7 @@ def test_all_imports():
                 """
             )
         ) as f:
-            assert get_imported_files(Path(f)) == {Path(to_import).relative_to(CWD)}
+            assert get_imported_files(Path(f)) == {Path(to_import).relative_to(Path.cwd())}
 
 
 def test_second_level_imports():
@@ -89,7 +89,7 @@ def test_second_level_imports():
                 """
             )
         ) as f:
-            assert get_imported_files(Path(f)) == {Path(to_import).relative_to(CWD)}
+            assert get_imported_files(Path(f)) == {Path(to_import).relative_to(Path.cwd())}
 
 
 def test_recursive_imports():
@@ -104,13 +104,13 @@ def test_recursive_imports():
         with temporary_file(f"import {import_name(to_import_1)}") as to_import:
             with temporary_file(f"import {import_name(to_import)}") as f:
                 assert get_imported_files(Path(f)) == {
-                    Path(to_import).relative_to(CWD),
-                    Path(to_import_1).relative_to(CWD),
+                    Path(to_import).relative_to(Path.cwd()),
+                    Path(to_import_1).relative_to(Path.cwd()),
                 }
 
 
 def test_package_imports():
-    test_package = CWD / "test_package"
+    test_package = Path.cwd() / "test_package"
     test_package.mkdir()
 
     (test_package / "__init__.py").write_text(
@@ -132,15 +132,15 @@ def test_package_imports():
     )
     try:
         with temporary_file("import test_package") as f:
-            assert get_imported_files(Path(f)) == {test_package.relative_to(CWD)}
+            assert get_imported_files(Path(f)) == {test_package.relative_to(Path.cwd())}
 
         with temporary_file("import test_package.test") as f:
-            assert get_imported_files(Path(f)) == {(test_package / "test.py").relative_to(CWD)}
+            assert get_imported_files(Path(f)) == {(test_package / "test.py").relative_to(Path.cwd())}
 
         with temporary_file("from test_package import bar") as f:
-            assert get_imported_files(Path(f)) == {test_package.relative_to(CWD)}
+            assert get_imported_files(Path(f)) == {test_package.relative_to(Path.cwd())}
 
         with temporary_file("from test_package.test import bar") as f:
-            assert get_imported_files(Path(f)) == {(test_package / "test.py").relative_to(CWD)}
+            assert get_imported_files(Path(f)) == {(test_package / "test.py").relative_to(Path.cwd())}
     finally:
         shutil.rmtree(test_package, ignore_errors=True)
