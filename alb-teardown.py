@@ -102,16 +102,21 @@ for ns in namespaces:
 
     print(f"Checking namespace: {namespace}")
     try:
-        ingress = networking_api.read_namespaced_ingress(name="locust-master-ingress", namespace=namespace)
-        creation_time = ingress.metadata.creation_timestamp
-        age_seconds = int((current_time - creation_time).total_seconds())
+        ingresses = networking_api.list_namespaced_ingress(namespace=namespace).items
+        if not ingresses:
+            print(f"No Ingresses found in {namespace}")
+            continue
 
-        if age_seconds > 3600:
-            print(f"Deleting Ingress in namespace: {namespace} (age: {age_seconds} seconds)")
-            networking_api.delete_namespaced_ingress(name="locust-master-ingress", namespace=namespace)
-        else:
-            print(f"Skipping Ingress in {namespace} (created within the last hour)")
+        for ingress in ingresses:
+            name = ingress.metadata.name
+            creation_time = ingress.metadata.creation_timestamp
+            age_seconds = int((current_time - creation_time).total_seconds())
 
+            if age_seconds > 3600:
+                print(f"Deleting Ingress in namespace: {namespace} name: {name} (age: {age_seconds} seconds)")
+                networking_api.delete_namespaced_ingress(name=name, namespace=namespace)
+            else:
+                print(f"Skipping Ingress in {namespace} (created within the last hour)")
     except client.exceptions.ApiException as e:
         if e.status == 404:
             print(f"Ingress not found in {namespace}")
