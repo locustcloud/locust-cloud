@@ -8,7 +8,7 @@ from playwright.sync_api import expect, sync_playwright
 HEADLESS = bool(os.environ.get("HEADLESS", False))
 
 
-def do_url_test(page, context):
+def do_url_test(page, _context):
     # skip dashboard tutorial
     page.get_by_text("Skip").click()
     time.sleep(5)
