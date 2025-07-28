@@ -148,7 +148,8 @@ def main(locustfiles: list[str] | None = None):
         session_id = js["session_id"]
 
         def open_ui():
-            webbrowser.open_new_tab("https://auth.locust.cloud/load-test")
+            extrasubdomain = ".dev." if "api-dev" in session.api_url else "."
+            webbrowser.open_new_tab(f"https://auth{extrasubdomain}locust.cloud/load-test")
 
         Thread(target=input_listener({"\r": open_ui, "\n": open_ui}), daemon=True).start()
 
