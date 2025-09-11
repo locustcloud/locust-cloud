@@ -4,6 +4,7 @@ import pathlib
 import time
 import webbrowser
 from argparse import ArgumentTypeError
+from datetime import timedelta
 from threading import Thread
 
 import requests
@@ -13,12 +14,21 @@ from locust_cloud.args import (
     valid_project_path,
     zip_project_paths,
 )
-from locust_cloud.common import __version__
+from locust_cloud.common import CloudConfig, __version__, write_cloud_config
 from locust_cloud.import_finder import get_imported_files
 from locust_cloud.input_events import input_listener
 from locust_cloud.websocket import SessionMismatchError, Websocket, WebsocketTimeout
 
 logger = logging.getLogger(__name__)
+
+if os.getenv("LOCUSTCLOUD_USER_SUB_ID") and os.getenv("LOCUSTCLOUD_REFRESH_TOKEN") and os.getenv("LOCUSTCLOUD_REGION"):
+    config = CloudConfig(
+        refresh_token=os.getenv("LOCUSTCLOUD_REFRESH_TOKEN"),
+        user_sub_id=os.getenv("LOCUSTCLOUD_USER_SUB_ID"),
+        refresh_token_expires=int(time.time() + timedelta(days=365).total_seconds()),
+        region=os.getenv("LOCUSTCLOUD_REGION"),
+    )
+    write_cloud_config(config)
 
 
 def configure_logging(loglevel: str) -> None:

@@ -59,8 +59,6 @@ class ApiSession(requests.Session):
             refresh_token = config.refresh_token
             id_token_expires = config.id_token_expires
 
-        assert id_token
-
         self.__user_sub_id = user_sub_id
         self.__refresh_token = refresh_token
         self.__id_token_expires = id_token_expires - 60  # Refresh 1 minute before expiry
