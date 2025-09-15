@@ -1,12 +1,11 @@
 import random
 
-from locust import FastHttpUser, run_single_user, task  # pyright: ignore [reportMissingImports]
-
-product_ids = [1, 2, 42, 4711]
+from locust import FastHttpUser, run_single_user, task
 
 
 class MyUser(FastHttpUser):
     host = "https://mock-test-target.eu-north-1.locust.cloud"
+    product_ids = [1, 2, 42, 4711]
 
     @task
     def t(self) -> None:
@@ -14,7 +13,7 @@ class MyUser(FastHttpUser):
             if error := resp.js.get("error"):
                 resp.failure(error)
 
-        for product_id in random.sample(product_ids, 2):
+        for product_id in random.sample(self.product_ids, 2):
             with self.rest("POST", "/cart/add", json={"productId": product_id}) as resp:
                 pass
 
