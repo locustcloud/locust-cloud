@@ -65,6 +65,7 @@ jobs:
     needs: [locust_cloud_full_run]
     runs-on: ubuntu-latest
     steps:
+      - run: sleep 60 # Wait a bit to let the previous test's resources be fully deleted
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
