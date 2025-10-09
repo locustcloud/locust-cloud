@@ -182,7 +182,7 @@ def main(locustfiles: list[str] | None = None):
         if options.local_instance:
             os.system("pkill -TERM -f bootstrap")
         else:
-            session.teardown()
+            session.teardown("KeyboardInterrupt")
         try:
             websocket.wait(timeout=True)
         except (WebsocketTimeout, SessionMismatchError) as e:
@@ -190,7 +190,7 @@ def main(locustfiles: list[str] | None = None):
             return 1
     except WebsocketTimeout as e:
         logger.error(str(e))
-        session.teardown()
+        session.teardown("WebsocketTimeout")
         return 1
     except SessionMismatchError as e:
         # In this case we do not trigger the teardown since the running instance is not ours
@@ -198,7 +198,7 @@ def main(locustfiles: list[str] | None = None):
         return 1
     except Exception as e:
         logger.exception(e)
-        session.teardown()
+        session.teardown(f"Exception {e}")
         return 1
     else:
-        session.teardown()
+        session.teardown("Shutdown")

@@ -169,7 +169,7 @@ class WebLogout(argparse.Action):
 class StackTeardown(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
         session = ApiSession(namespace.non_interactive)
-        session.teardown()
+        session.teardown("--delete")
         parser.exit()
 
 
