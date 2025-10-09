@@ -109,10 +109,10 @@ class ApiSession(requests.Session):
         self.__ensure_valid_authorization_header()
         return super().request(method, f"{self.api_url}{url}", *args, **kwargs)
 
-    def teardown(self):
+    def teardown(self, reason):
         try:
             logger.info("Tearing down Locust cloud...")
-            response = self.delete("/teardown")
+            response = self.post("/teardown", json={"reason": reason})
             if response.status_code == 200:
                 logger.debug(f"Response message from teardown: {response.json()['message']}")
             else:
