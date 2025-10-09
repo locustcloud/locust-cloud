@@ -61,3 +61,25 @@ jobs:
         if: always()
         run: uv run --with locust --with . locust --delete
 
+  locust_url_test:
+    needs: [locust_cloud_full_run]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+      - uses: astral-sh/setup-uv@v5
+      - run: uv venv --python 3.11
+      - run: uv run playwright install --with-deps
+      - run: uv run pytest tests/browser_tests.py
+        env:
+          LOCUSTCLOUD_USERNAME: ${{ secrets.LOCUSTCLOUD_USERNAME }}
+          LOCUSTCLOUD_PASSWORD: ${{ secrets.LOCUSTCLOUD_PASSWORD }}
+          HEADLESS: 1
+      - name: On failure, notify slack
+        if: failure()
+        run: curl -d "{\"text\":\"Failed url test run $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID\"}" $SLACK_NOTIFICATIONS_WEBHOOK
+      - name: Make sure to delete (url tester doesn't self-destroy)
+        if: always()
+        run: uv run --with locust --with . locust --delete
