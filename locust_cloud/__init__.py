@@ -142,6 +142,11 @@ def main(locustfiles: list[str] | None = None):
                     logger.info(js["message"])
 
                 time.sleep(2)
+            except requests.exceptions.ConnectionError:
+                logger.error(
+                    "An error occured while trying to connect to the server. Please check your internet connection and try again."
+                )
+                return 1
             except requests.exceptions.RequestException as e:
                 logger.error(f"Failed to deploy the load generators: {e}")
                 return 1
