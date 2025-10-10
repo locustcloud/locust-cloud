@@ -82,6 +82,7 @@ class Websocket:
                 f"{ws_connection_info.scheme}://{ws_connection_info.netloc}",
                 auth=auth,
                 retry=True,
+                wait_timeout=5,
                 **{"socketio_path": ws_connection_info.path} if ws_connection_info.path else {},
             )
         except socketio.exceptions.ConnectionError:
