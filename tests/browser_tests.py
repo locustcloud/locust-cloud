@@ -12,7 +12,7 @@ def do_url_test(page, _context):
     page.get_by_text("Skip").click()
 
     page.get_by_text("Single Url Load Test").click()
-    time.sleep(10)
+    time.sleep(30)
 
     # skip locust tutorial
     page.get_by_text("Skip").click()
@@ -84,6 +84,10 @@ def do_signup(region):
 
 
 def test_login_and_dashboard_actions():
+    # give some delay between tests
+    if HEADLESS:
+        time.sleep(10)
+
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=HEADLESS)
         context = browser.new_context(viewport={"width": 1280, "height": 1000})
