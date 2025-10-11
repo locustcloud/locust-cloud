@@ -1,6 +1,7 @@
 import os
 import time
 
+import pytest
 import requests
 from playwright.sync_api import expect, sync_playwright
 
@@ -12,10 +13,10 @@ def do_url_test(page, _context):
     page.get_by_text("Skip").click()
 
     page.get_by_text("Single Url Load Test").click()
-    time.sleep(30)
+    time.sleep(10)
 
     # skip locust tutorial
-    page.get_by_text("Skip").click(timeout=30000)
+    page.get_by_text("Skip").click()
 
     # Use the mock target as host for this test run
     page.fill('input[name="host"]', "https://mock-test-target.eu-north-1.locust.cloud")
@@ -73,27 +74,23 @@ def do_signup(region):
         browser.close()
 
 
-# @pytest.mark.skipif(HEADLESS, reason="verification code needs to be entered manually")
-# def test_signup_eu():
-#     do_signup(region="EU")
+@pytest.mark.skipif(HEADLESS, reason="verification code needs to be entered manually")
+def test_signup_eu():
+    do_signup(region="EU")
 
 
-# @pytest.mark.skipif(HEADLESS, reason="verification code needs to be entered manually")
-# def test_signup_us():
-#     do_signup(region="US")
+@pytest.mark.skipif(HEADLESS, reason="verification code needs to be entered manually")
+def test_signup_us():
+    do_signup(region="US")
 
 
 def test_login_and_dashboard_actions():
-    # give some delay between tests
-    if HEADLESS:
-        time.sleep(10)
-
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=HEADLESS)
         context = browser.new_context(viewport={"width": 1280, "height": 1000})
         page = context.new_page()
 
-        page.goto("http://auth.dev.locust.cloud")
+        page.goto("http://auth.dev.locust.cloud/login")
 
         page.fill('input[name="email"]', os.environ["LOCUSTCLOUD_USERNAME"])
         page.fill('input[name="password"]', os.environ["LOCUSTCLOUD_PASSWORD"])
