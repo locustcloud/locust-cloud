@@ -15,7 +15,7 @@ def do_url_test(page, _context):
     time.sleep(30)
 
     # skip locust tutorial
-    page.get_by_text("Skip").click()
+    page.get_by_text("Skip").click(timeout=30000)
 
     # Use the mock target as host for this test run
     page.fill('input[name="host"]', "https://mock-test-target.eu-north-1.locust.cloud")
