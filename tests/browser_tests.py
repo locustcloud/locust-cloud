@@ -12,7 +12,7 @@ def do_url_test(page, _context):
     page.get_by_text("Skip").click()
 
     page.get_by_text("Single Url Load Test").click()
-    time.sleep(5)
+    time.sleep(10)
 
     # skip locust tutorial
     page.get_by_text("Skip").click()
