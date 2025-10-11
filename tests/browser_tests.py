@@ -10,6 +10,7 @@ HEADLESS = bool(os.environ.get("HEADLESS", False))
 def do_url_test(page, _context):
     # skip dashboard tutorial
     page.get_by_text("Skip").click()
+    time.sleep(5)
 
     page.get_by_text("Single Url Load Test").click()
     time.sleep(10)
@@ -25,7 +26,7 @@ def do_url_test(page, _context):
     button.click()
 
     # Let the test run
-    time.sleep(10)
+    time.sleep(20)
 
     # Stop the test
     page.locator('button:has-text("Stop"):visible').click()
