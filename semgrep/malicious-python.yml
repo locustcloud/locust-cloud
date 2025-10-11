@@ -1,0 +1,150 @@
+rules:
+  - id: python.env-enumeration
+    message: "Env var enumeration"
+    languages: [python]
+    severity: ERROR
+    pattern-either:
+      - pattern: dict(os.environ)
+      - pattern: os.environ.copy()
+      - pattern: os.environ.items()
+      - pattern: os.environ.keys()
+      - pattern: os.environ.values()
+      - pattern: |
+          for $K, $V in os.environ.items():
+            ...
+      - pattern: |
+          for $K in os.environ:
+            ...
+
+  - id: python.sensitive-env-vars
+    message: "Sensitive env var read"
+    languages: [python]
+    severity: ERROR
+    pattern-either:
+      - patterns:
+          - pattern: os.environ[$K]
+          - metavariable-regex:
+              metavariable: $K
+              regex: '["''](?i).*?(?:^|_)(AWS|GCP|GOOGLE|AZURE|K8S|KUBERNETES|DB|DATABASE|POSTGRES|SECRET|KEY|TOKEN|PASSWORD|PASS|PRIVATE|CREDENTIAL|CERT|SSH|GITHUB|SLACK|S|LOCUST|HOSTNAME|API|AUTH)(?:_|$).*?["'']'
+      - patterns:
+          - pattern: os.environ.get($K, ...)
+          - metavariable-regex:
+              metavariable: $K
+              regex: '["''](?i).*?(?:^|_)(AWS|GCP|GOOGLE|AZURE|K8S|KUBERNETES|DB|DATABASE|POSTGRES|SECRET|KEY|TOKEN|PASSWORD|PASS|PRIVATE|CREDENTIAL|CERT|SSH|GITHUB|SLACK|LOCUST|HOSTNAME|API|AUTH)(?:_|$).*?["'']'
+      - patterns:
+          - pattern: os.getenv($K, ...)
+          - metavariable-regex:
+              metavariable: $K
+              regex: '["''](?i).*?(?:^|_)(AWS|GCP|GOOGLE|AZURE|K8S|KUBERNETES|DB|DATABASE|POSTGRES|SECRET|KEY|TOKEN|PASSWORD|PASS|PRIVATE|CREDENTIAL|CERT|SSH|GITHUB|SLACK|LOCUST|HOSTNAME|API|AUTH)(?:_|$).*?["'']'
+
+  - id: python.files.sensitive-file
+    message: "Sensitive file read"
+    languages: [python]
+    severity: ERROR
+    pattern-either:
+      - patterns:
+          - pattern: $FN($P, ...)
+          - metavariable-regex:
+              metavariable: $FN
+              regex: '^(open|io\.open)$'
+          - metavariable-regex:
+              metavariable: $P
+              regex: '["''](?:/etc/passwd|/etc/hostname|/etc/shadow|/proc/self/environ|/var/run/secrets/kubernetes\.io/serviceaccount/(?:token|ca\.crt|namespace))["'']'
+      - patterns:
+          - pattern: $CALLEE($P).$METH(...)
+          - metavariable-regex:
+              metavariable: $CALLEE
+              regex: '^(Path|pathlib\.Path)$'
+          - metavariable-regex:
+              metavariable: $METH
+              regex: "^(read_text|read_bytes|open)$"
+          - metavariable-regex:
+              metavariable: $P
+              regex: '["''](?:/etc/passwd|/etc/hostname|/etc/shadow|/proc/self/environ|/var/run/secrets/kubernetes\.io/serviceaccount/(?:token|ca\.crt|namespace))["'']'
+
+  - id: python.files.directory-enumeration
+    message: "Directory enumeration"
+    languages: [python]
+    severity: ERROR
+    pattern-either:
+      - pattern: os.getcwd(...)
+      - pattern: os.listdir(...)
+      - pattern: os.scandir(...)
+      - pattern: os.walk(...)
+      - pattern: glob.glob(...)
+      - pattern: glob.iglob(...)
+      - patterns:
+          - pattern: $CALLEE().$METH(...)
+          - metavariable-regex:
+              metavariable: $CALLEE
+              regex: '^(Path|pathlib\.Path)$'
+          - metavariable-regex:
+              metavariable: $METH
+              regex: "^(iterdir|glob|rglob)$"
+
+  - id: python.network-enumeration
+    message: "Network or hostname enumeration"
+    languages: [python]
+    severity: ERROR
+    pattern-either:
+      - pattern: socket.gethostname(...)
+      - pattern: socket.gethostbyname(...)
+      - pattern: socket.gethostbyaddr(...)
+      - pattern: socket.getfqdn(...)
+      - pattern: socket.getaddrinfo(...)
+      - pattern: socket.getnameinfo(...)
+      - pattern: socket.gethostbyname_ex(...)
+      - pattern: platform.node(...)
+      - pattern: platform.uname(...)
+      - pattern: platform.processor(...)
+      - pattern: platform.machine(...)
+      - pattern: platform.system(...)
+      - pattern: os.uname(...)
+      - pattern: netifaces.interfaces(...)
+      - pattern: psutil.net_if_addrs(...)
+      - pattern: psutil.net_if_stats(...)
+
+  - id: python.k8s.client.import
+    message: "Importing Kubernetes client"
+    languages: [python]
+    severity: WARNING
+    pattern-either:
+      - pattern: import kubernetes
+      - pattern: import kubernetes as $X
+      - pattern: from kubernetes import $X
+      - pattern: from kubernetes.$MOD import $X
+
+  - id: python.subprocess.creation
+    message: "Subprocess creation detected — disallowed in EKS workloads"
+    languages: [python]
+    severity: ERROR
+    pattern-either:
+      - patterns:
+          - pattern: subprocess.$FUNC(...)
+          - metavariable-regex:
+              metavariable: $FUNC
+              regex: "^(run|Popen|call|check_output|check_call|getoutput|getstatusoutput)$"
+      - pattern: os.system(...)
+      - pattern: os.popen(...)
+      - pattern: pexpect.spawn(...)
+      - pattern: sh.$FUNC(...)
+
+  # Following rules are made generic so we can also catch them in external files
+  # e.g. trying to import them and use them as variables to avoid detection
+  - id: generic.imds.literal
+    message: "IMDS URL literal present in file"
+    languages: [generic]
+    severity: ERROR
+    pattern-regex: '169\.254\.169\.254'
+
+  - id: generic.files.sensitive-path-literal
+    message: "Sensitive path literal present in file"
+    languages: [generic]
+    severity: ERROR
+    pattern-regex: '(/etc/passwd|/etc/shadow|/etc/hostname|/proc/self/environ|/var/run/secrets/kubernetes\.io/serviceaccount/(token|ca\.crt|namespace))'
+
+  - id: generic.k8s.api.url.literal
+    message: "Kubernetes API host literal present in file"
+    languages: [generic]
+    severity: ERROR
+    pattern-regex: '(?:https?://)?kubernetes\.default\.svc(?::\d+)?(?:/|\\b)'
