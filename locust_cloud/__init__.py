@@ -180,6 +180,7 @@ def main(locustfiles: list[str] | None = None):
             log_ws_url,
             auth=session_id,
         )
+        websocket.sio.emit("subscribe")
         logger.debug(f"SocketIO transport type: {websocket.sio.transport()}")
         websocket.wait()
 
