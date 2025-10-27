@@ -1,9 +1,17 @@
-.. _locust-cloud:
+==========================
+Locust Cloud Documentation
+==========================
 
-=========================
-Running with Locust Cloud
-=========================
+.. toctree ::
+    :maxdepth: 1
 
-.. include:: 1-first-run.rst
-.. include:: 2-examples.rst
+    docs
 
+==========================
+Locust Kubernetes Operator
+==========================
+
+.. toctree ::
+    :maxdepth: 1
+
+    kubernetes-operator
