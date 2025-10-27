@@ -1,5 +1,9 @@
 .. _kubernetes-operator:
 
+.. raw:: html
+
+    <h1>Kubernetes Operator</h1>
+
 The Locust Operator for Kubernetes is an operator that manages the lifecyle of :ref:`running-distributed` inside a Kubernetes cluster.
 
 It is a Custom Resource Definition (CRD) and a Controller that run on your Kubernetes cluster and allow you to create and manage your Locust tests as Kubernetes resources.
@@ -9,8 +13,8 @@ Automatically creates master/worker jobs, mounts locustfiles, exposes the web UI
 Installation
 ============
 
-Install using Helm Charts
-----------------------------
+Helm Charts
+-----------
 
 `Helm <https://helm.sh/>`_ is a package manager for Kubernetes that installs and manages Kubernetes applications.
 
@@ -51,8 +55,8 @@ Install using Helm Charts
     You may need to update/delete the CRD manually when upgrading/uninstalling the operator.
 
 
-Install using Manifest Files
--------------------------------
+Manifest Files
+--------------
 
 Locust Operator for Kubernetes can be installed using raw manifest files with `kubectl <https://kubernetes.io/docs/reference/kubectl/>`_.
 To generate the raw resources, you can use the Helm chart and output the manifests without installing them.
