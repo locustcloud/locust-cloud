@@ -7,9 +7,9 @@ Locust Cloud Documentation
 
     docs
 
-==========================
-Locust Kubernetes Operator
-==========================
+===================
+Kubernetes Operator
+===================
 
 .. toctree ::
     :maxdepth: 1
