@@ -22,7 +22,7 @@ Helm Charts
 
 .. code-block:: bash
 
-    $ helm repo add locust-operator http://locustcloud.github.io/k8s-operator
+    $ helm repo add locust-operator https://locustcloud.github.io/k8s-operator
     "locust-operator" has been added to your repositories
 
     $ helm repo update
@@ -63,7 +63,7 @@ To generate the raw resources, you can use the Helm chart and output the manifes
 
 .. code-block:: bash
 
-    $ helm repo add locust-operator http://locustcloud.github.io/k8s-operator
+    $ helm repo add locust-operator https://locustcloud.github.io/k8s-operator
     $ helm repo update
     $ helm template locust-operator locust-operator/locust-operator \
       --namespace locust-operator > locust-operator.yaml
