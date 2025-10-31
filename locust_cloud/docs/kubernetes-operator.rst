@@ -75,7 +75,69 @@ Then apply the generated manifest file:
     $ kubectl apply -f locust-operator.yaml
 
 
-Locust Test CRD Configuration
+Quickstart
+==========
+
+1. Create a YAML file defining a ``LocustTest`` resource.
+
+.. code-block:: yaml
+
+    apiVersion: locust.cloud/v1
+    kind: LocustTest
+    metadata:
+      name: load-test
+    spec:
+      image: locustio/locust:2.31.5
+      workers: 2
+      locustfile:
+        inline:
+          content: |
+            from locust import HttpUser, task
+            class TestUser(HttpUser):
+                @task
+                def index(self):
+                    self.client.get("/")
+
+2. Apply it using ``kubectl apply -f <file>.yaml``.
+
+3. You can verify the created resource using ``kubectl get locusttests`` and ``kubectl get pods`` to see the master and worker pods.
+
+.. code-block:: bash
+
+    $ kubectl apply -f locust-test.yaml
+    locusttest.locust.cloud/load-test created
+
+    $ kubectl get locusttests
+    NAME                 STATE   WORKERS   FAIL_RATIO   RPS   USERS   AGE
+    load-test            READY   2/2       0%           0     0       30s
+
+    $ kubectl get pods -l locust.cloud/test-run=load-test
+    NAME                       READY   STATUS    RESTARTS   AGE
+    load-test-master-xxxxx     1/1     Running   0          35s
+    load-test-worker-xxxxx     1/1     Running   0          35s
+    load-test-worker-xxxxx     1/1     Running   0          35s
+    load-test-worker-xxxxx     1/1     Running   0          35s
+
+4. Access the Locust web UI by port-forwarding the service to your local machine. Then open your browser and navigate to `http://localhost:8089`.
+
+.. code-block:: bash
+
+   $ kubectl port-forward svc/load-test-webui 8089:8089
+   Forwarding from 127.0.0.1:8089 -> 8089
+   Forwarding from [::1]:8089 -> 8089
+
+5. You can see the master logs by running:
+
+.. code-block:: bash
+
+  # Tailing the master pod logs directly
+  $ kubectl logs -f pod/load-test-master-xxxxx
+
+  # Using a selector to follow the master pod by labels
+  $ kubectl logs -f -l locust.cloud/test-run=load-test,locust.cloud/component=master
+
+
+LocustTest CRD Configuration
 =============================
 
 General
@@ -274,6 +336,34 @@ Custom Master/Worker pod configuration
           limits:
             cpu: "1"
             memory: "1Gi"
+
+Headless run
+------------
+
+.. code-block:: yaml
+
+    apiVersion: locust.cloud/v1
+    kind: LocustTest
+    metadata:
+      name: headless-test
+    spec:
+      image: locustio/locust:2.31.5
+      workers: 2
+      args:
+        --host http://locust.cloud/
+        --headless
+        --run-time=5m
+        --users=300
+        --spawn-rate=30
+      locustfile:
+        inline:
+          filename: locustfile.py
+          content: |
+            from locust import HttpUser, task
+            class TestUser(HttpUser):
+                @task
+                def index(self):
+                    self.client.get("/")
 
 Upgrade
 =======
