@@ -89,13 +89,12 @@ Quickstart
     spec:
       workers: 2
       locustfile:
-        inline:
-          content: |
-            from locust import HttpUser, task
-            class TestUser(HttpUser):
-                @task
-                def index(self):
-                    self.client.get("/")
+        content: |
+          from locust import HttpUser, task
+          class TestUser(HttpUser):
+              @task
+              def index(self):
+                  self.client.get("/")
 
 2. Apply it using ``kubectl apply -f <file>.yaml``.
 
@@ -163,10 +162,7 @@ Locustfile source
 
 ``spec.locustfile`` (object, optional; choose **one**)
 
-* ``inline``: embed file contents
-
-  * ``filename`` (string, default: ``locustfile.py``)
-  * ``content`` (string, required)
+* ``content`` (string): inline locustfile.py
 
 * ``configMap``: reference an existing ConfigMap
 
@@ -247,14 +243,12 @@ Inline locustfile
       - name: LOCUST_LOGLEVEL
         value: INFO
       locustfile:
-        inline:
-          filename: locustfile.py
-          content: |
-            from locust import HttpUser, task
-            class TestUser(HttpUser):
-                @task
-                def index(self):
-                    self.client.get("/")
+        content: |
+          from locust import HttpUser, task
+          class TestUser(HttpUser):
+              @task
+              def index(self):
+                  self.client.get("/")
 
 External ConfigMap locustfile
 -----------------------------
@@ -353,13 +347,12 @@ Headless run
         --users=300
         --spawn-rate=30
       locustfile:
-        inline:
-          content: |
-            from locust import HttpUser, task
-            class TestUser(HttpUser):
-                @task
-                def index(self):
-                    self.client.get("/")
+        content: |
+          from locust import HttpUser, task
+          class TestUser(HttpUser):
+              @task
+              def index(self):
+                  self.client.get("/")
 
 Upgrade
 =======
