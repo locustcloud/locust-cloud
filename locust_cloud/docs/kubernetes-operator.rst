@@ -279,7 +279,7 @@ External ConfigMap locustfile
       name: load-test-v2
     spec:
       workers: 5
-      extraArgs:
+      args:
         -f mytest.py
         --host http://my.site.com/api/v2
         --run-time=10m
