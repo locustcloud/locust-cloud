@@ -81,7 +81,7 @@ Locust Test CRD Configuration
 General
 -------
 
-``spec.image`` (string, required, default: ``ghcr.io/locustcloud/locust-operator``)
+``spec.image`` (string, required, default: ``locustio/locust:latest``)
 
     Container image for master and workers pods.
 
