@@ -49,12 +49,6 @@ Helm Charts
     NAME                       CREATED AT
     locusttests.locust.cloud   ...
 
-       
-.. seealso::
-    Helm `does not support updating or deleting CRDs <https://helm.sh/docs/chart_best_practices/custom_resource_definitions/#some-caveats-and-explanations>`_.
-    You may need to update/delete the CRD manually when upgrading/uninstalling the operator.
-
-
 Manifest Files
 --------------
 
@@ -367,6 +361,13 @@ Helm
      --namespace locust-operator \
      --reuse-values
 
+Helm `does not support updating or deleting CRDs <https://helm.sh/docs/chart_best_practices/custom_resource_definitions/#some-caveats-and-explanations>`_.
+You may need to update the CRD manually when upgrading the operator.
+
+.. code-block:: bash
+
+   $ kubectl apply -f https://raw.githubusercontent.com/locustcloud/k8s-operator/refs/heads/master/charts/locust-operator/crds/locusttest.yaml
+
 Uninstall
 =========
 
@@ -382,8 +383,10 @@ Helm
 
 .. code-block:: bash
 
+   # Uninstall the Helm release
    $ helm uninstall locust-operator --namespace locust-operator
-
+   # Remove the LocustTest CRD
+   $ kubectl delete crd locusttests.locust.cloud
 
 Manifest Files
 --------------
