@@ -87,7 +87,6 @@ Quickstart
     metadata:
       name: load-test
     spec:
-      image: locustio/locust:2.31.5
       workers: 2
       locustfile:
         inline:
@@ -237,7 +236,7 @@ Inline locustfile
     metadata:
       name: load-test-v1
     spec:
-      image: locustio/locust:2.31.5
+      image: locustio/locust:latest
       workers: 5
       args:
         --host http://my.site.com/api/v1
@@ -279,7 +278,6 @@ External ConfigMap locustfile
     metadata:
       name: load-test-v2
     spec:
-      image: locustio/locust:2.31.5
       workers: 5
       extraArgs:
         -f mytest.py
@@ -347,7 +345,6 @@ Headless run
     metadata:
       name: headless-test
     spec:
-      image: locustio/locust:2.31.5
       workers: 2
       args:
         --host http://locust.cloud/
@@ -357,7 +354,6 @@ Headless run
         --spawn-rate=30
       locustfile:
         inline:
-          filename: locustfile.py
           content: |
             from locust import HttpUser, task
             class TestUser(HttpUser):
