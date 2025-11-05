@@ -249,8 +249,8 @@ cloud_parser.add_argument(
 combined_cloud_parser = configargparse.ArgumentParser(
     parents=[cloud_parser],
     default_config_files=[
-        "~/.blah.conf",
-        "blah.conf",
+        "~/.locust.conf",
+        "locust.conf",
     ],
     auto_env_var_prefix="LOCUSTCLOUD_",
     formatter_class=configargparse.RawTextHelpFormatter,
