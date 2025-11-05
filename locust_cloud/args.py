@@ -249,8 +249,8 @@ cloud_parser.add_argument(
 combined_cloud_parser = configargparse.ArgumentParser(
     parents=[cloud_parser],
     default_config_files=[
-        "~/.locust.conf",
-        "locust.conf",
+        "~/.blah.conf",
+        "blah.conf",
     ],
     auto_env_var_prefix="LOCUSTCLOUD_",
     formatter_class=configargparse.RawTextHelpFormatter,
@@ -288,6 +288,12 @@ combined_cloud_parser.add_argument(
     help="Set --loglevel DEBUG for extra info.",
     choices=["DEBUG", "INFO", "WARNING", "ERROR"],
     default="INFO",
+)
+combined_cloud_parser.add_argument(
+    "--config",
+    is_config_file_arg=True,
+    help="File to read additional configuration from. See https://docs.locust.io/en/stable/configuration.html#configuration-file",
+    metavar="<filename>",
 )
 
 
