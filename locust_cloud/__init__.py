@@ -84,6 +84,7 @@ def main(locustfiles: list[str] | None = None):
                 "LOCUST_WEB_HOST_DISPLAY_NAME",
                 "LOCUST_SKIP_MONKEY_PATCH",
                 "LOCUST_CLOUD",
+                "LOCUST_ENABLE_OPENTELEMETRY",
             ]
         ]
 
@@ -93,6 +94,16 @@ def main(locustfiles: list[str] | None = None):
             {"name": "LOCUSTCLOUD_DEPLOYER_URL", "value": session.api_url},
             *locust_env_variables,
         ]
+
+        if options.otel:
+            locust_args.append({"name": "LOCUST_ENABLE_OPENTELEMETRY", "value": "true"})
+            locust_args.extend(
+                [
+                    {"name": env_variable, "value": os.environ[env_variable]}
+                    for env_variable in os.environ
+                    if env_variable.startswith("OTEL_")
+                ]
+            )
 
         if options.testrun_tags:
             locust_args.append({"name": "LOCUSTCLOUD_TESTRUN_TAGS", "value": ",".join(options.testrun_tags)})
