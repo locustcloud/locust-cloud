@@ -295,6 +295,11 @@ combined_cloud_parser.add_argument(
     help="File to read additional configuration from. See https://docs.locust.io/en/stable/configuration.html#configuration-file",
     metavar="<filename>",
 )
+combined_cloud_parser.add_argument(
+    "--otel",
+    action="store_true",
+    env_var="LOCUST_ENABLE_OPENTELEMETRY",
+)
 
 
 def add_locust_cloud_argparse(parser):
