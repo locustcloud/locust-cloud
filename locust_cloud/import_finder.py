@@ -37,6 +37,9 @@ def get_imported_files(file_path: Path) -> set[Path]:
 
         tree = ast.parse(current.read_text())
         for mod in imported_modules(tree):
+            if mod == "locust":
+                continue  # skip locust imports
+
             spec = importlib.util.find_spec(mod)
             if spec and spec.origin:
                 p = Path(spec.origin).resolve()
