@@ -288,6 +288,7 @@ combined_cloud_parser.add_argument(
     help="Set --loglevel DEBUG for extra info.",
     choices=["DEBUG", "INFO", "WARNING", "ERROR"],
     default="INFO",
+    env_var="LOCUST_LOGLEVEL",
 )
 combined_cloud_parser.add_argument(
     "--config",

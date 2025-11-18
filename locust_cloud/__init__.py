@@ -90,6 +90,7 @@ def main(locustfiles: list[str] | None = None):
         locust_args = [
             {"name": "LOCUST_LOCUSTFILE", "value": ",".join([str(file) for file in relative_locustfiles])},
             {"name": "LOCUST_FLAGS", "value": " ".join([option for option in locust_options if option != "--cloud"])},
+            {"name": "LOCUST_LOGLEVEL", "value": options.loglevel},
             {"name": "LOCUSTCLOUD_DEPLOYER_URL", "value": session.api_url},
             *locust_env_variables,
         ]
