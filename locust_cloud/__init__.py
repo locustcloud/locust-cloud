@@ -17,7 +17,7 @@ from locust_cloud.args import (
 from locust_cloud.common import CloudConfig, __version__, write_cloud_config
 from locust_cloud.import_finder import get_imported_files
 from locust_cloud.input_events import input_listener
-from locust_cloud.websocket import SessionMismatchError, Websocket, WebsocketTimeout
+from locust_cloud.websocket import SessionMismatchError, Websocket, WebsocketTimeout, engineio_handler
 
 logger = logging.getLogger(__name__)
 
@@ -213,7 +213,7 @@ def main(locustfiles: list[str] | None = None):
     except WebsocketTimeout as e:
         logger.error(str(e))
         if (datetime.now() - start_time).total_seconds() < 300:
-            session.teardown("WebsocketTimeout")
+            session.teardown("WebsocketTimeout", debug_info=engineio_handler.logs)
         else:
             session.teardown("IdleTimeout")
         return 1
