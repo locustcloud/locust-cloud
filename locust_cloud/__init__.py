@@ -147,9 +147,6 @@ def main(locustfiles: list[str] | None = None):
                 response = session.post("/deploy", json=payload)
                 js = response.json()
 
-                if js.get("worker_count"):
-                    logger.info(f"Starting a distributed test with {js['worker_count']} workers")
-
                 if response.status_code != 202:
                     # 202 means the stack is currently terminating, so we retry
                     break
@@ -190,7 +187,7 @@ def main(locustfiles: list[str] | None = None):
 
         # logger.debug(f"Session ID is {session_id}")
 
-        logger.info("Waiting for load generators to be ready...")
+        logger.info(f"Waiting for load generators ({js['worker_count']} workers) to be ready...")
         websocket.connect(
             log_ws_url,
             auth=session_id,
