@@ -9,6 +9,25 @@ import socketio.exceptions
 logger = logging.getLogger(__name__)
 
 
+class LogArrayHandler(logging.Handler):
+    def __init__(self):
+        super().__init__()
+        self.logs = []
+
+    def emit(self, record):
+        msg = self.format(record)
+        self.logs.append(msg)
+
+
+engineio_handler = LogArrayHandler()
+engineio_handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s: %(message)s"))
+
+engineio_logger = logging.getLogger("engineio")
+engineio_logger.setLevel(logging.DEBUG)
+engineio_logger.addHandler(engineio_handler)
+engineio_logger.propagate = False
+
+
 class SessionMismatchError(Exception):
     pass
 
@@ -35,7 +54,10 @@ class Websocket:
         self.wait_timeout = 0
         self.exception: None | Exception = None
 
-        self.sio = socketio.Client(handle_sigint=False)
+        self.sio = socketio.Client(
+            handle_sigint=False,
+            engineio_logger=engineio_logger,
+        )
         self.sio._reconnect_abort = threading.Event()
         # The _reconnect_abort value on the socketio client will be populated with a newly created threading.Event if it's not already set.
         # There is no way to set this by passing it in the constructor.
