@@ -64,6 +64,7 @@ def test_browser_login_succeded(mocked_requests, select_region, monkeypatch, cap
         "user_sub_id": "C",
         "refresh_token_expires": 42,
         "id_token_expires": 52,
+        "region": REGION,
     }
 
     mocked_requests.get(
