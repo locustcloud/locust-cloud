@@ -8,7 +8,7 @@ import pytest
 import requests_mock
 
 AUTH_ID = "fake"
-REGION = "eu-north-1"
+REGION = "us-east-1"
 API_URL = locust_cloud.common.get_api_url(REGION)
 REGION_CHOICE = locust_cloud.common.VALID_REGIONS.index(REGION) + 1
 
