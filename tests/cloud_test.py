@@ -17,7 +17,7 @@ from locust_cloud.apisession import unauthorized_message
 CLOUD_CONFIG_FILE = pathlib.Path(platformdirs.user_config_dir(appname="locust-cloud")) / "config"
 LOCUSTCLOUD_USERNAME = os.environ["LOCUSTCLOUD_USERNAME"]
 LOCUSTCLOUD_PASSWORD = os.environ["LOCUSTCLOUD_PASSWORD"]
-REGION = "eu-north-1"
+REGION = "us-east-1"
 API_URL = locust_cloud.common.get_api_url(REGION)
 
 

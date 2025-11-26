@@ -8,7 +8,7 @@ import pytest
 import requests_mock
 
 AUTH_ID = "fake"
-REGION = "eu-north-1"
+REGION = "us-east-1"
 API_URL = locust_cloud.common.get_api_url(REGION)
 REGION_CHOICE = locust_cloud.common.VALID_REGIONS.index(REGION) + 1
 
@@ -64,6 +64,7 @@ def test_browser_login_succeded(mocked_requests, select_region, monkeypatch, cap
         "user_sub_id": "C",
         "refresh_token_expires": 42,
         "id_token_expires": 52,
+        "region": REGION,
     }
 
     mocked_requests.get(
