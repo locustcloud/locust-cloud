@@ -1,4 +1,3 @@
-import builtins
 import webbrowser
 from unittest.mock import MagicMock
 
@@ -26,11 +25,6 @@ def mocked_requests():
         yield m
 
 
-@pytest.fixture
-def select_region(monkeypatch):
-    monkeypatch.setattr(builtins, "input", lambda prompt: REGION_CHOICE)
-
-
 @pytest.fixture(autouse=True)
 def faster_cli_auth_result_polling(monkeypatch):
     monkeypatch.setattr(locust_cloud.web_login, "POLLING_FREQUENCY", 0.1)
@@ -41,7 +35,7 @@ def block_browser_launch(monkeypatch):
     monkeypatch.setattr(webbrowser, "open_new_tab", lambda url: None)
 
 
-def test_browser_login_failed(mocked_requests, select_region, capsys):  # noqa: ARG001
+def test_browser_login_failed(mocked_requests, capsys):  # noqa: ARG001
     mocked_requests.get(
         f"{API_URL}/cli-auth/result/{AUTH_ID}",
         [{"json": {"state": "pending"}}, {"json": {"state": "failed", "reason": "because"}}],
@@ -53,7 +47,7 @@ def test_browser_login_failed(mocked_requests, select_region, capsys):  # noqa: 
     assert expected in capsys.readouterr().out
 
 
-def test_browser_login_succeded(mocked_requests, select_region, monkeypatch, capsys):  # noqa: ARG001
+def test_browser_login_succeded(mocked_requests, monkeypatch, capsys):  # noqa: ARG001
     mock = MagicMock()
     monkeypatch.setattr(locust_cloud.web_login, "write_cloud_config", mock)
 
