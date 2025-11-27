@@ -25,13 +25,13 @@ If the browser does not open or you wish to use a different device to authorize 
 
 {authentication_url}
     """.strip()
-    print()
     print(message)
 
     webbrowser.open_new_tab(authentication_url)
 
     try:
-        while True:  # Should there be some kind of timeout?
+        retries = 0
+        while True:
             response = requests.get(result_url)
 
             if not response.ok:
@@ -41,6 +41,10 @@ If the browser does not open or you wish to use a different device to authorize 
             data = response.json()
 
             if data["state"] == "pending":
+                if retries == 10:
+                    print("\nWaiting for response from login...")
+
+                retries += 1
                 time.sleep(POLLING_FREQUENCY)
                 continue
             elif data["state"] == "failed":
