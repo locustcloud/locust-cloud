@@ -1,4 +1,4 @@
-name: Daily test run (api-dev)
+name: Daily test run (api-dev, :master exporter)
 
 on:
   schedule: # 00:00, skipping Sunday and Monday
@@ -10,6 +10,7 @@ env:
   LOCUSTCLOUD_PASSWORD: ${{ secrets.LOCUSTCLOUD_PASSWORD }}
   LOCUSTCLOUD_DEPLOYER_URL: https://api-dev.eu-north-1.locust.cloud/1
   LOCUSTCLOUD_REGION: eu-north-1
+  LOCUSTCLOUD_IMAGE_TAG: master
   LOCUSTCLOUD_NON_INTERACTIVE: 1
   LOCUST_LOGLEVEL: DEBUG
   SLACK_NOTIFICATIONS_WEBHOOK: ${{ secrets.SLACK_NOTIFICATIONS_WEBHOOK }}
