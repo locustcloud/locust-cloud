@@ -141,6 +141,7 @@ def main(locustfiles: list[str] | None = None):
                 js = {
                     "log_ws_url": f"ws://localhost:1095{os.environ.get('LOCUST_WEB_BASE_PATH', '')}/socket-logs",
                     "session_id": "valid-session-id",
+                    "worker_count": 1,
                 }
                 break
             try:
