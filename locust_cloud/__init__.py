@@ -170,7 +170,8 @@ def main(locustfiles: list[str] | None = None):
 
         if response.status_code != 200:
             try:
-                logger.error(f"{js['Message']} (HTTP {response.status_code}/{response.reason})")
+                logger.error(js.get("Message", "An unexpected error has occured. Please try again."))
+                logger.debug(f"(HTTP {response.status_code}/{response.reason})")
             except Exception:
                 logger.error(
                     f"HTTP {response.status_code}/{response.reason} - Response: {response.text} - URL: {response.request.url}"
