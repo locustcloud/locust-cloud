@@ -42,7 +42,7 @@ def do_signup(region):
         context = browser.new_context(viewport={"width": 1280, "height": 1000})
         page = context.new_page()
 
-        page.goto("http://auth.locust.cloud/signup")
+        page.goto("http://app.locust.cloud/signup")
 
         # sleeps are to avoid getting flagged by recaptcha
         page.fill('input[name="email"]', f"andrew+{region}_signup_test@locust.cloud")

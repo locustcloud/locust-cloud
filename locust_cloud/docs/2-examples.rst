@@ -178,7 +178,7 @@ Locust will attempt to locate any local imports in your locustfile(s) and automa
 View dashboard / previous test runs
 ===================================
 
-You can examine the results from previous test runs (without needing to start your load generators) from your `Locust Cloud dashboard <https://auth.locust.cloud>`_.
+You can examine the results from previous test runs (without needing to start your load generators) from your `Locust Cloud dashboard <https://app.locust.cloud>`_.
 
 Source IP Addresses
 ===================
