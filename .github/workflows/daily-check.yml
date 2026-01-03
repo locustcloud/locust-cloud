@@ -1,8 +1,8 @@
 name: Daily test run (api-dev, :master exporter)
 
 on:
-  schedule: # 00:00, skipping Sunday and Monday
-    - cron: "0 0 * * 2-6"
+#   schedule: # 00:00, skipping Sunday and Monday
+#     - cron: "0 0 * * 2-6"
   workflow_dispatch:
 
 env:
